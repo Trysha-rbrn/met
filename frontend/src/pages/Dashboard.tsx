@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { DollarSign, ArrowUpCircle, ArrowDownCircle, Plus, Search, Filter, Edit2, Trash2 } from 'lucide-react'
+import { DollarSign, ArrowUp, ArrowDown, Plus, Edit2, Trash2 } from 'lucide-react'
+import { motion } from 'framer-motion'
 import * as api from '../api/transactionsApi'
 import TransactionModal from '../components/TransactionModal'
 
@@ -14,15 +15,6 @@ interface Transaction {
   }
 }
 
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  USD: '$',
-  EUR: '€',
-  CAD: 'C$',
-  RUB: '₽',
-  RSD: 'din',
-  TRY: '₺'
-}
-
 function Dashboard() {
   const [summary, setSummary] = useState({ totalBalance: 0, totalIncome: 0, totalExpenses: 0 })
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -31,7 +23,6 @@ function Dashboard() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
   
   const currencyCode = localStorage.getItem('met_currency') || 'USD'
-  const currencySymbol = CURRENCY_SYMBOLS[currencyCode] || '$'
 
   useEffect(() => {
     fetchData()
@@ -63,17 +54,14 @@ function Dashboard() {
       fetchData()
     } catch (error) {
       console.error('Error saving transaction:', error)
+      throw error // Re-throw to show error in modal
     }
   }
-
+  
   const handleDelete = async (id: string) => {
-    if (window.confirm('Delete this transaction?')) {
-      try {
-        await api.deleteTransaction(id)
-        fetchData()
-      } catch (error) {
-        console.error('Error deleting transaction:', error)
-      }
+    if (window.confirm('Are you sure you want to delete this transaction? This action cannot be undone.')) {
+      await api.deleteTransaction(id)
+      fetchData()
     }
   }
 
@@ -81,155 +69,143 @@ function Dashboard() {
     return new Intl.NumberFormat('en-US', { 
       style: 'currency', 
       currency: currencyCode,
-      currencyDisplay: 'symbol' 
     }).format(val)
   }
 
-  if (loading && transactions.length === 0) return <div className="p-8 text-center">Loading dashboard...</div>
-
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
-            Dashboard
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-lg font-medium">
-            Welcome back, <span className="text-blue-600 font-black">{localStorage.getItem('met_user_name') || 'Trysha-rbrn'}</span>. Here's your summary.
-          </p>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-8"
+    >
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black tracking-tighter">Dashboard</h1>
+          <p className="text-muted-foreground font-medium">An overview of your financial health.</p>
         </div>
-        <button 
+        <motion.button 
           onClick={() => { setSelectedTransaction(null); setIsModalOpen(true); }}
-          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-blue-500/25 active:scale-95"
+          className="flex items-center justify-center gap-2 bg-primary text-primary-foreground px-5 py-3 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 active:scale-95"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
         >
           <Plus size={20} />
           New Transaction
-        </button>
+        </motion.button>
       </header>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card 
-          title="Total Balance" 
+        <StatCard 
+          title="Balance" 
           amount={formatCurrency(summary.totalBalance)} 
-          icon={<DollarSign size={24} />} 
-          color="bg-blue-100 text-blue-600 dark:bg-blue-900/30"
-          trend={summary.totalBalance >= 0 ? 'text-emerald-500' : 'text-rose-500'}
+          icon={DollarSign}
+          color="text-blue-500"
         />
-        <Card 
-          title="Total Income" 
+        <StatCard 
+          title="Income" 
           amount={formatCurrency(summary.totalIncome)} 
-          icon={<ArrowUpCircle size={24} />} 
-          color="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30"
-          trend="text-emerald-500"
+          icon={ArrowUp}
+          color="text-emerald-500"
         />
-        <Card 
-          title="Total Expenses" 
+        <StatCard 
+          title="Expenses" 
           amount={formatCurrency(summary.totalExpenses)} 
-          icon={<ArrowDownCircle size={24} />} 
-          color="bg-rose-100 text-rose-600 dark:bg-rose-900/30"
-          trend="text-rose-500"
+          icon={ArrowDown}
+          color="text-rose-500"
         />
       </div>
 
-      {/* Transactions List */}
-      <section className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <h2 className="text-xl font-bold">Recent Transactions</h2>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <input 
-                type="text" 
-                placeholder="Search..." 
-                className="pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
-              />
-            </div>
-            <button className="p-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 hover:text-blue-600 transition-colors">
-              <Filter size={18} />
-            </button>
-          </div>
+      <div className="bg-card border rounded-2xl shadow-sm overflow-hidden">
+        <div className="p-6">
+          <h3 className="text-lg font-bold">Recent Transactions</h3>
         </div>
-
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
-                <th className="px-6 py-4">Date</th>
-                <th className="px-6 py-4">Category</th>
-                <th className="px-6 py-4">Description</th>
-                <th className="px-6 py-4">Amount</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {transactions.length > 0 ? transactions.map((t) => (
-                <tr key={t.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
-                  <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 font-medium">
-                    {new Date(t.date).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300">
-                      {t.category.name}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm font-semibold">
-                    {t.description || '—'}
-                  </td>
-                  <td className={`px-6 py-4 text-sm font-bold ${t.type === 'INCOME' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    {t.type === 'INCOME' ? '+' : '-'}{formatCurrency(t.amount)}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
-                        onClick={() => { setSelectedTransaction(t); setIsModalOpen(true); }}
-                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(t.id)}
-                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-all"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+          <table className="w-full">
+            <tbody className="divide-y">
+              {loading && transactions.length === 0 ? (
+                 [...Array(3)].map((_, i) => <TransactionSkeleton key={i} />)
+              ) : transactions.length > 0 ? transactions.map((t) => (
+                <TransactionRow key={t.id} transaction={t} formatCurrency={formatCurrency} onEdit={() => { setSelectedTransaction(t); setIsModalOpen(true); }} onDelete={() => handleDelete(t.id)} />
               )) : (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400 italic">
-                    No transactions found. Add your first one!
+                  <td colSpan={4} className="p-12 text-center text-muted-foreground italic">
+                    No transactions yet. Add your first one!
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-      </section>
-
+      </div>
+      
       <TransactionModal 
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveTransaction}
         initialData={selectedTransaction}
       />
-    </div>
+    </motion.div>
   )
 }
 
-function Card({ title, amount, icon, color, trend }: any) {
-  return (
-    <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800">
-      <div className="flex justify-between items-start mb-4">
-        <span className="text-slate-500 dark:text-slate-400 font-bold text-sm uppercase tracking-wider">{title}</span>
-        <div className={`p-3 rounded-2xl ${color}`}>
-          {icon}
-        </div>
-      </div>
-      <div className={`text-3xl font-black ${trend}`}>{amount}</div>
+const StatCard = ({ title, amount, icon: Icon, color }: any) => (
+  <motion.div 
+    className="bg-card border rounded-2xl p-6 flex flex-col justify-between gap-4 transition-all hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5"
+    whileHover={{ y: -5 }}
+  >
+    <div className="flex items-center justify-between text-muted-foreground">
+      <span className="font-bold text-sm uppercase tracking-widest">{title}</span>
+      <Icon size={24} className={color} />
     </div>
-  )
-}
+    <span className={`text-4xl font-black tracking-tighter ${color}`}>{amount}</span>
+  </motion.div>
+)
+
+const TransactionRow = ({ transaction: t, formatCurrency, onEdit, onDelete }: any) => (
+  <tr className="hover:bg-muted/50 transition-colors group">
+    <td className="p-4 md:p-6 flex items-center gap-4">
+      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+        t.type === 'INCOME' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
+      }`}>
+        {t.type === 'INCOME' ? <ArrowUp size={20} /> : <ArrowDown size={20} />}
+      </div>
+      <div>
+        <p className="font-bold">{t.description || 'Transaction'}</p>
+        <p className="text-sm text-muted-foreground">{t.category.name}</p>
+      </div>
+    </td>
+    <td className="p-4 md:p-6 text-right">
+      <p className={`font-bold text-lg ${t.type === 'INCOME' ? 'text-emerald-500' : 'text-rose-500'}`}>
+        {t.type === 'INCOME' ? '+' : '-'}{formatCurrency(t.amount)}
+      </p>
+      <p className="text-sm text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
+    </td>
+    <td className="p-4 md:p-6 w-24">
+      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button onClick={onEdit} className="p-2 text-muted-foreground hover:text-foreground"><Edit2 size={16} /></button>
+        <button onClick={onDelete} className="p-2 text-muted-foreground hover:text-destructive"><Trash2 size={16} /></button>
+      </div>
+    </td>
+  </tr>
+)
+
+const TransactionSkeleton = () => (
+  <tr className="animate-pulse">
+    <td className="p-4 md:p-6 flex items-center gap-4">
+      <div className="w-10 h-10 rounded-full bg-muted" />
+      <div>
+        <div className="h-4 w-32 bg-muted rounded-md" />
+        <div className="h-3 w-20 bg-muted rounded-md mt-2" />
+      </div>
+    </td>
+    <td className="p-4 md:p-6 text-right">
+      <div className="h-6 w-24 bg-muted rounded-md ml-auto" />
+      <div className="h-3 w-16 bg-muted rounded-md mt-2 ml-auto" />
+    </td>
+    <td className="p-4 md:p-6 w-24" />
+  </tr>
+)
 
 export default Dashboard

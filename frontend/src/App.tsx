@@ -1,13 +1,23 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom'
-import { Sun, Moon, Wallet, Settings, LayoutDashboard, Github, Linkedin, Cpu, LogOut, User } from 'lucide-react'
+import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
+import { Sun, Moon, Wallet, Settings, LayoutDashboard, LogOut, User, BarChart } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+
 import CategoriesPage from './pages/CategoriesPage'
 import Dashboard from './pages/Dashboard'
 import AuthPage from './pages/AuthPage'
 import SettingsPage from './pages/SettingsPage'
+import * as authApi from './api/authApi'
+
+const navItems = [
+  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/transactions', label: 'Transactions', icon: BarChart },
+  { path: '/categories', label: 'Categories', icon: Settings },
+  { path: '/settings', label: 'Settings', icon: User },
+]
 
 function App() {
-  const [darkMode, setDarkMode] = useState(localStorage.getItem('met_theme') === 'dark')
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('met_theme') === 'dark')
   const [user, setUser] = useState<any>(null)
   const [token, setToken] = useState<string | null>(localStorage.getItem('met_token'))
   const [loading, setLoading] = useState(true)
@@ -23,160 +33,139 @@ function App() {
   }, [darkMode])
 
   useEffect(() => {
-    const checkUser = async () => {
+    const verifyUser = async () => {
       const storedToken = localStorage.getItem('met_token')
       if (storedToken) {
         try {
-          // Verify token and get user data
-          // const userData = await authApi.getMe()
-          // setUser(userData)
-          setUser({ name: localStorage.getItem('met_user_name') || 'User' })
+          const userData = await authApi.getMe()
+          setUser(userData)
         } catch (err) {
           handleLogout()
         }
       }
       setLoading(false)
     }
-    checkUser()
-  }, [])
+    verifyUser()
+  }, [token])
 
   const handleLogin = (userData: any, userToken: string) => {
     setUser(userData)
     setToken(userToken)
     localStorage.setItem('met_token', userToken)
-    localStorage.setItem('met_user_name', userData.name || 'User')
   }
 
   const handleLogout = () => {
     setUser(null)
     setToken(null)
     localStorage.removeItem('met_token')
-    localStorage.removeItem('met_user_name')
   }
 
-  if (loading) return null
+  if (loading) {
+    return <div className="fixed inset-0 bg-background flex items-center justify-center">
+      <Wallet size={48} className="animate-pulse text-blue-500" />
+    </div>
+  }
 
   return (
     <Router>
-      <div className="min-h-screen font-sans bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-500 flex flex-col">
+      <div className="min-h-screen bg-muted/40 font-sans antialiased">
         {!token ? (
           <AuthPage onLogin={handleLogin} />
         ) : (
-          <>
-            {/* Header */}
-            <nav className="border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex justify-between items-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-10 shadow-sm">
-              <div className="flex items-center gap-8">
-                <Link to="/" className="flex items-center gap-2 group">
-                  <div className="p-2 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl text-white shadow-lg shadow-blue-500/20 group-hover:rotate-6 transition-transform">
-                    <Wallet size={24} />
-                  </div>
-                  <span className="text-xl font-black tracking-tighter">MET</span>
-                </Link>
-                
-                <div className="hidden md:flex items-center gap-6">
-                  <Link to="/" className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-all hover:translate-y-[-1px]">
-                    <LayoutDashboard size={18} />
-                    Dashboard
-                  </Link>
-                  <Link to="/categories" className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-all hover:translate-y-[-1px]">
-                    <Settings size={18} />
-                    Categories
-                  </Link>
-                  <Link to="/settings" className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-all hover:translate-y-[-1px]">
-                    <User size={18} />
-                    Settings
-                  </Link>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-4">
-                <button 
-                  onClick={() => setDarkMode(!darkMode)}
-                  className="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
-                >
-                  {darkMode ? <Sun size={20} className="text-yellow-400" /> : <Moon size={20} className="text-slate-600" />}
-                </button>
-
-                <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-800 mx-1" />
-
-                <div className="flex items-center gap-3 pl-2">
-                  <div className="flex flex-col items-end hidden sm:flex">
-                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Active Session</span>
-                    <span className="text-sm font-bold">{user?.name || 'User'}</span>
-                  </div>
-                  <button 
-                    onClick={handleLogout}
-                    className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all border border-rose-100 dark:border-rose-800/50"
-                    title="Logout"
-                  >
-                    <LogOut size={20} />
-                  </button>
-                </div>
-              </div>
-            </nav>
-
-            {/* Main Content */}
-            <main className="max-w-6xl mx-auto p-6 flex-grow w-full">
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/categories" element={<CategoriesPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route path="*" element={<Navigate to="/" />} />
-              </Routes>
-            </main>
-          </>
-        )}
-
-        {/* Footer */}
-        <footer className="mt-auto border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-12">
-          <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 items-center">
-            <div className="flex flex-col items-center md:items-start gap-2">
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-black tracking-tighter bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">MET - Micro Economics Tool</span>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest">
-                Professional Financial Management
-              </p>
-              <p className="text-xs text-slate-400 mt-2 flex items-center gap-2">
-                <Cpu size={14} className="text-blue-500" /> Built with <span className="font-black text-slate-600 dark:text-slate-300">Gemini AI Technology</span>
-              </p>
-            </div>
-
-            <div className="flex flex-col items-center gap-3">
-              <div className="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center gap-3 group transition-all hover:border-blue-500/50">
-                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
-                  <User size={16} />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Developed by</span>
-                  <span className="text-sm font-black">Trysha-rbrn</span>
-                </div>
-              </div>
-              <span className="text-[10px] font-black text-slate-400 tracking-[0.3em]">© SINCE 2026</span>
-            </div>
-
-            <div className="flex items-center justify-center md:justify-end gap-4">
-              <a 
-                href="https://github.com/Trysha-rbrn" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:scale-110 transition-all border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl hover:shadow-blue-500/10"
-              >
-                <Github size={22} />
-              </a>
-              <a 
-                href="https://linkedin.com/in/YOUR_LINKEDIN_HERE" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:scale-110 transition-all border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl hover:shadow-blue-500/10"
-              >
-                <Linkedin size={22} />
-              </a>
+          <div className="flex">
+            <Sidebar />
+            <div className="flex-1 flex flex-col">
+              <Header user={user} onLogout={handleLogout} onToggleTheme={() => setDarkMode(!darkMode)} isDark={darkMode} />
+              <main className="flex-1 p-4 sm:p-6 lg:p-8">
+                <AnimatePresence mode="wait">
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/categories" element={<CategoriesPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="*" element={<Navigate to="/" />} />
+                  </Routes>
+                </AnimatePresence>
+              </main>
             </div>
           </div>
-        </footer>
+        )}
       </div>
     </Router>
+  )
+}
+
+function Sidebar() {
+  const location = useLocation()
+  
+  return (
+    <aside className="hidden lg:flex flex-col w-64 border-r bg-background fixed h-full">
+      <div className="flex items-center gap-3 h-20 px-6 border-b">
+        <div className="p-2.5 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-xl text-white shadow-lg shadow-blue-500/20">
+          <Wallet size={24} />
+        </div>
+        <span className="text-2xl font-black tracking-tighter">MET</span>
+      </div>
+      <nav className="flex-1 px-4 py-6 space-y-2">
+        {navItems.map(item => (
+          <Link
+            key={item.path}
+            to={item.path}
+            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-bold transition-all duration-200 ${
+              location.pathname === item.path
+                ? 'bg-primary text-primary-foreground shadow-md'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            }`}
+          >
+            <item.icon size={20} />
+            {item.label}
+          </Link>
+        ))}
+      </nav>
+    </aside>
+  )
+}
+
+function Header({ user, onLogout, onToggleTheme, isDark }: any) {
+  return (
+    <header className="sticky top-0 z-30 flex h-20 items-center gap-4 border-b bg-background/80 backdrop-blur-lg px-6 lg:ml-64">
+       <div className="flex-1">
+         {/* Can add breadcrumbs or page title here */}
+       </div>
+       <div className="flex items-center gap-4">
+        <motion.button 
+          onClick={onToggleTheme}
+          whileTap={{ scale: 0.9, rotate: 90 }}
+          className="p-2.5 rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+        >
+          <AnimatePresence mode="wait">
+            {isDark ? (
+              <motion.div key="sun" initial={{ scale: 0, rotate: -90 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0, rotate: 90 }}>
+                <Sun size={20} className="text-yellow-400" />
+              </motion.div>
+            ) : (
+              <motion.div key="moon" initial={{ scale: 0, rotate: 90 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0, rotate: -90 }}>
+                <Moon size={20} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.button>
+        <div className="h-8 w-px bg-border" />
+        <div className="flex items-center gap-3">
+          <div className="flex flex-col items-end">
+            <span className="text-sm font-bold text-foreground">{user?.name || 'User'}</span>
+            <span className="text-xs text-muted-foreground">{user?.email}</span>
+          </div>
+          <motion.button 
+            onClick={onLogout}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+          >
+            <LogOut size={20} />
+          </motion.button>
+        </div>
+       </div>
+    </header>
   )
 }
 
