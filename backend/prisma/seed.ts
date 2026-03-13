@@ -1,22 +1,18 @@
 import { PrismaClient, TransactionType } from '@prisma/client'
+import 'dotenv/config'
 
 const prisma = new PrismaClient()
 
 async function main() {
-  // Clear existing data (optional, be careful)
-  // await prisma.category.deleteMany({})
-  // await prisma.user.deleteMany({})
-
   console.log('Seeding categories...')
 
-  // This is a placeholder user since categories are tied to users in our schema
-  // In a real app, this would happen during user registration
+  // This is a placeholder user
   const user = await prisma.user.upsert({
     where: { email: 'demo@example.com' },
     update: {},
     create: {
       email: 'demo@example.com',
-      password: 'hashed_password_here', // In reality, use bcrypt
+      password: 'hashed_password_here',
       name: 'Demo User',
     },
   })
