@@ -64,3 +64,36 @@ export const getMe = async (req: Request, res: Response) => {
     res.status(500).json({ error: (error as Error).message })
   }
 }
+
+export const updateUser = async (req: Request, res: Response) => {
+  const userId = (req as any).userId
+  const { name, password } = req.body
+  try {
+    const updateData: any = { name }
+    if (password) {
+      updateData.password = await bcrypt.hash(password, 10)
+    }
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: { id: true, email: true, name: true }
+    })
+    res.json(user)
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message })
+  }
+}
+
+export const deleteUser = async (req: Request, res: Response) => {
+  const userId = (req as any).userId
+  try {
+    // Delete all related data (Prisma can do this if onDelete is set, but manually here to be safe)
+    await prisma.transaction.deleteMany({ where: { userId } })
+    await prisma.category.deleteMany({ where: { userId } })
+    await prisma.user.delete({ where: { id: userId } })
+    res.json({ message: 'User and all related data deleted successfully' })
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message })
+  }
+}

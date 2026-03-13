@@ -4,9 +4,10 @@ import { Sun, Moon, Wallet, Settings, LayoutDashboard, Github, Linkedin, Cpu, Lo
 import CategoriesPage from './pages/CategoriesPage'
 import Dashboard from './pages/Dashboard'
 import AuthPage from './pages/AuthPage'
+import SettingsPage from './pages/SettingsPage'
 
 function App() {
-  const [darkMode, setDarkMode] = useState(false)
+  const [darkMode, setDarkMode] = useState(localStorage.getItem('met_theme') === 'dark')
   const [user, setUser] = useState<any>(null)
   const [token, setToken] = useState<string | null>(localStorage.getItem('met_token'))
   const [loading, setLoading] = useState(true)
@@ -14,32 +15,43 @@ function App() {
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark')
+      localStorage.setItem('met_theme', 'dark')
     } else {
       document.documentElement.classList.remove('dark')
+      localStorage.setItem('met_theme', 'light')
     }
   }, [darkMode])
 
   useEffect(() => {
-    // Check if user is logged in
-    const storedToken = localStorage.getItem('met_token')
-    if (storedToken) {
-      // In a real app, you'd verify the token with /api/auth/me
-      // For now we'll just assume it's valid if present
-      setUser({ name: 'User' }) // Placeholder
+    const checkUser = async () => {
+      const storedToken = localStorage.getItem('met_token')
+      if (storedToken) {
+        try {
+          // Verify token and get user data
+          // const userData = await authApi.getMe()
+          // setUser(userData)
+          setUser({ name: localStorage.getItem('met_user_name') || 'User' })
+        } catch (err) {
+          handleLogout()
+        }
+      }
+      setLoading(false)
     }
-    setLoading(false)
+    checkUser()
   }, [])
 
   const handleLogin = (userData: any, userToken: string) => {
     setUser(userData)
     setToken(userToken)
     localStorage.setItem('met_token', userToken)
+    localStorage.setItem('met_user_name', userData.name || 'User')
   }
 
   const handleLogout = () => {
     setUser(null)
     setToken(null)
     localStorage.removeItem('met_token')
+    localStorage.removeItem('met_user_name')
   }
 
   if (loading) return null
@@ -69,6 +81,10 @@ function App() {
                   <Link to="/categories" className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-all hover:translate-y-[-1px]">
                     <Settings size={18} />
                     Categories
+                  </Link>
+                  <Link to="/settings" className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-bold transition-all hover:translate-y-[-1px]">
+                    <User size={18} />
+                    Settings
                   </Link>
                 </div>
               </div>
@@ -104,6 +120,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/categories" element={<CategoriesPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </main>

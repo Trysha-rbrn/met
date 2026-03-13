@@ -14,12 +14,24 @@ interface Transaction {
   }
 }
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: '$',
+  EUR: '€',
+  CAD: 'C$',
+  RUB: '₽',
+  RSD: 'din',
+  TRY: '₺'
+}
+
 function Dashboard() {
   const [summary, setSummary] = useState({ totalBalance: 0, totalIncome: 0, totalExpenses: 0 })
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
+  
+  const currencyCode = localStorage.getItem('met_currency') || 'USD'
+  const currencySymbol = CURRENCY_SYMBOLS[currencyCode] || '$'
 
   useEffect(() => {
     fetchData()
@@ -66,7 +78,11 @@ function Dashboard() {
   }
 
   const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val)
+    return new Intl.NumberFormat('en-US', { 
+      style: 'currency', 
+      currency: currencyCode,
+      currencyDisplay: 'symbol' 
+    }).format(val)
   }
 
   if (loading && transactions.length === 0) return <div className="p-8 text-center">Loading dashboard...</div>
@@ -79,7 +95,7 @@ function Dashboard() {
             Dashboard
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-lg font-medium">
-            Welcome back, <span className="text-blue-600">Trysha-rbrn</span>. Here's your summary.
+            Welcome back, <span className="text-blue-600 font-black">{localStorage.getItem('met_user_name') || 'Trysha-rbrn'}</span>. Here's your summary.
           </p>
         </div>
         <button 
