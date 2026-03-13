@@ -1,13 +1,57 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String     @id @default(uuid())
+  email     @unique
+  password  String
+  name      String?
+  categories Category[]
+  transactions Transaction[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Category {
+  id             String     @id @default(uuid())
+  name           String
+  type           TransactionType // INCOME or EXPENSE
+  userId         String
+  user           User       @relation(fields: [userId], references: [id])
+  parentId       String?    // For subcategories
+  parent         Category?  @relation("Subcategories", fields: [parentId], references: [id])
+  subcategories  Category[] @relation("Subcategories")
+  transactions   Transaction[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@unique([name, userId, parentId])
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  amount      Float
+  description String?
+  date        DateTime @default(now())
+  type        TransactionType
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
 }
