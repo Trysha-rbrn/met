@@ -5,8 +5,11 @@ import {
   updateCategory, 
   deleteCategory 
 } from '../controllers/categoryController.ts'
+import { auth } from '../middleware/authMiddleware.ts'
 
 const router = Router()
+
+router.use(auth) // All category routes are protected
 
 router.get('/', getCategories)
 router.post('/', createCategory)

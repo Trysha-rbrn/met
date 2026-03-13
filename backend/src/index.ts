@@ -3,6 +3,7 @@ import cors from 'cors'
 import 'dotenv/config'
 import categoryRoutes from './routes/categoryRoutes.ts'
 import transactionRoutes from './routes/transactionRoutes.ts'
+import authRoutes from './routes/authRoutes.ts'
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -11,6 +12,7 @@ app.use(cors())
 app.use(express.json())
 
 // Routes
+app.use('/api/auth', authRoutes)
 app.use('/api/categories', categoryRoutes)
 app.use('/api/transactions', transactionRoutes)
 

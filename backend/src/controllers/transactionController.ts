@@ -3,14 +3,11 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-// Fetch all transactions for a user
 export const getTransactions = async (req: Request, res: Response) => {
+  const userId = (req as any).userId
   try {
-    const demoUser = await prisma.user.findFirst({ where: { email: 'demo@example.com' } })
-    if (!demoUser) return res.status(404).json({ error: 'User not found' })
-
     const transactions = await prisma.transaction.findMany({
-      where: { userId: demoUser.id },
+      where: { userId },
       include: {
         category: true
       },
@@ -22,20 +19,17 @@ export const getTransactions = async (req: Request, res: Response) => {
   }
 }
 
-// Create a new transaction
 export const createTransaction = async (req: Request, res: Response) => {
+  const userId = (req as any).userId
   const { amount, description, date, type, categoryId, metadata } = req.body
   try {
-    const demoUser = await prisma.user.findFirst({ where: { email: 'demo@example.com' } })
-    if (!demoUser) return res.status(404).json({ error: 'User not found' })
-
     const transaction = await prisma.transaction.create({
       data: {
         amount: parseFloat(amount),
         description,
         date: date ? new Date(date) : new Date(),
         type,
-        userId: demoUser.id,
+        userId,
         categoryId,
         metadata: metadata || {}
       },
@@ -49,11 +43,14 @@ export const createTransaction = async (req: Request, res: Response) => {
   }
 }
 
-// Update a transaction
 export const updateTransaction = async (req: Request, res: Response) => {
+  const userId = (req as any).userId
   const { id } = req.params
   const { amount, description, date, type, categoryId, metadata } = req.body
   try {
+    const existing = await prisma.transaction.findUnique({ where: { id } })
+    if (!existing || existing.userId !== userId) return res.status(403).json({ error: 'Unauthorized' })
+
     const transaction = await prisma.transaction.update({
       where: { id },
       data: {
@@ -74,10 +71,13 @@ export const updateTransaction = async (req: Request, res: Response) => {
   }
 }
 
-// Delete a transaction
 export const deleteTransaction = async (req: Request, res: Response) => {
+  const userId = (req as any).userId
   const { id } = req.params
   try {
+    const existing = await prisma.transaction.findUnique({ where: { id } })
+    if (!existing || existing.userId !== userId) return res.status(403).json({ error: 'Unauthorized' })
+
     await prisma.transaction.delete({
       where: { id }
     })
@@ -87,14 +87,11 @@ export const deleteTransaction = async (req: Request, res: Response) => {
   }
 }
 
-// Get financial summary (total balance, income, expenses)
 export const getSummary = async (req: Request, res: Response) => {
+  const userId = (req as any).userId
   try {
-    const demoUser = await prisma.user.findFirst({ where: { email: 'demo@example.com' } })
-    if (!demoUser) return res.status(404).json({ error: 'User not found' })
-
     const transactions = await prisma.transaction.findMany({
-      where: { userId: demoUser.id }
+      where: { userId }
     })
 
     const income = transactions

@@ -3,18 +3,13 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-// Fetch categories for a user (hierarchical structure)
 export const getCategories = async (req: Request, res: Response) => {
+  const userId = (req as any).userId
   try {
-    // In a real app, userId would come from JWT (auth middleware)
-    // For now, let's use our demo user
-    const demoUser = await prisma.user.findFirst({ where: { email: 'demo@example.com' } })
-    if (!demoUser) return res.status(404).json({ error: 'User not found' })
-
     const categories = await prisma.category.findMany({
       where: { 
-        userId: demoUser.id,
-        parentId: null // Only parent categories (Income/Expense)
+        userId,
+        parentId: null 
       },
       include: {
         subcategories: true
@@ -26,18 +21,15 @@ export const getCategories = async (req: Request, res: Response) => {
   }
 }
 
-// Create a new category or subcategory
 export const createCategory = async (req: Request, res: Response) => {
+  const userId = (req as any).userId
   const { name, type, parentId } = req.body
   try {
-    const demoUser = await prisma.user.findFirst({ where: { email: 'demo@example.com' } })
-    if (!demoUser) return res.status(404).json({ error: 'User not found' })
-
     const category = await prisma.category.create({
       data: {
         name,
-        type, // INCOME or EXPENSE
-        userId: demoUser.id,
+        type, 
+        userId,
         parentId: parentId || null
       }
     })
@@ -47,11 +39,15 @@ export const createCategory = async (req: Request, res: Response) => {
   }
 }
 
-// Update a category or subcategory
 export const updateCategory = async (req: Request, res: Response) => {
+  const userId = (req as any).userId
   const { id } = req.params
   const { name, type, parentId } = req.body
   try {
+    // Check ownership
+    const existing = await prisma.category.findUnique({ where: { id } })
+    if (!existing || existing.userId !== userId) return res.status(403).json({ error: 'Unauthorized' })
+
     const category = await prisma.category.update({
       where: { id },
       data: {
@@ -66,13 +62,13 @@ export const updateCategory = async (req: Request, res: Response) => {
   }
 }
 
-// Delete a category (and its subcategories automatically)
 export const deleteCategory = async (req: Request, res: Response) => {
+  const userId = (req as any).userId
   const { id } = req.params
   try {
-    // Note: Due to foreign key constraints, 
-    // we may need to handle subcategories if we don't have onDelete: Cascade
-    // In our schema, we should check it.
+    const existing = await prisma.category.findUnique({ where: { id } })
+    if (!existing || existing.userId !== userId) return res.status(403).json({ error: 'Unauthorized' })
+
     await prisma.category.delete({
       where: { id }
     })
