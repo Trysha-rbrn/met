@@ -3,8 +3,10 @@ import { Coins, ArrowUp, ArrowDown, CalendarDays, TrendingUp, WalletCards, Gem, 
 import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts'
 import * as api from '../api/transactionsApi'
 import * as accountsApi from '../api/accountsApi'
+import * as categoriesApi from '../api/categoriesApi'
 import type { Transaction, TransactionSummary } from '../api/transactionsApi'
 import type { Account } from '../api/accountsApi'
+import type { BudgetGoal } from '../api/categoriesApi'
 
 type RangeKey = '1D' | '7D' | '30D' | '90D' | 'YTD' | 'ALL' | 'CUSTOM'
 type UserRole = 'BASIC' | 'PREMIUM' | 'ADMIN'
@@ -21,6 +23,7 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
   const [selectedAccountId, setSelectedAccountId] = useState<string>('')
   const [summary, setSummary] = useState<TransactionSummary>({ totalBalance: 0, totalIncome: 0, totalExpenses: 0 })
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [budgetGoals, setBudgetGoals] = useState<BudgetGoal[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedRange, setSelectedRange] = useState<RangeKey>('7D')
   const [customStart, setCustomStart] = useState(() => getDateInputValue(daysAgo(29)))
@@ -122,6 +125,25 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
     const customEndDate = customEnd ? endOfDay(new Date(customEnd)) : end
     return { start: customStartDate, end: customEndDate, label: 'custom range' }
   }, [selectedRange, customStart, customEnd, sortedTransactions])
+
+  useEffect(() => {
+    if (!isPremiumUser) {
+      setBudgetGoals([])
+      return
+    }
+
+    const monthKey = getMonthValue(rangeBoundaries.end)
+    const loadBudgetGoals = async () => {
+      try {
+        const goals = await categoriesApi.getBudgetGoals(monthKey)
+        setBudgetGoals(goals)
+      } catch {
+        setBudgetGoals([])
+      }
+    }
+
+    void loadBudgetGoals()
+  }, [isPremiumUser, rangeBoundaries.end])
 
   const hasInvalidCustomRange = selectedRange === 'CUSTOM' && rangeBoundaries.start.getTime() > rangeBoundaries.end.getTime()
 
@@ -260,6 +282,30 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
       relativeWidth: topAmount > 0 ? (row.amount / topAmount) * 100 : 0
     }))
   }, [periodTransactions])
+
+  const budgetPerformance = useMemo(() => {
+    const spentByCategory = new Map<string, number>()
+
+    for (const transaction of periodTransactions) {
+      if (transaction.type !== 'EXPENSE' || !transaction.category?.id) continue
+      spentByCategory.set(transaction.category.id, (spentByCategory.get(transaction.category.id) || 0) + transaction.amount)
+    }
+
+    return budgetGoals
+      .map((goal) => {
+        const spent = spentByCategory.get(goal.categoryId) || 0
+        const remaining = goal.amount - spent
+        const progress = goal.amount > 0 ? (spent / goal.amount) * 100 : 0
+        return {
+          ...goal,
+          spent,
+          remaining,
+          progress
+        }
+      })
+      .sort((a, b) => b.progress - a.progress)
+      .slice(0, 5)
+  }, [budgetGoals, periodTransactions])
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -622,6 +668,74 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
         </section>
       )}
 
+      {isPremiumUser ? (
+        <section className="rounded-[24px] border bg-card p-5 md:p-6 space-y-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700">
+                <Gem size={13} />
+                BUDGET VS ACTUAL
+              </div>
+              <h3 className="text-xl font-black tracking-tight text-slate-900">Are your category budgets still intact?</h3>
+              <p className="text-sm text-slate-600">Budget goals are loaded for the month tied to the active analysis window.</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-right">
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-500">Budget month</p>
+              <p className="text-sm font-semibold text-slate-700">{getMonthValue(rangeBoundaries.end)}</p>
+            </div>
+          </div>
+
+          {budgetPerformance.length === 0 ? (
+            <p className="text-sm text-slate-500">No monthly category budgets are set for this period yet. Add them from Categories.</p>
+          ) : (
+            <div className="space-y-4">
+              {budgetPerformance.map((goal) => (
+                <div key={goal.id} className="space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-slate-900">{goal.category.name}</p>
+                      <p className="text-xs text-slate-500">
+                        Budget {formatCurrency(goal.amount)} • Spent {formatCurrency(goal.spent)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-sm font-black ${goal.remaining >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {goal.remaining >= 0 ? `${formatCurrency(goal.remaining)} left` : `${formatCurrency(Math.abs(goal.remaining))} over`}
+                      </p>
+                      <p className="text-xs text-slate-500">{goal.progress.toFixed(1)}% used</p>
+                    </div>
+                  </div>
+                  <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className={`h-full rounded-full ${goal.progress > 100 ? 'bg-rose-500' : goal.progress > 85 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                      style={{ width: `${Math.min(100, Math.max(8, goal.progress))}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      ) : (
+        <section className="overflow-hidden rounded-[24px] border border-dashed border-slate-300 bg-[linear-gradient(135deg,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] p-5 md:p-6">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700">
+                <Lock size={13} />
+                LOCKED BUDGET TRACKING
+              </div>
+              <h3 className="text-xl font-black tracking-tight text-slate-900">Budget tracking lives in premium analytics</h3>
+              <p className="max-w-2xl text-sm text-slate-600">See category budgets, real spending, remaining room and over-budget warnings directly on the dashboard.</p>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:min-w-[36rem]">
+              <LockedPreviewCard title="Budget vs actual" subtitle="Watch category targets against live spend." />
+              <LockedPreviewCard title="Remaining room" subtitle="See how much budget is still available." />
+              <LockedPreviewCard title="Over-budget alerts" subtitle="Spot categories that already crossed the line." />
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="bg-card border rounded-2xl p-5 md:p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-bold">Recent Activity (Snapshot)</h3>
@@ -672,6 +786,10 @@ function getDateInputValue(date: Date) {
   const month = `${date.getMonth() + 1}`.padStart(2, '0')
   const day = `${date.getDate()}`.padStart(2, '0')
   return `${year}-${month}-${day}`
+}
+
+function getMonthValue(date: Date) {
+  return getDateInputValue(date).slice(0, 7)
 }
 
 function formatDayLabel(date: Date) {

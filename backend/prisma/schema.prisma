@@ -19,6 +19,7 @@ model User {
   isBanned          Boolean          @default(false)
   accounts          Account[]
   categories        Category[]
+  budgetGoals       BudgetGoal[]
   transferLogs      DataTransferLog[]
   transactions      Transaction[]
   subscription      Subscription?
@@ -51,6 +52,7 @@ model Category {
   parent        Category?       @relation("Subcategories", fields: [parentId], references: [id])
   subcategories Category[]      @relation("Subcategories")
   transactions  Transaction[]
+  budgetGoals   BudgetGoal[]
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
@@ -138,6 +140,21 @@ model Subscription {
   updatedAt              DateTime           @updatedAt
 
   @@index([status, currentPeriodEnd])
+}
+
+model BudgetGoal {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  monthStart  DateTime
+  amount      Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, categoryId, monthStart])
+  @@index([userId, monthStart])
 }
 
 enum UserRole {

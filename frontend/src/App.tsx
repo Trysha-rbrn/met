@@ -170,7 +170,7 @@ function App() {
                   <Routes>
                     <Route path="/" element={<Dashboard isSidebarCollapsed={isSidebarCollapsed} userRole={user?.role || 'BASIC'} />} />
                     <Route path="/transactions" element={<TransactionsPage userRole={user?.role || 'BASIC'} />} />
-                    <Route path="/categories" element={<CategoriesPage />} />
+                    <Route path="/categories" element={<CategoriesPage userRole={user?.role || 'BASIC'} />} />
                     <Route path="/settings" element={<SettingsPage user={user} onUserUpdate={setUser} themeMode={themeMode} onThemeModeChange={setThemeMode} />} />
                     <Route path="/admin" element={user?.role === 'ADMIN' ? <AdminPage /> : <NotFoundPage isAuthenticated />} />
                     <Route path="*" element={<NotFoundPage isAuthenticated />} />

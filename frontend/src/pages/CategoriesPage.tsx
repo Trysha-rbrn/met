@@ -1,25 +1,44 @@
-import { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, ChevronRight, ChevronDown, Tag } from 'lucide-react'
+import { useMemo, useState, useEffect } from 'react'
+import { Plus, Edit2, Trash2, ChevronRight, ChevronDown, Tag, Gem, Lock, Target, CalendarDays } from 'lucide-react'
 import * as api from '../api/categoriesApi'
-import type { Category } from '../api/categoriesApi'
+import type { BudgetGoal, Category } from '../api/categoriesApi'
 import CategoryModal from '../components/CategoryModal'
 import { notify } from '../lib/toast'
 import { renderCategoryIcon } from '../lib/categoryIcons'
 
-function CategoriesPage() {
+type UserRole = 'BASIC' | 'PREMIUM' | 'ADMIN'
+
+interface CategoriesPageProps {
+  userRole: UserRole
+}
+
+function CategoriesPage({ userRole }: CategoriesPageProps) {
   const [categories, setCategories] = useState<Category[]>([])
+  const [budgetGoals, setBudgetGoals] = useState<BudgetGoal[]>([])
   const [loading, setLoading] = useState(true)
+  const [budgetLoading, setBudgetLoading] = useState(false)
   const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({})
+  const [selectedBudgetMonth, setSelectedBudgetMonth] = useState(() => new Date().toISOString().slice(0, 7))
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalInitialData, setModalInitialData] = useState<Category | null>(null)
   const [modalParentId, setModalParentId] = useState<string | null>(null)
   const [modalDefaultType, setModalDefaultType] = useState<'INCOME' | 'EXPENSE' | undefined>()
+  const isPremiumUser = userRole === 'PREMIUM' || userRole === 'ADMIN'
 
   useEffect(() => {
-    fetchCategories()
+    void fetchCategories()
   }, [])
+
+  useEffect(() => {
+    if (!isPremiumUser) {
+      setBudgetGoals([])
+      return
+    }
+
+    void fetchBudgetGoals(selectedBudgetMonth)
+  }, [isPremiumUser, selectedBudgetMonth])
 
   const fetchCategories = async () => {
     try {
@@ -71,6 +90,19 @@ function CategoriesPage() {
     }
   }
 
+  const fetchBudgetGoals = async (month: string) => {
+    try {
+      setBudgetLoading(true)
+      const data = await api.getBudgetGoals(month)
+      setBudgetGoals(data)
+    } catch (error) {
+      console.error('Error fetching budget goals:', error)
+      notify.error('Failed to load category budgets.')
+    } finally {
+      setBudgetLoading(false)
+    }
+  }
+
   const handleSaveCategory = async (data: { name: string; icon: string; type: string; parentId: string | null }) => {
     try {
       if (modalInitialData) {
@@ -84,6 +116,56 @@ function CategoriesPage() {
     } catch (error) {
       console.error('Error saving category:', error)
       throw error
+    }
+  }
+
+  const expenseCategoryOptions = useMemo(
+    () => categories.filter((category) => category.type === 'EXPENSE'),
+    [categories]
+  )
+
+  const budgetMap = useMemo(
+    () => new Map(budgetGoals.map((goal) => [goal.categoryId, goal])),
+    [budgetGoals]
+  )
+
+  const handleSetBudgetGoal = async (category: Category) => {
+    const existing = budgetMap.get(category.id)
+    const suggestedAmount = existing?.amount ? String(existing.amount) : ''
+    const input = window.prompt(`Set monthly budget for ${category.name}`, suggestedAmount)
+    if (input === null) return
+
+    const amount = Number(input)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      notify.warning('Budget amount must be a positive number.')
+      return
+    }
+
+    try {
+      if (existing) {
+        await api.updateBudgetGoal(existing.id, amount)
+        notify.success('Budget updated.')
+      } else {
+        await api.createBudgetGoal({ categoryId: category.id, month: selectedBudgetMonth, amount })
+        notify.success('Budget created.')
+      }
+      await fetchBudgetGoals(selectedBudgetMonth)
+    } catch (error) {
+      console.error('Error saving budget goal:', error)
+      notify.error('Failed to save budget.')
+    }
+  }
+
+  const handleDeleteBudgetGoal = async (goal: BudgetGoal) => {
+    if (!window.confirm(`Delete monthly budget for ${goal.category.name}?`)) return
+
+    try {
+      await api.deleteBudgetGoal(goal.id)
+      notify.success('Budget deleted.')
+      await fetchBudgetGoals(selectedBudgetMonth)
+    } catch (error) {
+      console.error('Error deleting budget goal:', error)
+      notify.error('Failed to delete budget.')
     }
   }
 
@@ -107,6 +189,99 @@ function CategoriesPage() {
           Add Category
         </button>
       </header>
+
+      {isPremiumUser ? (
+        <section className="rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-5 md:p-6 space-y-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-amber-800">
+                <Gem size={13} />
+                MONTHLY BUDGET GOALS
+              </div>
+              <h2 className="text-xl font-black tracking-tight text-slate-900">Set category targets before the month runs away</h2>
+              <p className="text-sm text-slate-600">Budget goals are available for expense categories and feed premium dashboard analysis.</p>
+            </div>
+            <label className="space-y-1 text-sm font-semibold text-slate-600">
+              <span className="inline-flex items-center gap-2"><CalendarDays size={15} /> Budget month</span>
+              <input
+                type="month"
+                value={selectedBudgetMonth}
+                onChange={(e) => setSelectedBudgetMonth(e.target.value)}
+                className="min-h-11 rounded-2xl border border-amber-200 bg-white px-4 py-2.5 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-200/40"
+              />
+            </label>
+          </div>
+
+          {budgetLoading ? (
+            <p className="text-sm text-slate-500">Loading budget goals...</p>
+          ) : expenseCategoryOptions.length === 0 ? (
+            <p className="text-sm text-slate-500">Create at least one expense category to start budgeting.</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {expenseCategoryOptions.map((category) => {
+                const goal = budgetMap.get(category.id)
+                return (
+                  <div key={category.id} className="rounded-2xl border border-white/70 bg-white/90 p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-black tracking-tight text-slate-900">{category.name}</p>
+                        <p className="mt-1 text-xs text-slate-500 inline-flex items-center gap-2">
+                          <CategoryIcon icon={category.icon} small />
+                          Expense category
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleSetBudgetGoal(category)}
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-800 transition hover:bg-slate-50"
+                      >
+                        <Target size={15} />
+                        {goal ? 'Edit' : 'Set'}
+                      </button>
+                    </div>
+                    <div className="mt-4 flex items-end justify-between gap-3">
+                      <div>
+                        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Monthly target</p>
+                        <p className="mt-1 text-xl font-black tracking-tight text-slate-900">
+                          {goal ? formatBudgetCurrency(goal.amount) : 'Not set'}
+                        </p>
+                      </div>
+                      {goal && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteBudgetGoal(goal)}
+                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700 transition hover:bg-rose-100"
+                        >
+                          <Trash2 size={14} />
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </section>
+      ) : (
+        <section className="rounded-[24px] border border-dashed border-slate-300 bg-[linear-gradient(135deg,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] p-5 md:p-6">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700">
+                <Lock size={13} />
+                LOCKED BUDGET PREVIEW
+              </div>
+              <h2 className="text-xl font-black tracking-tight text-slate-900">Monthly category budgets are premium</h2>
+              <p className="max-w-2xl text-sm text-slate-600">Set spending limits per expense category and surface them inside dashboard analytics.</p>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:min-w-[36rem]">
+              <BudgetPreviewCard title="Category targets" subtitle="Set a monthly cap for groceries, rent, transport and more." />
+              <BudgetPreviewCard title="Budget tracking" subtitle="Compare actual spend vs planned spend through the month." />
+              <BudgetPreviewCard title="Dashboard signals" subtitle="Use budgets together with premium trends and insights." />
+            </div>
+          </div>
+        </section>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Income Categories */}
@@ -254,11 +429,30 @@ function CategoryItem({ category, isExpanded, onToggle, onEdit, onDelete, onSubE
   )
 }
 
+function formatBudgetCurrency(amount: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: localStorage.getItem('met_currency') || 'USD'
+  }).format(amount)
+}
+
 function CategoryIcon({ icon, small = false }: { icon: string; small?: boolean }) {
   return (
     <span className={`inline-flex items-center justify-center rounded-full bg-muted/60 ${small ? 'h-5 w-5' : 'h-7 w-7'}`}>
       {renderCategoryIcon(icon, small ? 12 : 15, 'text-muted-foreground')}
     </span>
+  )
+}
+
+function BudgetPreviewCard({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{title}</p>
+        <Lock size={14} className="text-slate-400" />
+      </div>
+      <p className="mt-3 text-sm text-slate-600">{subtitle}</p>
+    </div>
   )
 }
 

@@ -19,6 +19,21 @@ export interface CategoryPayload {
   parentId?: string | null
 }
 
+export interface BudgetGoal {
+  id: string
+  userId: string
+  categoryId: string
+  monthStart: string
+  amount: number
+  category: {
+    id: string
+    name: string
+    icon: string
+    type: 'INCOME' | 'EXPENSE'
+    parentId: string | null
+  }
+}
+
 const getAuthHeaders = () => {
   const token = localStorage.getItem('met_token');
   return { Authorization: `Bearer ${token}` };
@@ -43,3 +58,32 @@ export const deleteCategory = async (id: string) => {
   const response = await axios.delete(`${API_URL}/${id}`, { headers: getAuthHeaders() });
   return response.data;
 };
+
+export const getBudgetGoals = async (month: string) => {
+  const response = await axios.get<BudgetGoal[]>(`${API_URL}/budgets`, {
+    headers: getAuthHeaders(),
+    params: { month }
+  })
+  return response.data
+}
+
+export const createBudgetGoal = async (data: { categoryId: string; month: string; amount: number }) => {
+  const response = await axios.post<BudgetGoal>(`${API_URL}/budgets`, data, {
+    headers: getAuthHeaders()
+  })
+  return response.data
+}
+
+export const updateBudgetGoal = async (id: string, amount: number) => {
+  const response = await axios.patch<BudgetGoal>(`${API_URL}/budgets/${id}`, { amount }, {
+    headers: getAuthHeaders()
+  })
+  return response.data
+}
+
+export const deleteBudgetGoal = async (id: string) => {
+  const response = await axios.delete(`${API_URL}/budgets/${id}`, {
+    headers: getAuthHeaders()
+  })
+  return response.data
+}

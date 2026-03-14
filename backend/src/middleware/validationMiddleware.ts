@@ -32,6 +32,7 @@ const parseAmount = (value: unknown) => {
 }
 
 const validateEmail = (email: string) => email.length <= 254 && EMAIL_REGEX.test(email)
+const MONTH_QUERY_REGEX = /^\d{4}-\d{2}$/
 
 const sendValidationError = (res: Response, errors: string[]) =>
   res.status(400).json({ error: errors[0], details: errors })
@@ -431,5 +432,63 @@ export const validateBillingWebhook = (req: Request, res: Response, next: NextFu
   req.body.userId = userId || undefined
   req.body.externalSubscriptionId = externalSubscriptionId || undefined
   req.body.billingInterval = billingInterval || undefined
+  return next()
+}
+
+export const validateBudgetMonthQuery = (req: Request, res: Response, next: NextFunction) => {
+  const month = toTrimmedString(req.query.month)
+  if (!month || !MONTH_QUERY_REGEX.test(month)) {
+    return sendValidationError(res, ['month query must be in YYYY-MM format.'])
+  }
+
+  req.query.month = month
+  return next()
+}
+
+export const validateCreateBudgetGoal = (req: Request, res: Response, next: NextFunction) => {
+  if (!isPlainObject(req.body)) {
+    return sendValidationError(res, ['Invalid request body.'])
+  }
+
+  const categoryId = toTrimmedString(req.body.categoryId)
+  const month = toTrimmedString(req.body.month)
+  const amount = parseAmount(req.body.amount)
+  const errors: string[] = []
+
+  if (!isValidUuid(categoryId)) errors.push('categoryId must be a valid UUID.')
+  if (!MONTH_QUERY_REGEX.test(month)) errors.push('month must be in YYYY-MM format.')
+  if (amount === null || amount <= 0) errors.push('amount must be a positive number.')
+
+  if (errors.length > 0) return sendValidationError(res, errors)
+
+  req.body.categoryId = categoryId
+  req.body.month = month
+  req.body.amount = amount
+  return next()
+}
+
+export const validateUpdateBudgetGoal = (req: Request, res: Response, next: NextFunction) => {
+  if (!isValidUuid(req.params.id)) {
+    return sendValidationError(res, ['Budget goal id must be a valid UUID.'])
+  }
+
+  if (!isPlainObject(req.body)) {
+    return sendValidationError(res, ['Invalid request body.'])
+  }
+
+  const amount = parseAmount(req.body.amount)
+  if (amount === null || amount <= 0) {
+    return sendValidationError(res, ['amount must be a positive number.'])
+  }
+
+  req.body.amount = amount
+  return next()
+}
+
+export const validateBudgetGoalIdParam = (req: Request, res: Response, next: NextFunction) => {
+  if (!isValidUuid(req.params.id)) {
+    return sendValidationError(res, ['Budget goal id must be a valid UUID.'])
+  }
+
   return next()
 }
