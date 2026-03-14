@@ -258,7 +258,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 space-y-6">
           <section className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-6 md:p-8">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr),minmax(0,0.85fr)] xl:items-end">
               <div className="space-y-3">
                 <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-black tracking-[0.24em] text-amber-800">
                   <Gem size={14} />
@@ -275,7 +275,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                   </p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[31rem]">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <MembershipChip icon={LineChart} label="Insights" value={isPremiumUser ? 'Enabled' : 'Locked'} />
                 <MembershipChip icon={Sparkles} label="90D Range" value={isPremiumUser ? 'Enabled' : 'Locked'} />
                 <MembershipChip icon={WalletCards} label="Accounts" value={isPremiumUser ? (user?.role === 'ADMIN' ? '20' : '10') : '3'} />
@@ -413,7 +413,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                       </span>
                     )}
                   </div>
-                  <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="grid gap-3 lg:grid-cols-3">
                     <SubscriptionInfoCard
                       label="Plan posture"
                       value={isPremiumUser ? 'Premium unlocked' : 'Basic active'}
@@ -450,32 +450,37 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                       <h3 className="text-lg font-black tracking-tight text-slate-900">Upgrade path</h3>
                       <p className="text-sm text-slate-600">Choose a billing interval or use a promo code for instant local activation.</p>
                     </div>
-                    <div className="space-y-2">
-                      <label htmlFor="settings-billing-interval" className="text-sm font-semibold text-slate-600">Billing interval</label>
-                      <select
-                        id="settings-billing-interval"
-                        value={billingInterval}
-                        onChange={(e) => setBillingInterval(e.target.value as 'MONTHLY' | 'YEARLY')}
-                        className="w-full rounded-2xl border border-amber-200 bg-white px-4 py-3 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-200/40"
-                      >
-                        <option value="MONTHLY">Monthly</option>
-                        <option value="YEARLY">Yearly</option>
-                      </select>
+                    <div className="grid gap-4 lg:grid-cols-[minmax(0,0.75fr),minmax(0,1.25fr)]">
+                      <div className="space-y-2">
+                        <label htmlFor="settings-billing-interval" className="text-sm font-semibold text-slate-600">Billing interval</label>
+                        <select
+                          id="settings-billing-interval"
+                          value={billingInterval}
+                          onChange={(e) => setBillingInterval(e.target.value as 'MONTHLY' | 'YEARLY')}
+                          className="w-full rounded-2xl border border-amber-200 bg-white px-4 py-3 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-200/40"
+                        >
+                          <option value="MONTHLY">Monthly</option>
+                          <option value="YEARLY">Yearly</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label htmlFor="settings-premium-code" className="text-sm font-semibold text-slate-600">Promo code</label>
+                        <input
+                          id="settings-premium-code"
+                          name="premiumCode"
+                          type="text"
+                          autoComplete="off"
+                          value={premiumCode}
+                          onChange={(e) => setPremiumCode(e.target.value)}
+                          placeholder="Optional promo code for instant activation"
+                          className="w-full rounded-2xl border border-amber-200 bg-white px-4 py-3 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-200/40"
+                        />
+                      </div>
                     </div>
-                    <input
-                      id="settings-premium-code"
-                      name="premiumCode"
-                      type="text"
-                      autoComplete="off"
-                      value={premiumCode}
-                      onChange={(e) => setPremiumCode(e.target.value)}
-                      placeholder="Optional promo code for instant activation"
-                      className="w-full rounded-2xl border border-amber-200 bg-white px-4 py-3 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-200/40"
-                    />
                     <button
                       type="submit"
                       disabled={isSubmittingSubscription}
-                      className="w-full sm:w-auto rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-5 py-3 font-black text-white shadow-lg shadow-amber-500/20 transition hover:opacity-95 disabled:opacity-60"
+                      className="w-full lg:w-auto rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-5 py-3 font-black text-white shadow-lg shadow-amber-500/20 transition hover:opacity-95 disabled:opacity-60"
                     >
                       {subscription?.status === 'PENDING' ? 'Request Again' : 'Upgrade to Premium'}
                     </button>
@@ -486,13 +491,13 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                       <h3 className="text-lg font-black tracking-tight text-slate-900">Membership actions</h3>
                       <p className="text-sm text-slate-600">Control renewal behavior while keeping the premium state clearly visible.</p>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="grid gap-2 sm:grid-cols-2">
                     {subscription?.cancelAtPeriodEnd ? (
                       <button
                         type="button"
                         onClick={handleResumeSubscription}
                         disabled={isSubmittingSubscription}
-                        className="rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-3 font-black text-white shadow-lg shadow-emerald-500/20 transition hover:opacity-95 disabled:opacity-60"
+                        className="w-full rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-3 font-black text-white shadow-lg shadow-emerald-500/20 transition hover:opacity-95 disabled:opacity-60"
                       >
                         Resume Renewal
                       </button>
@@ -501,7 +506,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                         type="button"
                         onClick={() => handleDowngradeSubscription(false)}
                         disabled={isSubmittingSubscription}
-                        className="rounded-2xl border border-slate-300 bg-white px-5 py-3 font-black text-slate-800 transition hover:bg-slate-50 disabled:opacity-60"
+                        className="w-full rounded-2xl border border-slate-300 bg-white px-5 py-3 font-black text-slate-800 transition hover:bg-slate-50 disabled:opacity-60"
                       >
                         Cancel At Period End
                       </button>
@@ -510,7 +515,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                       type="button"
                       onClick={() => handleDowngradeSubscription(true)}
                       disabled={isSubmittingSubscription}
-                      className="rounded-2xl border border-rose-300 bg-rose-50 px-5 py-3 font-black text-rose-700 transition hover:bg-rose-100 disabled:opacity-60"
+                      className="w-full rounded-2xl border border-rose-300 bg-rose-50 px-5 py-3 font-black text-rose-700 transition hover:bg-rose-100 disabled:opacity-60"
                     >
                       Downgrade Now
                     </button>
