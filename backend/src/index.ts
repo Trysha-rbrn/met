@@ -4,6 +4,7 @@ import 'dotenv/config'
 import categoryRoutes from './routes/categoryRoutes.ts'
 import transactionRoutes from './routes/transactionRoutes.ts'
 import authRoutes from './routes/authRoutes.ts'
+import accountRoutes from './routes/accountRoutes.ts'
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -15,6 +16,7 @@ app.use(express.json())
 app.use('/api/auth', authRoutes)
 app.use('/api/categories', categoryRoutes)
 app.use('/api/transactions', transactionRoutes)
+app.use('/api/accounts', accountRoutes)
 
 app.get('/health', (req, res) => {
   res.json({ status: 'API is running' })

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Prisma } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 
@@ -13,22 +13,34 @@ export const register = async (req: Request, res: Response) => {
     if (existingUser) return res.status(400).json({ error: 'User already exists' })
 
     const hashedPassword = await bcrypt.hash(password, 10)
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        name
-      }
+    const user = await prisma.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          name
+        }
+      })
+
+      // Seed initial categories for new user
+      const incomeCategories = ['Salary', 'Family', 'Bonus']
+      const expenseCategories = ['Rent', 'Groceries', 'Transport', 'Entertainment']
+
+      await Promise.all([
+        ...incomeCategories.map((categoryName) => tx.category.create({ data: { name: categoryName, type: 'INCOME', userId: createdUser.id } })),
+        ...expenseCategories.map((categoryName) => tx.category.create({ data: { name: categoryName, type: 'EXPENSE', userId: createdUser.id } }))
+      ])
+
+      // Create default bank-like account
+      await tx.account.create({
+        data: {
+          name: 'Primary',
+          userId: createdUser.id
+        }
+      })
+
+      return createdUser
     })
-
-    // Seed initial categories for new user
-    const incomeCategories = ['Salary', 'Family', 'Bonus']
-    const expenseCategories = ['Rent', 'Groceries', 'Transport', 'Entertainment']
-
-    await Promise.all([
-      ...incomeCategories.map(name => prisma.category.create({ data: { name, type: 'INCOME', userId: user.id } })),
-      ...expenseCategories.map(name => prisma.category.create({ data: { name, type: 'EXPENSE', userId: user.id } }))
-    ])
 
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' })
     res.status(201).json({ user: { id: user.id, email: user.email, name: user.name }, token })
@@ -69,7 +81,12 @@ export const updateUser = async (req: Request, res: Response) => {
   const userId = (req as any).userId
   const { name, password } = req.body
   try {
-    const updateData: any = { name }
+    const updateData: Prisma.UserUpdateInput = {}
+
+    if (typeof name !== 'undefined') {
+      updateData.name = name
+    }
+
     if (password) {
       updateData.password = await bcrypt.hash(password, 10)
     }
@@ -90,6 +107,7 @@ export const deleteUser = async (req: Request, res: Response) => {
   try {
     // Delete all related data (Prisma can do this if onDelete is set, but manually here to be safe)
     await prisma.transaction.deleteMany({ where: { userId } })
+    await prisma.account.deleteMany({ where: { userId } })
     await prisma.category.deleteMany({ where: { userId } })
     await prisma.user.delete({ where: { id: userId } })
     res.json({ message: 'User and all related data deleted successfully' })

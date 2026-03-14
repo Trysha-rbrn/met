@@ -3,13 +3,26 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
+const toQueryString = (value: unknown) => {
+  if (typeof value === 'string') return value
+  if (Array.isArray(value) && typeof value[0] === 'string') return value[0]
+  return undefined
+}
+
 export const getTransactions = async (req: Request, res: Response) => {
   const userId = (req as any).userId
+  const accountId = toQueryString(req.query.accountId)
   try {
+    const where = {
+      userId,
+      ...(accountId ? { accountId } : {})
+    }
+
     const transactions = await prisma.transaction.findMany({
-      where: { userId },
+      where,
       include: {
-        category: true
+        category: true,
+        account: true
       },
       orderBy: { date: 'desc' }
     })
@@ -21,8 +34,21 @@ export const getTransactions = async (req: Request, res: Response) => {
 
 export const createTransaction = async (req: Request, res: Response) => {
   const userId = (req as any).userId
-  const { amount, description, date, type, categoryId, metadata } = req.body
+  const { amount, description, date, type, categoryId, accountId, metadata } = req.body
   try {
+    let resolvedAccountId: string | undefined = accountId
+
+    if (resolvedAccountId) {
+      const account = await prisma.account.findFirst({ where: { id: resolvedAccountId, userId } })
+      if (!account) return res.status(403).json({ error: 'Invalid account' })
+    } else {
+      const defaultAccount = await prisma.account.findFirst({
+        where: { userId },
+        orderBy: { createdAt: 'asc' }
+      })
+      resolvedAccountId = defaultAccount?.id
+    }
+
     const transaction = await prisma.transaction.create({
       data: {
         amount: parseFloat(amount),
@@ -30,11 +56,13 @@ export const createTransaction = async (req: Request, res: Response) => {
         date: date ? new Date(date) : new Date(),
         type,
         userId,
+        accountId: resolvedAccountId,
         categoryId,
         metadata: metadata || {}
       },
       include: {
-        category: true
+        category: true,
+        account: true
       }
     })
     res.status(201).json(transaction)
@@ -46,10 +74,15 @@ export const createTransaction = async (req: Request, res: Response) => {
 export const updateTransaction = async (req: Request, res: Response) => {
   const userId = (req as any).userId
   const { id } = req.params
-  const { amount, description, date, type, categoryId, metadata } = req.body
+  const { amount, description, date, type, categoryId, accountId, metadata } = req.body
   try {
     const existing = await prisma.transaction.findUnique({ where: { id } })
     if (!existing || existing.userId !== userId) return res.status(403).json({ error: 'Unauthorized' })
+
+    if (accountId) {
+      const account = await prisma.account.findFirst({ where: { id: accountId, userId } })
+      if (!account) return res.status(403).json({ error: 'Invalid account' })
+    }
 
     const transaction = await prisma.transaction.update({
       where: { id },
@@ -59,10 +92,12 @@ export const updateTransaction = async (req: Request, res: Response) => {
         date: date ? new Date(date) : undefined,
         type,
         categoryId,
+        accountId: accountId || undefined,
         metadata: metadata || undefined
       },
       include: {
-        category: true
+        category: true,
+        account: true
       }
     })
     res.json(transaction)
@@ -89,9 +124,13 @@ export const deleteTransaction = async (req: Request, res: Response) => {
 
 export const getSummary = async (req: Request, res: Response) => {
   const userId = (req as any).userId
+  const accountId = toQueryString(req.query.accountId)
   try {
     const transactions = await prisma.transaction.findMany({
-      where: { userId }
+      where: {
+        userId,
+        ...(accountId ? { accountId } : {})
+      }
     })
 
     const income = transactions

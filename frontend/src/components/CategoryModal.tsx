@@ -72,6 +72,7 @@ function CategoryModal({ isOpen, onClose, onSave, initialData, parentId, type }:
             </label>
             <input
               id="name"
+              name="name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}

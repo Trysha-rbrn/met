@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { X, Calendar, DollarSign, FileText } from 'lucide-react'
+import { X, Calendar, Coins, FileText, WalletCards, CheckCircle2 } from 'lucide-react'
 import * as categoryApi from '../api/categoriesApi'
+import type { Transaction, TransactionPayload, TransactionType } from '../api/transactionsApi'
+import type { Account } from '../api/accountsApi'
 
 interface Category {
   id: string
@@ -12,16 +14,19 @@ interface Category {
 interface TransactionModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (data: any) => Promise<void>
-  initialData?: any
+  onSave: (data: TransactionPayload) => Promise<void>
+  initialData?: Transaction | null
+  accounts: Account[]
+  defaultAccountId?: string
 }
 
-function TransactionModal({ isOpen, onClose, onSave, initialData }: TransactionModalProps) {
+function TransactionModal({ isOpen, onClose, onSave, initialData, accounts, defaultAccountId }: TransactionModalProps) {
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [type, setType] = useState<'INCOME' | 'EXPENSE'>('EXPENSE')
+  const [type, setType] = useState<TransactionType>('EXPENSE')
   const [categoryId, setCategoryId] = useState('')
+  const [accountId, setAccountId] = useState('')
   const [categories, setCategories] = useState<Category[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -37,15 +42,17 @@ function TransactionModal({ isOpen, onClose, onSave, initialData }: TransactionM
       setDescription(initialData.description || '')
       setDate(new Date(initialData.date).toISOString().split('T')[0])
       setType(initialData.type)
-      setCategoryId(initialData.categoryId)
+      setCategoryId(initialData.categoryId || '')
+      setAccountId(initialData.accountId || defaultAccountId || accounts[0]?.id || '')
     } else {
       setAmount('')
       setDescription('')
       setDate(new Date().toISOString().split('T')[0])
       setType('EXPENSE')
       setCategoryId('')
+      setAccountId(defaultAccountId || accounts[0]?.id || '')
     }
-  }, [initialData, isOpen])
+  }, [initialData, isOpen, accounts, defaultAccountId])
 
   const fetchCategories = async () => {
     try {
@@ -60,7 +67,7 @@ function TransactionModal({ isOpen, onClose, onSave, initialData }: TransactionM
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!amount || !categoryId) return
+    if (!amount || !categoryId || !accountId) return
 
     setIsSubmitting(true)
     try {
@@ -70,6 +77,7 @@ function TransactionModal({ isOpen, onClose, onSave, initialData }: TransactionM
         date,
         type,
         categoryId,
+        accountId,
         metadata: { source: 'web-app', author: 'Trysha-rbrn' }
       })
       onClose()
@@ -80,123 +88,157 @@ function TransactionModal({ isOpen, onClose, onSave, initialData }: TransactionM
     }
   }
 
-  const filteredCategories = categories.filter(c => c.type === type)
+  const filteredCategories = categories.filter((c) => c.type === type)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-          <h2 className="text-xl font-bold">
-            {initialData ? 'Edit Transaction' : 'New Transaction'}
-          </h2>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-500">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/55 backdrop-blur-md">
+      <div className="w-full max-w-2xl rounded-3xl border border-slate-200/70 dark:border-slate-800 bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 shadow-[0_30px_80px_-35px_rgba(15,23,42,0.6)] overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="flex items-start justify-between gap-4 px-7 py-6 border-b border-slate-200/70 dark:border-slate-800/80">
+          <div className="space-y-1">
+            <h2 className="text-2xl font-black tracking-tight">
+              {initialData ? 'Edit Transaction' : 'Create Transaction'}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Save income and expenses with account and category context.
+            </p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors text-slate-500">
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          {/* Type Toggle */}
-          <div className="flex p-1 bg-slate-100 dark:bg-slate-950 rounded-xl">
-            <button
-              type="button"
-              onClick={() => setType('EXPENSE')}
-              className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
-                type === 'EXPENSE' 
-                  ? 'bg-white dark:bg-slate-800 text-rose-600 shadow-sm' 
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              Expense
-            </button>
-            <button
-              type="button"
-              onClick={() => setType('INCOME')}
-              className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
-                type === 'INCOME' 
-                  ? 'bg-white dark:bg-slate-800 text-emerald-600 shadow-sm' 
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              Income
-            </button>
-          </div>
+        <form onSubmit={handleSubmit} className="p-7 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <label className="space-y-2">
+              <span className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                <WalletCards size={15} /> Account
+              </span>
+              <select
+                id="transaction-account"
+                name="accountId"
+                value={accountId}
+                onChange={(e) => setAccountId(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 outline-none"
+                required
+              >
+                <option value="">Select account</option>
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.id}>{account.name}</option>
+                ))}
+              </select>
+            </label>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Amount */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                <DollarSign size={14} /> Amount
-              </label>
+            <label className="space-y-2">
+              <span className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                <Coins size={15} /> Amount
+              </span>
               <input
+                id="transaction-amount"
+                name="amount"
                 type="number"
                 step="0.01"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                className="w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 outline-none"
                 required
               />
-            </div>
+            </label>
+          </div>
 
-            {/* Date */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                <Calendar size={14} /> Date
-              </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <label className="space-y-2">
+              <span className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                <Calendar size={15} /> Date
+              </span>
               <input
+                id="transaction-date"
+                name="date"
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                className="w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 outline-none"
                 required
               />
-            </div>
+            </label>
+
+            <label className="space-y-2">
+              <span className="text-sm font-semibold text-muted-foreground">Type</span>
+              <div className="grid grid-cols-2 p-1 rounded-xl bg-muted/70 border">
+                <button
+                  type="button"
+                  onClick={() => setType('EXPENSE')}
+                  className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${
+                    type === 'EXPENSE' ? 'bg-white dark:bg-slate-800 text-rose-600 shadow-sm' : 'text-muted-foreground'
+                  }`}
+                >
+                  Expense
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setType('INCOME')}
+                  className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${
+                    type === 'INCOME' ? 'bg-white dark:bg-slate-800 text-emerald-600 shadow-sm' : 'text-muted-foreground'
+                  }`}
+                >
+                  Income
+                </button>
+              </div>
+            </label>
           </div>
 
-          {/* Category */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Category
-            </label>
+          <label className="space-y-2">
+            <span className="text-sm font-semibold text-muted-foreground">Category</span>
             <select
+              id="transaction-category"
+              name="categoryId"
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              className="w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 outline-none"
               required
             >
-              <option value="">Select a category</option>
-              {filteredCategories.map(cat => (
+              <option value="">Select category</option>
+              {filteredCategories.map((cat) => (
                 <React.Fragment key={cat.id}>
-                  <option value={cat.id} className="font-bold">{cat.name}</option>
-                  {cat.subcategories?.map(sub => (
-                    <option key={sub.id} value={sub.id}>&nbsp;&nbsp;— {sub.name}</option>
+                  <option value={cat.id}>{cat.name}</option>
+                  {cat.subcategories?.map((sub) => (
+                    <option key={sub.id} value={sub.id}>&nbsp;&nbsp;- {sub.name}</option>
                   ))}
                 </React.Fragment>
               ))}
             </select>
-          </div>
+          </label>
 
-          {/* Description */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-              <FileText size={14} /> Description
-            </label>
+          <label className="space-y-2">
+            <span className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+              <FileText size={15} /> Description
+            </span>
             <textarea
+              id="transaction-description"
+              name="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="What was this for?"
+              placeholder="Optional note about this transaction"
               rows={3}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none"
+              className="w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 outline-none resize-none"
             />
-          </div>
+          </label>
 
-          <div className="pt-2">
+          <div className="flex items-center justify-end gap-3 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-xl border font-semibold hover:bg-muted transition-colors"
+            >
+              Cancel
+            </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-blue-500/20 active:scale-[0.98] disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
             >
-              {isSubmitting ? 'Processing...' : initialData ? 'Update Transaction' : 'Save Transaction'}
+              <CheckCircle2 size={17} />
+              {isSubmitting ? 'Saving...' : initialData ? 'Update' : 'Create'}
             </button>
           </div>
         </form>

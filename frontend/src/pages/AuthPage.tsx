@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import axios from 'axios'
 import { Wallet, Mail, Lock, User, ArrowRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import * as api from '../api/authApi'
+import type { AuthUser } from '../api/authApi'
 
 interface AuthPageProps {
-  onLogin: (user: any, token: string) => void
+  onLogin: (user: AuthUser, token: string) => void
 }
 
 function AuthPage({ onLogin }: AuthPageProps) {
@@ -25,8 +27,12 @@ function AuthPage({ onLogin }: AuthPageProps) {
         ? await api.login({ email, password })
         : await api.register({ email, password, name })
       onLogin(data.user, data.token)
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'An unexpected error occurred.')
+    } catch (err: unknown) {
+      if (axios.isAxiosError<{ error?: string }>(err)) {
+        setError(err.response?.data?.error || 'An unexpected error occurred.')
+      } else {
+        setError('An unexpected error occurred.')
+      }
     } finally {
       setLoading(false)
     }
@@ -61,9 +67,9 @@ function AuthPage({ onLogin }: AuthPageProps) {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && <AuthInput type="text" placeholder="Full Name" value={name} onChange={setName} icon={User} />}
-              <AuthInput type="email" placeholder="Email Address" value={email} onChange={setEmail} icon={Mail} />
-              <AuthInput type="password" placeholder="Password" value={password} onChange={setPassword} icon={Lock} />
+              {!isLogin && <AuthInput id="auth-name" name="name" type="text" placeholder="Full Name" value={name} onChange={setName} icon={User} />}
+              <AuthInput id="auth-email" name="email" type="email" placeholder="Email Address" value={email} onChange={setEmail} icon={Mail} />
+              <AuthInput id="auth-password" name="password" type="password" placeholder="Password" value={password} onChange={setPassword} icon={Lock} />
 
               {error && (
                 <div className="p-3 bg-destructive/10 text-destructive text-sm font-bold rounded-lg animate-shake text-center">
@@ -101,10 +107,22 @@ function AuthPage({ onLogin }: AuthPageProps) {
   )
 }
 
-const AuthInput = ({ type, placeholder, value, onChange, icon: Icon }: any) => (
+interface AuthInputProps {
+  id: string
+  name: string
+  type: React.HTMLInputTypeAttribute
+  placeholder: string
+  value: string
+  onChange: (value: string) => void
+  icon: React.ComponentType<{ className?: string; size?: number }>
+}
+
+const AuthInput = ({ id, name, type, placeholder, value, onChange, icon: Icon }: AuthInputProps) => (
   <div className="relative group">
     <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={20} />
     <input 
+      id={id}
+      name={name}
       type={type} 
       placeholder={placeholder} 
       value={value}
