@@ -6,6 +6,7 @@ import * as accountsApi from '../api/accountsApi'
 import type { Transaction, TransactionPayload } from '../api/transactionsApi'
 import type { Account } from '../api/accountsApi'
 import TransactionModal from '../components/TransactionModal'
+import { extractApiError, notify } from '../lib/toast'
 
 const MAX_ACCOUNTS = 3
 
@@ -57,6 +58,7 @@ function TransactionsPage() {
       setTransactions(data)
     } catch (error) {
       console.error('Error fetching transactions:', error)
+      notify.error('Failed to load transactions.')
     } finally {
       setLoading(false)
     }
@@ -64,7 +66,7 @@ function TransactionsPage() {
 
   const handleCreateAccount = async () => {
     if (accounts.length >= MAX_ACCOUNTS) {
-      alert('Maximum 3 accounts allowed.')
+      notify.warning('Maximum 3 accounts allowed.')
       return
     }
 
@@ -81,13 +83,7 @@ function TransactionsPage() {
       setAccounts(updatedAccounts)
       setSelectedAccountId(created.id)
     } catch (error: unknown) {
-      const fallback = 'Failed to create account.'
-      if (typeof error === 'object' && error !== null && 'response' in error) {
-        const response = (error as { response?: { data?: { error?: string } } }).response
-        alert(response?.data?.error || fallback)
-      } else {
-        alert(fallback)
-      }
+      notify.error(extractApiError(error, 'Failed to create account.'))
     }
   }
 
@@ -100,8 +96,10 @@ function TransactionsPage() {
 
       if (selectedTransaction) {
         await api.updateTransaction(selectedTransaction.id, payload)
+        notify.success('Transaction updated.')
       } else {
         await api.createTransaction(payload)
+        notify.success('Transaction created.')
       }
       await fetchTransactions(selectedAccountId)
     } catch (error) {
@@ -113,6 +111,7 @@ function TransactionsPage() {
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this transaction? This action cannot be undone.')) {
       await api.deleteTransaction(id)
+      notify.success('Transaction deleted.')
       await fetchTransactions(selectedAccountId)
     }
   }
@@ -135,17 +134,17 @@ function TransactionsPage() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
-      className="space-y-8"
+      className="space-y-6 sm:space-y-8"
     >
       <header className="flex flex-col gap-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-black tracking-tighter">Transactions</h1>
-            <p className="text-muted-foreground font-medium">All your income and expense records for selected account.</p>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tighter">Transactions</h1>
+            <p className="text-sm sm:text-base text-muted-foreground font-medium">All your income and expense records for selected account.</p>
           </div>
           <motion.button
             onClick={() => { setSelectedTransaction(null); setIsModalOpen(true) }}
-            className="flex items-center justify-center gap-2 bg-primary text-primary-foreground px-5 py-3 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 active:scale-95"
+            className="w-full md:w-auto min-h-11 flex items-center justify-center gap-2 bg-primary text-primary-foreground px-5 py-3 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 active:scale-95"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             disabled={!selectedAccountId}
@@ -166,7 +165,7 @@ function TransactionsPage() {
               name="accountId"
               value={selectedAccountId}
               onChange={(e) => setSelectedAccountId(e.target.value)}
-              className="min-w-52 px-4 py-2.5 border rounded-xl bg-background"
+              className="w-full sm:min-w-52 min-h-11 px-4 py-2.5 border rounded-xl bg-background"
             >
               {accounts.map((account) => (
                 <option key={account.id} value={account.id}>{account.name}</option>
@@ -175,7 +174,7 @@ function TransactionsPage() {
             <button
               type="button"
               onClick={handleCreateAccount}
-              className="px-4 py-2.5 rounded-xl border font-semibold hover:bg-muted transition-colors"
+              className="w-full sm:w-auto min-h-11 px-4 py-2.5 rounded-xl border font-semibold hover:bg-muted transition-colors"
               disabled={accounts.length >= MAX_ACCOUNTS}
             >
               {accounts.length >= MAX_ACCOUNTS ? 'Account limit reached' : 'Create Account'}
@@ -188,7 +187,7 @@ function TransactionsPage() {
         <div className="px-5 md:px-6 py-4 border-b bg-muted/30 text-sm font-semibold text-muted-foreground">
           {selectedAccount ? `Showing transactions for ${selectedAccount.name}` : 'No account selected'}
         </div>
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <tbody className="divide-y">
               {loading ? (
@@ -210,6 +209,23 @@ function TransactionsPage() {
               )}
             </tbody>
           </table>
+        </div>
+        <div className="md:hidden p-3 space-y-3">
+          {loading ? (
+            [...Array(4)].map((_, i) => <MobileTransactionSkeleton key={i} />)
+          ) : transactions.length > 0 ? transactions.map((t) => (
+            <MobileTransactionCard
+              key={t.id}
+              transaction={t}
+              formatCurrency={formatCurrency}
+              onEdit={() => { setSelectedTransaction(t); setIsModalOpen(true) }}
+              onDelete={() => handleDelete(t.id)}
+            />
+          )) : (
+            <p className="text-center text-sm text-muted-foreground italic py-8">
+              No transactions yet for this account. Add your first one.
+            </p>
+          )}
         </div>
       </div>
 
@@ -278,6 +294,49 @@ const TransactionSkeleton = () => (
     </td>
     <td className="p-4 md:p-6 w-24" />
   </tr>
+)
+
+const MobileTransactionCard = ({
+  transaction: t,
+  formatCurrency,
+  onEdit,
+  onDelete
+}: {
+  transaction: Transaction
+  formatCurrency: (value: number) => string
+  onEdit: () => void
+  onDelete: () => void
+}) => (
+  <div className="rounded-xl border bg-background p-4 space-y-3">
+    <div className="flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <p className="font-bold truncate">{t.description || 'Transaction'}</p>
+        <p className="text-xs text-muted-foreground truncate">{t.category?.name || 'Uncategorized'} - {t.account?.name || 'No account'}</p>
+      </div>
+      <div className={`text-right font-bold ${t.type === 'INCOME' ? 'text-emerald-500' : 'text-rose-500'}`}>
+        {t.type === 'INCOME' ? '+' : '-'}{formatCurrency(t.amount)}
+      </div>
+    </div>
+    <div className="flex items-center justify-between">
+      <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
+      <div className="flex items-center gap-2">
+        <button onClick={onEdit} className="h-11 w-11 rounded-lg border text-muted-foreground hover:text-foreground flex items-center justify-center">
+          <Edit2 size={15} />
+        </button>
+        <button onClick={onDelete} className="h-11 w-11 rounded-lg border text-muted-foreground hover:text-destructive flex items-center justify-center">
+          <Trash2 size={15} />
+        </button>
+      </div>
+    </div>
+  </div>
+)
+
+const MobileTransactionSkeleton = () => (
+  <div className="rounded-xl border p-4 space-y-3 animate-pulse">
+    <div className="h-4 w-1/2 bg-muted rounded" />
+    <div className="h-3 w-2/3 bg-muted rounded" />
+    <div className="h-3 w-1/3 bg-muted rounded" />
+  </div>
 )
 
 export default TransactionsPage

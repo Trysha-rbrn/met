@@ -3,6 +3,7 @@ import { X, Calendar, Coins, FileText, WalletCards, CheckCircle2 } from 'lucide-
 import * as categoryApi from '../api/categoriesApi'
 import type { Transaction, TransactionPayload, TransactionType } from '../api/transactionsApi'
 import type { Account } from '../api/accountsApi'
+import { notify } from '../lib/toast'
 
 interface Category {
   id: string
@@ -60,6 +61,7 @@ function TransactionModal({ isOpen, onClose, onSave, initialData, accounts, defa
       setCategories(data)
     } catch (error) {
       console.error('Error fetching categories:', error)
+      notify.error('Failed to load categories.')
     }
   }
 
@@ -83,6 +85,7 @@ function TransactionModal({ isOpen, onClose, onSave, initialData, accounts, defa
       onClose()
     } catch (error) {
       console.error('Failed to save transaction:', error)
+      notify.error('Failed to save transaction.')
     } finally {
       setIsSubmitting(false)
     }
@@ -92,10 +95,10 @@ function TransactionModal({ isOpen, onClose, onSave, initialData, accounts, defa
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/55 backdrop-blur-md">
-      <div className="w-full max-w-2xl rounded-3xl border border-slate-200/70 dark:border-slate-800 bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 shadow-[0_30px_80px_-35px_rgba(15,23,42,0.6)] overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="flex items-start justify-between gap-4 px-7 py-6 border-b border-slate-200/70 dark:border-slate-800/80">
+      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-200/70 dark:border-slate-800 bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 shadow-[0_30px_80px_-35px_rgba(15,23,42,0.6)] animate-in zoom-in-95 duration-200">
+        <div className="flex items-start justify-between gap-4 px-5 sm:px-7 py-5 sm:py-6 border-b border-slate-200/70 dark:border-slate-800/80">
           <div className="space-y-1">
-            <h2 className="text-2xl font-black tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight">
               {initialData ? 'Edit Transaction' : 'Create Transaction'}
             </h2>
             <p className="text-sm text-muted-foreground">
@@ -107,7 +110,7 @@ function TransactionModal({ isOpen, onClose, onSave, initialData, accounts, defa
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-7 space-y-6">
+        <form onSubmit={handleSubmit} className="p-5 sm:p-7 space-y-5 sm:space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <label className="space-y-2">
               <span className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
@@ -224,18 +227,18 @@ function TransactionModal({ isOpen, onClose, onSave, initialData, accounts, defa
             />
           </label>
 
-          <div className="flex items-center justify-end gap-3 pt-1">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-1">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border font-semibold hover:bg-muted transition-colors"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl border font-semibold hover:bg-muted transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               <CheckCircle2 size={17} />
               {isSubmitting ? 'Saving...' : initialData ? 'Update' : 'Create'}

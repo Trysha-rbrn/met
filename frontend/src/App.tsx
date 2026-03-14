@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
-import { Sun, Moon, Wallet, Settings, LayoutDashboard, LogOut, User, BarChart, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Wallet, Settings, LayoutDashboard, LogOut, User, BarChart, PanelLeftClose, PanelLeftOpen, Sparkles, ShieldCheck, Smartphone } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { ToastContainer } from 'react-toastify'
 
 import CategoriesPage from './pages/CategoriesPage'
 import Dashboard from './pages/Dashboard'
@@ -10,6 +11,7 @@ import AuthPage from './pages/AuthPage'
 import SettingsPage from './pages/SettingsPage'
 import * as authApi from './api/authApi'
 import type { AuthUser } from './api/authApi'
+import { notify } from './lib/toast'
 
 const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -18,28 +20,48 @@ const navItems = [
   { path: '/settings', label: 'Settings', icon: User },
 ]
 
+type ThemeMode = 'light' | 'dark' | 'system'
+
 function App() {
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('met_theme') === 'dark')
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
+    const stored = localStorage.getItem('met_theme_mode')
+    if (stored === 'light' || stored === 'dark' || stored === 'system') return stored
+    return 'system'
+  })
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [user, setUser] = useState<AuthUser | null>(null)
   const [token, setToken] = useState<string | null>(localStorage.getItem('met_token'))
   const [loading, setLoading] = useState(true)
+  const hadConnectionDropRef = useRef(false)
 
   useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark')
-      localStorage.setItem('met_theme', 'dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-      localStorage.setItem('met_theme', 'light')
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const applyTheme = () => {
+      const shouldUseDark = themeMode === 'dark' || (themeMode === 'system' && media.matches)
+      if (shouldUseDark) {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
     }
-  }, [darkMode])
 
-  const handleLogout = () => {
+    applyTheme()
+    localStorage.setItem('met_theme_mode', themeMode)
+
+    if (themeMode === 'system') {
+      const listener = () => applyTheme()
+      media.addEventListener('change', listener)
+      return () => media.removeEventListener('change', listener)
+    } else {
+      return undefined
+    }
+  }, [themeMode])
+
+  const handleLogout = useCallback(() => {
     setUser(null)
     setToken(null)
     localStorage.removeItem('met_token')
-  }
+  }, [])
 
   useEffect(() => {
     const verifyUser = async () => {
@@ -55,7 +77,48 @@ function App() {
       setLoading(false)
     }
     verifyUser()
-  }, [token])
+  }, [token, handleLogout])
+
+  useEffect(() => {
+    const onOffline = () => {
+      hadConnectionDropRef.current = true
+    }
+
+    const onOnline = () => {
+      if (!hadConnectionDropRef.current) return
+      hadConnectionDropRef.current = false
+      if (localStorage.getItem('met_token')) {
+        notify.info('Connection changed. Please log in again.')
+      }
+      handleLogout()
+    }
+
+    window.addEventListener('offline', onOffline)
+    window.addEventListener('online', onOnline)
+
+    return () => {
+      window.removeEventListener('offline', onOffline)
+      window.removeEventListener('online', onOnline)
+    }
+  }, [handleLogout])
+
+  useEffect(() => {
+    if (!token) return
+
+    const interval = window.setInterval(async () => {
+      try {
+        await authApi.getMe()
+      } catch (error: unknown) {
+        const status = (error as { response?: { status?: number } })?.response?.status
+        if (status === 401) {
+          notify.info('Session expired. Please log in again.')
+          handleLogout()
+        }
+      }
+    }, 15000)
+
+    return () => window.clearInterval(interval)
+  }, [token, handleLogout])
 
   const handleLogin = (userData: AuthUser, userToken: string) => {
     setUser(userData)
@@ -65,7 +128,7 @@ function App() {
 
   if (loading) {
     return <div className="fixed inset-0 bg-background flex items-center justify-center">
-      <Wallet size={48} className="animate-pulse text-blue-500" />
+      <Wallet size={48} className="animate-pulse text-primary" />
     </div>
   }
 
@@ -73,47 +136,52 @@ function App() {
     <Router>
       <div className="min-h-screen bg-muted/40 font-sans antialiased">
         {!token ? (
-          <AuthPage onLogin={handleLogin} />
+          <div className="min-h-screen flex flex-col">
+            <div className="flex-1">
+              <AuthPage onLogin={handleLogin} />
+            </div>
+            <AppFooter />
+          </div>
         ) : (
           <div className="min-h-screen">
             <Sidebar
               isCollapsed={isSidebarCollapsed}
               onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              onToggleTheme={() => setDarkMode(!darkMode)}
-              isDark={darkMode}
             />
             <div className={`flex min-h-screen flex-col ${isSidebarCollapsed ? 'lg:pl-24' : 'lg:pl-64'}`}>
-              <Header user={user} onLogout={handleLogout} onToggleTheme={() => setDarkMode(!darkMode)} isDark={darkMode} />
+              <Header user={user} onLogout={handleLogout} />
               <main className="flex-1 p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 lg:pb-8">
                 <AnimatePresence mode="wait">
                   <Routes>
                     <Route path="/" element={<Dashboard isSidebarCollapsed={isSidebarCollapsed} />} />
                     <Route path="/transactions" element={<TransactionsPage />} />
                     <Route path="/categories" element={<CategoriesPage />} />
-                    <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="/settings" element={<SettingsPage user={user} onUserUpdate={setUser} themeMode={themeMode} onThemeModeChange={setThemeMode} />} />
                     <Route path="*" element={<Navigate to="/" />} />
                   </Routes>
                 </AnimatePresence>
               </main>
+              <AppFooter />
             </div>
             <MobileNav />
           </div>
         )}
       </div>
+      <ToastContainer
+        newestOnTop
+        limit={4}
+        toastClassName="!rounded-xl !border !border-border !bg-card !text-card-foreground"
+      />
     </Router>
   )
 }
 
 function Sidebar({
   isCollapsed,
-  onToggle,
-  onToggleTheme,
-  isDark
+  onToggle
 }: {
   isCollapsed: boolean
   onToggle: () => void
-  onToggleTheme: () => void
-  isDark: boolean
 }) {
   const location = useLocation()
   
@@ -122,13 +190,13 @@ function Sidebar({
       <button
         type="button"
         onClick={onToggle}
-        className="absolute -right-5 top-1/2 -translate-y-1/2 z-50 h-10 w-10 rounded-full border bg-background shadow-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        className="absolute -right-5 top-1/2 -translate-y-1/2 z-50 h-11 w-11 rounded-full border bg-background shadow-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
         {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
       </button>
       <div className={`flex items-center h-20 px-6 border-b ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
-        <div className="p-2.5 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-xl text-white shadow-lg shadow-blue-500/20">
+        <div className="p-2.5 bg-gradient-to-tr from-[#a569b0] to-[#6a4d8b] rounded-xl text-white shadow-lg shadow-[#a569b0]/25">
           <Wallet size={24} />
         </div>
         {!isCollapsed && <span className="text-2xl font-black tracking-tighter">MET</span>}
@@ -150,26 +218,6 @@ function Sidebar({
           </Link>
         ))}
       </nav>
-      <div className={`border-t p-4 ${isCollapsed ? 'flex justify-center' : ''}`}>
-        <motion.button
-          onClick={onToggleTheme}
-          whileTap={{ scale: 0.9, rotate: 90 }}
-          className={`rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground transition-colors ${isCollapsed ? 'p-2.5' : 'w-full px-3 py-2.5 flex items-center gap-2'}`}
-        >
-          <AnimatePresence mode="wait">
-            {isDark ? (
-              <motion.div key="sun" initial={{ scale: 0, rotate: -90 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0, rotate: 90 }}>
-                <Sun size={18} className="text-yellow-400" />
-              </motion.div>
-            ) : (
-              <motion.div key="moon" initial={{ scale: 0, rotate: 90 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0, rotate: -90 }}>
-                <Moon size={18} />
-              </motion.div>
-            )}
-          </AnimatePresence>
-          {!isCollapsed && <span className="text-sm font-semibold">{isDark ? 'Light Mode' : 'Dark Mode'}</span>}
-        </motion.button>
-      </div>
     </aside>
   )
 }
@@ -177,25 +225,15 @@ function Sidebar({
 interface HeaderProps {
   user: AuthUser | null
   onLogout: () => void
-  onToggleTheme: () => void
-  isDark: boolean
 }
 
-function Header({ user, onLogout, onToggleTheme, isDark }: HeaderProps) {
+function Header({ user, onLogout }: HeaderProps) {
   return (
     <header className="sticky top-0 z-30 flex h-20 items-center gap-4 border-b bg-background/80 backdrop-blur-lg px-6">
        <div className="flex-1">
          {/* Can add breadcrumbs or page title here */}
        </div>
        <div className="flex items-center gap-4">
-        <motion.button
-          onClick={onToggleTheme}
-          whileTap={{ scale: 0.9, rotate: 90 }}
-          className="lg:hidden p-2.5 rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          aria-label="Toggle theme"
-        >
-          {isDark ? <Sun size={18} className="text-yellow-400" /> : <Moon size={18} />}
-        </motion.button>
         <div className="flex items-center gap-3">
           <div className="flex flex-col items-end">
             <span className="text-sm font-bold text-foreground">{user?.name || 'User'}</span>
@@ -205,7 +243,8 @@ function Header({ user, onLogout, onToggleTheme, isDark }: HeaderProps) {
             onClick={onLogout}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+            className="w-11 h-11 flex items-center justify-center rounded-full bg-primary/15 text-primary hover:bg-primary/25 transition-colors border border-primary/25"
+            aria-label="Logout"
           >
             <LogOut size={20} />
           </motion.button>
@@ -225,7 +264,7 @@ function MobileNav() {
           <Link
             key={item.path}
             to={item.path}
-            className={`flex flex-col items-center justify-center gap-1 rounded-xl py-2 text-xs font-semibold transition-colors ${
+            className={`flex flex-col items-center justify-center gap-1 rounded-xl min-h-11 py-2 text-xs font-semibold transition-colors ${
               location.pathname === item.path
                 ? 'text-primary bg-primary/10'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted'
@@ -237,6 +276,45 @@ function MobileNav() {
         ))}
       </div>
     </nav>
+  )
+}
+
+function AppFooter() {
+  return (
+    <footer className="mt-auto border-t-2 border-[#dc89e1]/35 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+        <div className="rounded-2xl border border-border/70 bg-gradient-to-r from-[#fce3f7]/70 via-background to-[#ff9eff]/20 p-4 sm:p-5">
+          <div className="flex flex-col gap-4 sm:gap-5 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-tr from-[#a569b0] to-[#6a4d8b] text-white shadow-sm">
+                  <Wallet size={17} />
+                </div>
+                <p className="text-sm font-black tracking-tight text-foreground">MET Finance Tracker</p>
+              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Copyright © 2026 MET. Crafted with AI assistance (OpenAI, Gemini, Claude).
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-3 sm:gap-3 sm:text-sm">
+              <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/70 px-3 py-2 text-muted-foreground">
+                <ShieldCheck size={15} className="text-primary" />
+                <span>Secure by design</span>
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/70 px-3 py-2 text-muted-foreground">
+                <Smartphone size={15} className="text-primary" />
+                <span>Mobile optimized</span>
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/70 px-3 py-2 text-muted-foreground">
+                <Sparkles size={15} className="text-primary" />
+                <span>Modern UI experience</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
   )
 }
 

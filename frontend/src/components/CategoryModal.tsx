@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
+import { notify } from '../lib/toast'
 
 interface Category {
   id: string
@@ -48,6 +49,7 @@ function CategoryModal({ isOpen, onClose, onSave, initialData, parentId, type }:
       onClose()
     } catch (error) {
       console.error('Failed to save category:', error)
+      notify.error('Failed to save category.')
     } finally {
       setIsSubmitting(false)
     }
@@ -55,9 +57,9 @@ function CategoryModal({ isOpen, onClose, onSave, initialData, parentId, type }:
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-          <h2 className="text-xl font-bold">
+      <div className="bg-white dark:bg-slate-900 w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+          <h2 className="text-lg sm:text-xl font-bold">
             {initialData ? 'Edit Category' : parentId ? 'Add Subcategory' : 'Add Category'}
           </h2>
           <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-500">
@@ -65,7 +67,7 @@ function CategoryModal({ isOpen, onClose, onSave, initialData, parentId, type }:
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-5 sm:space-y-6">
           <div className="space-y-2">
             <label htmlFor="name" className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Category Name
@@ -78,7 +80,7 @@ function CategoryModal({ isOpen, onClose, onSave, initialData, parentId, type }:
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Groceries, Freelance..."
               autoFocus
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-primary/40 outline-none transition-all"
               required
             />
           </div>
@@ -119,7 +121,7 @@ function CategoryModal({ isOpen, onClose, onSave, initialData, parentId, type }:
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-500/20 active:scale-[0.98] disabled:opacity-50"
+              className="w-full bg-primary hover:opacity-90 text-primary-foreground font-bold py-3 rounded-xl transition-all shadow-lg shadow-primary/20 active:scale-[0.98] disabled:opacity-50"
             >
               {isSubmitting ? 'Saving...' : initialData ? 'Update Category' : 'Create Category'}
             </button>

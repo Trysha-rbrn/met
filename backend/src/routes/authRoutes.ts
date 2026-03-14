@@ -1,13 +1,15 @@
 import { Router } from 'express'
 import { register, login, getMe, updateUser, deleteUser } from '../controllers/authController.ts'
 import { auth } from '../middleware/authMiddleware.ts'
+import { authRateLimit } from '../middleware/rateLimitMiddleware.ts'
+import { validateDeleteProfile, validateLogin, validateRegister, validateUpdateProfile } from '../middleware/validationMiddleware.ts'
 
 const router = Router()
 
-router.post('/register', register)
-router.post('/login', login)
+router.post('/register', authRateLimit, validateRegister, register)
+router.post('/login', authRateLimit, validateLogin, login)
 router.get('/me', auth, getMe)
-router.put('/profile', auth, updateUser)
-router.delete('/profile', auth, deleteUser)
+router.put('/profile', auth, validateUpdateProfile, updateUser)
+router.delete('/profile', auth, validateDeleteProfile, deleteUser)
 
 export default router

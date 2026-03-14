@@ -1,5 +1,5 @@
 import { memo, useState, useEffect, useMemo, type ComponentType } from 'react'
-import { DollarSign, ArrowUp, ArrowDown, CalendarDays, TrendingUp, WalletCards } from 'lucide-react'
+import { Coins, ArrowUp, ArrowDown, CalendarDays, TrendingUp, WalletCards } from 'lucide-react'
 import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts'
 import * as api from '../api/transactionsApi'
 import * as accountsApi from '../api/accountsApi'
@@ -212,11 +212,11 @@ function Dashboard({ isSidebarCollapsed }: DashboardProps) {
     : rangeBoundaries.label
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <header className="space-y-3">
         <div className="space-y-1">
-          <h1 className="text-3xl font-black tracking-tighter">Dashboard</h1>
-          <p className="text-muted-foreground font-medium">Current balance and movement across selected periods.</p>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tighter">Dashboard</h1>
+          <p className="text-sm sm:text-base text-muted-foreground font-medium">Current balance and movement across selected periods.</p>
         </div>
         <div className="bg-card border rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
@@ -228,7 +228,7 @@ function Dashboard({ isSidebarCollapsed }: DashboardProps) {
             name="accountId"
             value={selectedAccountId}
             onChange={(e) => setSelectedAccountId(e.target.value)}
-            className="sm:min-w-56 px-4 py-2.5 border rounded-xl bg-background"
+            className="sm:min-w-56 min-h-11 px-4 py-2.5 border rounded-xl bg-background"
           >
             {accounts.map((account) => (
               <option key={account.id} value={account.id}>{account.name}</option>
@@ -252,7 +252,7 @@ function Dashboard({ isSidebarCollapsed }: DashboardProps) {
                 key={range}
                 type="button"
                 onClick={() => setSelectedRange(range)}
-                className={`px-3 py-2 rounded-lg text-sm font-bold transition-colors ${
+                className={`min-h-11 px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
                   selectedRange === range
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted text-muted-foreground hover:text-foreground'
@@ -300,12 +300,13 @@ function Dashboard({ isSidebarCollapsed }: DashboardProps) {
         )}
       </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
         <StatCard
           title="Current Balance"
           amount={formatCurrency(summary.totalBalance)}
-          icon={DollarSign}
-          color="text-blue-500"
+          icon={Coins}
+          color="text-primary"
+          glow
         />
         <StatCard
           title="Period Net"
@@ -327,14 +328,14 @@ function Dashboard({ isSidebarCollapsed }: DashboardProps) {
         />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 min-w-0">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 min-w-0">
         <div className="bg-card border rounded-2xl p-5 md:p-6 min-w-0">
           <h3 className="text-lg font-bold mb-4">Balance Trend</h3>
-          <div className="h-72 min-h-[18rem] min-w-0">
+          <div className="h-64 sm:h-72 min-h-[16rem] sm:min-h-[18rem] min-w-0">
             {loading ? (
               <ChartSkeleton />
             ) : showCharts ? (
-              <ResponsiveContainer width="100%" height={288} minWidth={1} minHeight={288} debounce={120}>
+              <ResponsiveContainer width="100%" height={256} minWidth={1} minHeight={256} debounce={300}>
                 <AreaChart data={chartData}>
                   <defs>
                     <linearGradient id="balanceFill" x1="0" y1="0" x2="0" y2="1">
@@ -357,11 +358,11 @@ function Dashboard({ isSidebarCollapsed }: DashboardProps) {
 
         <div className="bg-card border rounded-2xl p-5 md:p-6 min-w-0">
           <h3 className="text-lg font-bold mb-4">Income vs Expenses</h3>
-          <div className="h-72 min-h-[18rem] min-w-0">
+          <div className="h-64 sm:h-72 min-h-[16rem] sm:min-h-[18rem] min-w-0">
             {loading ? (
               <ChartSkeleton />
             ) : showCharts ? (
-              <ResponsiveContainer width="100%" height={288} minWidth={1} minHeight={288} debounce={120}>
+              <ResponsiveContainer width="100%" height={256} minWidth={1} minHeight={256} debounce={120}>
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
                   <XAxis dataKey="day" tick={{ fontSize: 12 }} />
@@ -416,13 +417,18 @@ function formatCompactCurrency(value: number) {
   }).format(value)
 }
 
-const StatCard = ({ title, amount, icon: Icon, color }: { title: string; amount: string; icon: ComponentType<{ size?: number; className?: string }>; color: string }) => (
-  <div className="bg-card border rounded-2xl p-6 flex flex-col justify-between gap-4 transition-all hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5">
+const StatCard = ({ title, amount, icon: Icon, color, glow = false }: { title: string; amount: string; icon: ComponentType<{ size?: number; className?: string }>; color: string; glow?: boolean }) => (
+  <div className="bg-card border rounded-2xl p-4 sm:p-6 flex flex-col justify-between gap-3 sm:gap-4 transition-all hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5">
     <div className="flex items-center justify-between text-muted-foreground">
       <span className="font-bold text-sm uppercase tracking-widest">{title}</span>
       <Icon size={24} className={color} />
     </div>
-    <span className={`text-4xl font-black tracking-tighter ${color}`}>{amount}</span>
+    <span
+      className={`text-3xl sm:text-4xl font-black tracking-tighter ${color}`}
+      style={glow ? { textShadow: '0 0 16px rgba(165, 105, 176, 0.45)' } : undefined}
+    >
+      {amount}
+    </span>
   </div>
 )
 

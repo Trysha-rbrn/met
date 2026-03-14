@@ -29,7 +29,11 @@ function AuthPage({ onLogin }: AuthPageProps) {
       onLogin(data.user, data.token)
     } catch (err: unknown) {
       if (axios.isAxiosError<{ error?: string }>(err)) {
-        setError(err.response?.data?.error || 'An unexpected error occurred.')
+        if (!err.response) {
+          setError('Cannot reach server. Check backend, CORS and network (phone + laptop must be on same Wi-Fi).')
+        } else {
+          setError(err.response.data?.error || 'An unexpected error occurred.')
+        }
       } else {
         setError('An unexpected error occurred.')
       }
@@ -39,9 +43,9 @@ function AuthPage({ onLogin }: AuthPageProps) {
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-background p-4 relative overflow-hidden">
+    <div className="h-full w-full flex items-center justify-center bg-background p-4 relative overflow-hidden">
       {/* Background Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60rem] h-[60rem] bg-blue-500/10 rounded-full blur-3xl -z-10 animate-pulse" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60rem] h-[60rem] bg-primary/15 rounded-full blur-3xl -z-10 animate-pulse" />
 
       <motion.div 
         initial={{ opacity: 0, y: 50 }}
@@ -53,7 +57,7 @@ function AuthPage({ onLogin }: AuthPageProps) {
           <div className="p-8 lg:p-12">
             <div className="flex flex-col items-center text-center mb-8">
               <motion.div 
-                className="p-3 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-xl text-white shadow-lg shadow-blue-500/30 mb-5"
+                className="p-3 bg-gradient-to-tr from-[#a569b0] to-[#6a4d8b] rounded-xl text-white shadow-lg shadow-[#a569b0]/30 mb-5"
                 whileHover={{ scale: 1.1, rotate: 10 }}
               >
                 <Wallet size={28} />
@@ -67,9 +71,9 @@ function AuthPage({ onLogin }: AuthPageProps) {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && <AuthInput id="auth-name" name="name" type="text" placeholder="Full Name" value={name} onChange={setName} icon={User} />}
-              <AuthInput id="auth-email" name="email" type="email" placeholder="Email Address" value={email} onChange={setEmail} icon={Mail} />
-              <AuthInput id="auth-password" name="password" type="password" placeholder="Password" value={password} onChange={setPassword} icon={Lock} />
+              {!isLogin && <AuthInput id="auth-name" name="name" type="text" autoComplete="name" placeholder="Full Name" value={name} onChange={setName} icon={User} />}
+              <AuthInput id="auth-email" name="email" type="email" autoComplete="email" placeholder="Email Address" value={email} onChange={setEmail} icon={Mail} />
+              <AuthInput id="auth-password" name="password" type="password" autoComplete={isLogin ? 'current-password' : 'new-password'} placeholder="Password" value={password} onChange={setPassword} icon={Lock} />
 
               {error && (
                 <div className="p-3 bg-destructive/10 text-destructive text-sm font-bold rounded-lg animate-shake text-center">
@@ -111,19 +115,21 @@ interface AuthInputProps {
   id: string
   name: string
   type: React.HTMLInputTypeAttribute
+  autoComplete?: string
   placeholder: string
   value: string
   onChange: (value: string) => void
   icon: React.ComponentType<{ className?: string; size?: number }>
 }
 
-const AuthInput = ({ id, name, type, placeholder, value, onChange, icon: Icon }: AuthInputProps) => (
+const AuthInput = ({ id, name, type, autoComplete, placeholder, value, onChange, icon: Icon }: AuthInputProps) => (
   <div className="relative group">
     <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={20} />
     <input 
       id={id}
       name={name}
       type={type} 
+      autoComplete={autoComplete}
       placeholder={placeholder} 
       value={value}
       onChange={(e) => onChange(e.target.value)}

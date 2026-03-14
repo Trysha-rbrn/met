@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { API_BASE_URL } from './baseUrl'
 
-const API_URL = 'http://localhost:3000/api/auth';
+const API_URL = `${API_BASE_URL}/auth`;
 
 export interface AuthUser {
   id: string
@@ -21,7 +22,8 @@ export interface AuthPayload {
 
 export interface UpdateProfilePayload {
   name?: string
-  password?: string
+  currentPassword?: string
+  newPassword?: string
 }
 
 const getAuthHeaders = () => {
@@ -47,14 +49,15 @@ export const getMe = async () => {
 };
 
 export const updateProfile = async (data: UpdateProfilePayload) => {
-  const response = await axios.put(`${API_URL}/profile`, data, {
+  const response = await axios.put<AuthUser>(`${API_URL}/profile`, data, {
     headers: getAuthHeaders()
   });
   return response.data;
 };
 
-export const deleteAccount = async () => {
+export const deleteAccount = async (password: string) => {
   const response = await axios.delete(`${API_URL}/profile`, {
+    data: { password },
     headers: getAuthHeaders()
   });
   return response.data;

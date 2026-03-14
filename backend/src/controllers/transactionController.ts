@@ -1,4 +1,4 @@
-import { Request, Response } from 'express'
+import { NextFunction, Request, Response } from 'express'
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
@@ -9,7 +9,13 @@ const toQueryString = (value: unknown) => {
   return undefined
 }
 
-export const getTransactions = async (req: Request, res: Response) => {
+const toBodyString = (value: unknown) => {
+  if (typeof value === 'string') return value
+  if (Array.isArray(value) && typeof value[0] === 'string') return value[0]
+  return undefined
+}
+
+export const getTransactions = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).userId
   const accountId = toQueryString(req.query.accountId)
   try {
@@ -28,15 +34,20 @@ export const getTransactions = async (req: Request, res: Response) => {
     })
     res.json(transactions)
   } catch (error) {
-    res.status(500).json({ error: (error as Error).message })
+    next(error)
   }
 }
 
-export const createTransaction = async (req: Request, res: Response) => {
+export const createTransaction = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).userId
   const { amount, description, date, type, categoryId, accountId, metadata } = req.body
   try {
-    let resolvedAccountId: string | undefined = accountId
+    let resolvedAccountId = toBodyString(accountId)
+    const resolvedCategoryId = toBodyString(categoryId)
+
+    if (!resolvedCategoryId) {
+      return res.status(400).json({ error: 'Category is required.' })
+    }
 
     if (resolvedAccountId) {
       const account = await prisma.account.findFirst({ where: { id: resolvedAccountId, userId } })
@@ -49,6 +60,12 @@ export const createTransaction = async (req: Request, res: Response) => {
       resolvedAccountId = defaultAccount?.id
     }
 
+    const category = await prisma.category.findFirst({ where: { id: resolvedCategoryId, userId } })
+    if (!category) return res.status(403).json({ error: 'Invalid category' })
+    if (category.type !== type) {
+      return res.status(400).json({ error: 'Transaction type does not match selected category.' })
+    }
+
     const transaction = await prisma.transaction.create({
       data: {
         amount: parseFloat(amount),
@@ -57,7 +74,7 @@ export const createTransaction = async (req: Request, res: Response) => {
         type,
         userId,
         accountId: resolvedAccountId,
-        categoryId,
+        categoryId: category.id,
         metadata: metadata || {}
       },
       include: {
@@ -67,21 +84,38 @@ export const createTransaction = async (req: Request, res: Response) => {
     })
     res.status(201).json(transaction)
   } catch (error) {
-    res.status(500).json({ error: (error as Error).message })
+    next(error)
   }
 }
 
-export const updateTransaction = async (req: Request, res: Response) => {
+export const updateTransaction = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).userId
-  const { id } = req.params
+  const id = toQueryString(req.params.id)
   const { amount, description, date, type, categoryId, accountId, metadata } = req.body
   try {
+    if (!id) {
+      return res.status(400).json({ error: 'Transaction id is required.' })
+    }
+
     const existing = await prisma.transaction.findUnique({ where: { id } })
     if (!existing || existing.userId !== userId) return res.status(403).json({ error: 'Unauthorized' })
 
-    if (accountId) {
-      const account = await prisma.account.findFirst({ where: { id: accountId, userId } })
+    const resolvedAccountId = toBodyString(accountId)
+    const resolvedCategoryId = toBodyString(categoryId)
+
+    if (resolvedAccountId) {
+      const account = await prisma.account.findFirst({ where: { id: resolvedAccountId, userId } })
       if (!account) return res.status(403).json({ error: 'Invalid account' })
+    }
+
+    if (resolvedCategoryId) {
+      const category = await prisma.category.findFirst({ where: { id: resolvedCategoryId, userId } })
+      if (!category) return res.status(403).json({ error: 'Invalid category' })
+
+      const resolvedType = type ?? existing.type
+      if (category.type !== resolvedType) {
+        return res.status(400).json({ error: 'Transaction type does not match selected category.' })
+      }
     }
 
     const transaction = await prisma.transaction.update({
@@ -91,8 +125,8 @@ export const updateTransaction = async (req: Request, res: Response) => {
         description,
         date: date ? new Date(date) : undefined,
         type,
-        categoryId,
-        accountId: accountId || undefined,
+        categoryId: resolvedCategoryId || undefined,
+        accountId: resolvedAccountId || undefined,
         metadata: metadata || undefined
       },
       include: {
@@ -102,14 +136,18 @@ export const updateTransaction = async (req: Request, res: Response) => {
     })
     res.json(transaction)
   } catch (error) {
-    res.status(500).json({ error: (error as Error).message })
+    next(error)
   }
 }
 
-export const deleteTransaction = async (req: Request, res: Response) => {
+export const deleteTransaction = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).userId
-  const { id } = req.params
+  const id = toQueryString(req.params.id)
   try {
+    if (!id) {
+      return res.status(400).json({ error: 'Transaction id is required.' })
+    }
+
     const existing = await prisma.transaction.findUnique({ where: { id } })
     if (!existing || existing.userId !== userId) return res.status(403).json({ error: 'Unauthorized' })
 
@@ -118,11 +156,11 @@ export const deleteTransaction = async (req: Request, res: Response) => {
     })
     res.json({ message: 'Transaction deleted successfully' })
   } catch (error) {
-    res.status(500).json({ error: (error as Error).message })
+    next(error)
   }
 }
 
-export const getSummary = async (req: Request, res: Response) => {
+export const getSummary = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).userId
   const accountId = toQueryString(req.query.accountId)
   try {
@@ -147,6 +185,6 @@ export const getSummary = async (req: Request, res: Response) => {
       totalExpenses: expenses
     })
   } catch (error) {
-    res.status(500).json({ error: (error as Error).message })
+    next(error)
   }
 }

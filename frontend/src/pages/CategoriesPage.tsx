@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Plus, Edit2, Trash2, ChevronRight, ChevronDown, Tag } from 'lucide-react'
 import * as api from '../api/categoriesApi'
 import CategoryModal from '../components/CategoryModal'
+import { notify } from '../lib/toast'
 
 interface Category {
   id: string
@@ -32,6 +33,7 @@ function CategoriesPage() {
       setCategories(data)
     } catch (error) {
       console.error('Error fetching categories:', error)
+      notify.error('Failed to load categories.')
     } finally {
       setLoading(false)
     }
@@ -66,9 +68,11 @@ function CategoriesPage() {
     if (window.confirm('Are you sure you want to delete this category? All subcategories will also be deleted.')) {
       try {
         await api.deleteCategory(id)
+        notify.success('Category deleted.')
         fetchCategories()
       } catch (error) {
         console.error('Error deleting category:', error)
+        notify.error('Failed to delete category.')
       }
     }
   }
@@ -77,8 +81,10 @@ function CategoriesPage() {
     try {
       if (modalInitialData) {
         await api.updateCategory(modalInitialData.id, data)
+        notify.success('Category updated.')
       } else {
         await api.createCategory(data)
+        notify.success('Category created.')
       }
       fetchCategories()
     } catch (error) {
@@ -93,15 +99,15 @@ function CategoriesPage() {
   const expenseCats = categories.filter(c => c.type === 'EXPENSE')
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <header className="flex justify-between items-end">
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-500">
+      <header className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
         <div className="space-y-2">
-          <h1 className="text-3xl font-extrabold tracking-tight">Categories</h1>
-          <p className="text-slate-500 dark:text-slate-400">Manage your income and expense categories.</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Categories</h1>
+          <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400">Manage your income and expense categories.</p>
         </div>
         <button 
           onClick={handleAddCategory}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+          className="w-full sm:w-auto min-h-11 flex items-center justify-center gap-2 bg-primary hover:opacity-90 text-primary-foreground px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 active:scale-95"
         >
           <Plus size={20} />
           Add Category
@@ -124,6 +130,8 @@ function CategoriesPage() {
                 onToggle={() => toggleExpand(cat.id)}
                 onEdit={() => handleEdit(cat)}
                 onDelete={() => handleDelete(cat.id)}
+                onSubEdit={handleEdit}
+                onSubDelete={(subId) => handleDelete(subId)}
                 onAddSub={() => handleAddSubcategory(cat)}
               />
             )) : (
@@ -147,6 +155,8 @@ function CategoriesPage() {
                 onToggle={() => toggleExpand(cat.id)}
                 onEdit={() => handleEdit(cat)}
                 onDelete={() => handleDelete(cat.id)}
+                onSubEdit={handleEdit}
+                onSubDelete={(subId) => handleDelete(subId)}
                 onAddSub={() => handleAddSubcategory(cat)}
               />
             )) : (
@@ -168,12 +178,14 @@ function CategoriesPage() {
   )
 }
 
-function CategoryItem({ category, isExpanded, onToggle, onEdit, onDelete, onAddSub }: { 
+function CategoryItem({ category, isExpanded, onToggle, onEdit, onDelete, onSubEdit, onSubDelete, onAddSub }: { 
   category: Category, 
   isExpanded: boolean, 
   onToggle: () => void,
   onEdit: () => void,
   onDelete: () => void,
+  onSubEdit: (category: Category) => void,
+  onSubDelete: (id: string) => void,
   onAddSub: () => void
 }) {
   const hasSubs = category.subcategories && category.subcategories.length > 0
@@ -183,7 +195,7 @@ function CategoryItem({ category, isExpanded, onToggle, onEdit, onDelete, onAddS
       <div className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
         <div className="flex items-center gap-3">
           {hasSubs ? (
-            <button onClick={onToggle} className="text-slate-400 hover:text-blue-600 transition-colors cursor-pointer">
+            <button onClick={onToggle} className="h-11 w-11 -ml-1 text-slate-400 hover:text-primary transition-colors cursor-pointer flex items-center justify-center">
               {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
             </button>
           ) : (
@@ -192,20 +204,20 @@ function CategoryItem({ category, isExpanded, onToggle, onEdit, onDelete, onAddS
           <span className="font-semibold text-slate-700 dark:text-slate-200">{category.name}</span>
         </div>
         
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button 
-            onClick={onEdit}
-            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all"
-            title="Edit"
-          >
-            <Edit2 size={16} />
-          </button>
-          <button 
-            onClick={onDelete}
-            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-all"
-            title="Delete"
-          >
-            <Trash2 size={16} />
+        <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+            <button 
+              onClick={onEdit}
+              className="h-11 w-11 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-all flex items-center justify-center"
+              title="Edit"
+            >
+              <Edit2 size={16} />
+            </button>
+            <button 
+              onClick={onDelete}
+              className="h-11 w-11 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-all flex items-center justify-center"
+              title="Delete"
+            >
+              <Trash2 size={16} />
           </button>
         </div>
       </div>
@@ -215,15 +227,15 @@ function CategoryItem({ category, isExpanded, onToggle, onEdit, onDelete, onAddS
           {category.subcategories?.map(sub => (
             <div key={sub.id} className="flex items-center justify-between py-2 group/sub">
               <span className="text-slate-600 dark:text-slate-400 text-sm font-medium">{sub.name}</span>
-              <div className="flex items-center gap-1 opacity-0 group-hover/sub:opacity-100 transition-opacity">
+              <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover/sub:opacity-100 transition-opacity">
                 <button 
-                  onClick={() => onEdit()} // Should ideally pass the subcategory to edit
-                  className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors"
+                  onClick={() => onSubEdit(sub)}
+                  className="p-1.5 text-slate-400 hover:text-primary transition-colors"
                 >
                   <Edit2 size={14} />
                 </button>
                 <button 
-                  onClick={() => onDelete()} // Should pass sub.id
+                  onClick={() => onSubDelete(sub.id)}
                   className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors"
                 >
                   <Trash2 size={14} />
@@ -233,7 +245,7 @@ function CategoryItem({ category, isExpanded, onToggle, onEdit, onDelete, onAddS
           ))}
           <button 
             onClick={onAddSub}
-            className="flex items-center gap-2 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline py-3 transition-all"
+            className="flex items-center gap-2 text-xs font-bold text-primary hover:underline py-3 transition-all"
           >
             <Plus size={14} />
             Add Subcategory

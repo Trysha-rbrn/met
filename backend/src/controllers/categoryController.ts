@@ -1,9 +1,14 @@
-import { Request, Response } from 'express'
+import { NextFunction, Request, Response } from 'express'
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
+const toParamString = (value: unknown) => {
+  if (typeof value === 'string') return value
+  if (Array.isArray(value) && typeof value[0] === 'string') return value[0]
+  return undefined
+}
 
-export const getCategories = async (req: Request, res: Response) => {
+export const getCategories = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).userId
   try {
     const categories = await prisma.category.findMany({
@@ -17,11 +22,11 @@ export const getCategories = async (req: Request, res: Response) => {
     })
     res.json(categories)
   } catch (error) {
-    res.status(500).json({ error: (error as Error).message })
+    next(error)
   }
 }
 
-export const createCategory = async (req: Request, res: Response) => {
+export const createCategory = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).userId
   const { name, type, parentId } = req.body
   try {
@@ -35,15 +40,19 @@ export const createCategory = async (req: Request, res: Response) => {
     })
     res.status(201).json(category)
   } catch (error) {
-    res.status(500).json({ error: (error as Error).message })
+    next(error)
   }
 }
 
-export const updateCategory = async (req: Request, res: Response) => {
+export const updateCategory = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).userId
-  const { id } = req.params
+  const id = toParamString(req.params.id)
   const { name, type, parentId } = req.body
   try {
+    if (!id) {
+      return res.status(400).json({ error: 'Category id is required.' })
+    }
+
     // Check ownership
     const existing = await prisma.category.findUnique({ where: { id } })
     if (!existing || existing.userId !== userId) return res.status(403).json({ error: 'Unauthorized' })
@@ -58,14 +67,18 @@ export const updateCategory = async (req: Request, res: Response) => {
     })
     res.json(category)
   } catch (error) {
-    res.status(500).json({ error: (error as Error).message })
+    next(error)
   }
 }
 
-export const deleteCategory = async (req: Request, res: Response) => {
+export const deleteCategory = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).userId
-  const { id } = req.params
+  const id = toParamString(req.params.id)
   try {
+    if (!id) {
+      return res.status(400).json({ error: 'Category id is required.' })
+    }
+
     const existing = await prisma.category.findUnique({ where: { id } })
     if (!existing || existing.userId !== userId) return res.status(403).json({ error: 'Unauthorized' })
 
@@ -74,6 +87,6 @@ export const deleteCategory = async (req: Request, res: Response) => {
     })
     res.json({ message: 'Category deleted successfully' })
   } catch (error) {
-    res.status(500).json({ error: (error as Error).message })
+    next(error)
   }
 }

@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { API_BASE_URL } from './baseUrl'
 
-const API_URL = 'http://localhost:3000/api/transactions';
+const API_URL = `${API_BASE_URL}/transactions`;
 
 export type TransactionType = 'INCOME' | 'EXPENSE'
 
