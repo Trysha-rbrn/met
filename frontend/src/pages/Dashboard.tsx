@@ -182,11 +182,11 @@ function Dashboard({ isSidebarCollapsed }: DashboardProps) {
 
     return dayLabels.map((key) => {
       const bucket = dayBuckets.get(key)
-      if (!bucket) return { day: key, income: 0, expenses: 0, net: 0, runningBalance }
+      if (!bucket) return { dayKey: key, income: 0, expenses: 0, net: 0, runningBalance }
       const net = bucket.income - bucket.expenses
       runningBalance += net
       return {
-        day: bucket.day,
+        dayKey: key,
         income: bucket.income,
         expenses: bucket.expenses,
         runningBalance
@@ -349,9 +349,16 @@ function Dashboard({ isSidebarCollapsed }: DashboardProps) {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis dataKey="day" tick={{ fontSize: 12 }} />
+                  <XAxis
+                    dataKey="dayKey"
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(value) => formatDayLabelFromKey(String(value))}
+                  />
                   <YAxis tickFormatter={(value) => formatCompactCurrency(value)} tick={{ fontSize: 12 }} />
-                  <Tooltip formatter={formatTooltipCurrency} />
+                  <Tooltip
+                    formatter={formatTooltipCurrency}
+                    labelFormatter={(label) => formatFullDateLabelFromKey(String(label))}
+                  />
                   <Area type="monotone" dataKey="runningBalance" stroke="#3b82f6" fill="url(#balanceFill)" strokeWidth={2.5} isAnimationActive={false} />
                 </AreaChart>
               </ResponsiveContainer>
@@ -370,9 +377,16 @@ function Dashboard({ isSidebarCollapsed }: DashboardProps) {
               <ResponsiveContainer width="100%" height={256} minWidth={1} minHeight={256} debounce={120}>
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis dataKey="day" tick={{ fontSize: 12 }} />
+                  <XAxis
+                    dataKey="dayKey"
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(value) => formatDayLabelFromKey(String(value))}
+                  />
                   <YAxis tickFormatter={(value) => formatCompactCurrency(value)} tick={{ fontSize: 12 }} />
-                  <Tooltip formatter={formatTooltipCurrency} />
+                  <Tooltip
+                    formatter={formatTooltipCurrency}
+                    labelFormatter={(label) => formatFullDateLabelFromKey(String(label))}
+                  />
                   <Legend />
                   <Bar dataKey="income" fill="#10b981" radius={[6, 6, 0, 0]} isAnimationActive={false} />
                   <Bar dataKey="expenses" fill="#f43f5e" radius={[6, 6, 0, 0]} isAnimationActive={false} />
@@ -439,6 +453,18 @@ function getDateInputValue(date: Date) {
 
 function formatDayLabel(date: Date) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function formatDayLabelFromKey(value: string) {
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return value
+  return formatDayLabel(parsed)
+}
+
+function formatFullDateLabelFromKey(value: string) {
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return value
+  return parsed.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
 function formatCompactCurrency(value: number) {

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowDown, ArrowUp, Download, Edit2, FileUp, Plus, Trash2, WalletCards } from 'lucide-react'
-import ExcelJS from 'exceljs'
+import { ArrowDown, ArrowUp, Download, Edit2, FileUp, Plus, Tag, Trash2, WalletCards } from 'lucide-react'
+import ExcelJS from 'exceljs/dist/exceljs.min.js'
+import type { CellValue } from 'exceljs'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import * as api from '../api/transactionsApi'
@@ -21,9 +22,12 @@ function TransactionsPage() {
   const [selectedAccountId, setSelectedAccountId] = useState<string>('')
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
   const importInputRef = useRef<HTMLInputElement | null>(null)
+  const loadMoreRef = useRef<HTMLDivElement | null>(null)
+  const [visibleCount, setVisibleCount] = useState(20)
 
   const currencyCode = localStorage.getItem('met_currency') || 'USD'
 
@@ -63,6 +67,7 @@ function TransactionsPage() {
       setLoading(true)
       const data = await api.getTransactions(accountId)
       setTransactions(data)
+      setVisibleCount(20)
     } catch (error) {
       console.error('Error fetching transactions:', error)
       notify.error('Failed to load transactions.')
@@ -134,6 +139,34 @@ function TransactionsPage() {
     () => accounts.find((account) => account.id === selectedAccountId),
     [accounts, selectedAccountId]
   )
+
+  const displayedTransactions = useMemo(
+    () => transactions.slice(0, visibleCount),
+    [transactions, visibleCount]
+  )
+
+  const hasMoreTransactions = displayedTransactions.length < transactions.length
+
+  useEffect(() => {
+    const node = loadMoreRef.current
+    if (!node || loading || !hasMoreTransactions) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0]
+        if (!first?.isIntersecting) return
+        setLoadingMore(true)
+        window.setTimeout(() => {
+          setVisibleCount((prev) => Math.min(prev + 20, transactions.length))
+          setLoadingMore(false)
+        }, 120)
+      },
+      { root: null, rootMargin: '320px 0px', threshold: 0.01 }
+    )
+
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [hasMoreTransactions, loading, transactions.length])
 
   const exportExcel = async () => {
     if (!transactions.length) {
@@ -223,13 +256,108 @@ function TransactionsPage() {
     importInputRef.current?.click()
   }
 
-  const parseTransactionType = (value: unknown): 'INCOME' | 'EXPENSE' | null => {
-    const normalized = String(value || '').trim().toUpperCase()
-    if (normalized === 'INCOME' || normalized === 'EXPENSE') return normalized
+  const parseTransactionTypeFromAmount = (amount: number): 'INCOME' | 'EXPENSE' | null => {
+    if (amount > 0) return 'INCOME'
+    if (amount < 0) return 'EXPENSE'
     return null
   }
 
-  const normalizeExcelCell = (value: ExcelJS.CellValue) => {
+  const isValidImportDate = (value: string) => {
+    if (!value) return false
+    const date = new Date(value)
+    return !Number.isNaN(date.getTime())
+  }
+
+  const parseImportedAmount = (value: string): number | null => {
+    const raw = value.trim()
+    if (!raw) return null
+
+    const normalized = raw
+      .replace(/\s+/g, '')
+      .replace(/[A-Za-z\u00C0-\u024F]/g, '')
+      .replace(/[^\d,.\-+()]/g, '')
+
+    if (!normalized) return null
+
+    const hasComma = normalized.includes(',')
+    const hasDot = normalized.includes('.')
+    let numeric = normalized
+
+    if (hasComma && hasDot) {
+      // Balkan/European style: 1.234,56
+      numeric = numeric.replace(/\./g, '').replace(',', '.')
+    } else if (hasComma) {
+      numeric = numeric.replace(',', '.')
+    }
+
+    const parsed = Number(numeric)
+    if (!Number.isFinite(parsed)) return null
+    return parsed
+  }
+
+  const parseImportedDate = (value: string): string | null => {
+    const raw = value.trim()
+    if (!raw) return null
+
+    const dmY = raw.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/)
+    if (dmY) {
+      const day = Number(dmY[1])
+      const month = Number(dmY[2])
+      const year = Number(dmY[3])
+      const date = new Date(year, month - 1, day)
+      if (!Number.isNaN(date.getTime())) return date.toISOString().slice(0, 10)
+      return null
+    }
+
+    if (!isValidImportDate(raw)) return null
+    return new Date(raw).toISOString().slice(0, 10)
+  }
+
+  const pickAutoCategory = (
+    type: 'INCOME' | 'EXPENSE',
+    description: string,
+    categoryName: string,
+    flatCategories: Array<{ id: string; name: string; type: 'INCOME' | 'EXPENSE' }>
+  ) => {
+    const byType = flatCategories.filter((c) => c.type === type)
+    if (!byType.length) return null
+
+    const normalizedCategory = categoryName.toLowerCase()
+    const exactCategory = normalizedCategory
+      ? byType.find((c) => c.name.toLowerCase() === normalizedCategory)
+      : null
+    if (exactCategory) return exactCategory
+
+    const normalizedDescription = description.toLowerCase()
+    if (normalizedDescription) {
+      const keywordCategoryMap: Array<{ keywords: string[]; categoryHints: string[] }> = [
+        { keywords: ['salary', 'payroll', 'wage'], categoryHints: ['salary'] },
+        { keywords: ['bonus'], categoryHints: ['bonus'] },
+        { keywords: ['rent', 'apartment'], categoryHints: ['rent'] },
+        { keywords: ['market', 'grocery', 'supermarket'], categoryHints: ['groceries'] },
+        { keywords: ['bus', 'taxi', 'fuel', 'gas'], categoryHints: ['transport'] },
+        { keywords: ['movie', 'netflix', 'game', 'cinema'], categoryHints: ['entertainment'] }
+      ]
+
+      for (const mapEntry of keywordCategoryMap) {
+        if (!mapEntry.keywords.some((keyword) => normalizedDescription.includes(keyword))) continue
+        const hinted = byType.find((c) =>
+          mapEntry.categoryHints.some((hint) => c.name.toLowerCase().includes(hint))
+        )
+        if (hinted) return hinted
+      }
+    }
+
+    return byType[0]
+  }
+
+  const isImportedTransaction = (transaction: Transaction) => {
+    if (!transaction.metadata || typeof transaction.metadata !== 'object') return false
+    const importedValue = (transaction.metadata as Record<string, unknown>).imported
+    return importedValue === true
+  }
+
+  const normalizeExcelCell = (value: CellValue) => {
     if (value instanceof Date) return value.toISOString().slice(0, 10)
     if (typeof value === 'object' && value !== null) {
       if ('text' in value && typeof value.text === 'string') return value.text
@@ -259,10 +387,18 @@ function TransactionsPage() {
         if (key) headerIndexMap.set(key, colNumber)
       })
 
-      const requiredHeaders = ['type', 'category', 'amount']
-      const hasRequiredHeaders = requiredHeaders.every((key) => headerIndexMap.has(key))
+      const headerAliases = {
+        date: ['date', 'datum'],
+        amount: ['amount', 'iznos', 'value', 'vrednost'],
+        category: ['category', 'kategorija'],
+        description: ['description', 'opis', 'note', 'details']
+      }
+
+      const hasAnyHeader = (aliases: string[]) => aliases.some((alias) => headerIndexMap.has(alias))
+      const requiredHeaders = ['date', 'amount'] as const
+      const hasRequiredHeaders = requiredHeaders.every((key) => hasAnyHeader(headerAliases[key]))
       if (!hasRequiredHeaders) {
-        notify.warning('Excel format invalid. Required headers: Type, Category, Amount.')
+        notify.warning('Excel format invalid. Required headers: Date/Datum, Amount/Iznos.')
         return
       }
 
@@ -274,37 +410,49 @@ function TransactionsPage() {
       const categories = await categoriesApi.getCategories()
       const flatCategories = categories.flatMap((cat) => [cat, ...(cat.subcategories || [])])
       let importedCount = 0
+      let skippedCount = 0
 
       for (let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber += 1) {
         const row = sheet.getRow(rowNumber)
-        const getValue = (header: string) => {
-          const col = headerIndexMap.get(header.toLowerCase())
-          if (!col) return ''
-          return normalizeExcelCell(row.getCell(col).value)
+        const getValueByAliases = (aliases: string[]) => {
+          for (const alias of aliases) {
+            const col = headerIndexMap.get(alias)
+            if (!col) continue
+            return normalizeExcelCell(row.getCell(col).value)
+          }
+          return ''
         }
 
-        const amount = Number(getValue('amount'))
-        const type = parseTransactionType(getValue('type'))
-        const categoryName = getValue('category')
-        const description = getValue('description')
-        const dateValue = getValue('date')
+        const rawAmountValue = getValueByAliases(headerAliases.amount)
+        const rawAmount = parseImportedAmount(rawAmountValue)
+        const type = typeof rawAmount === 'number' ? parseTransactionTypeFromAmount(rawAmount) : null
+        const categoryName = getValueByAliases(headerAliases.category)
+        const description = getValueByAliases(headerAliases.description)
+        const dateValue = getValueByAliases(headerAliases.date)
+        const parsedDate = parseImportedDate(dateValue)
 
-        if (!Number.isFinite(amount) || amount <= 0 || !type || !categoryName) {
+        if (rawAmount === null || !type || !parsedDate) {
+          skippedCount += 1
           continue
         }
 
-        const category = flatCategories.find(
-          (c) => c.type === type && c.name.toLowerCase() === categoryName.toLowerCase()
-        )
-        if (!category) continue
+        const category = pickAutoCategory(type, description, categoryName, flatCategories)
+        if (!category) {
+          skippedCount += 1
+          continue
+        }
 
         await api.createTransaction({
-          amount: amount.toString(),
+          amount: Math.abs(rawAmount).toString(),
           description,
-          date: dateValue || new Date().toISOString().slice(0, 10),
+          date: parsedDate,
           type,
           categoryId: category.id,
-          accountId: selectedAccountId
+          accountId: selectedAccountId,
+          metadata: {
+            imported: true,
+            importSource: file.name
+          }
         })
         importedCount += 1
       }
@@ -317,7 +465,7 @@ function TransactionsPage() {
         // logging should not block import UX
       }
 
-      notify.success(`Excel import completed. Imported ${importedCount} transaction(s).`)
+      notify.success(`Excel import completed. Imported ${importedCount} transaction(s), skipped ${skippedCount}.`)
     } catch (error) {
       notify.error(extractApiError(error, 'Failed to import Excel file.'))
     } finally {
@@ -422,11 +570,12 @@ function TransactionsPage() {
             <tbody className="divide-y">
               {loading ? (
                 [...Array(6)].map((_, i) => <TransactionSkeleton key={i} />)
-              ) : transactions.length > 0 ? transactions.map((t) => (
+              ) : displayedTransactions.length > 0 ? displayedTransactions.map((t) => (
                 <TransactionRow
                   key={t.id}
                   transaction={t}
                   formatCurrency={formatCurrency}
+                  isImported={isImportedTransaction(t)}
                   onEdit={() => { setSelectedTransaction(t); setIsModalOpen(true) }}
                   onDelete={() => handleDelete(t.id)}
                 />
@@ -443,11 +592,12 @@ function TransactionsPage() {
         <div className="md:hidden p-3 space-y-3">
           {loading ? (
             [...Array(4)].map((_, i) => <MobileTransactionSkeleton key={i} />)
-          ) : transactions.length > 0 ? transactions.map((t) => (
+          ) : displayedTransactions.length > 0 ? displayedTransactions.map((t) => (
             <MobileTransactionCard
               key={t.id}
               transaction={t}
               formatCurrency={formatCurrency}
+              isImported={isImportedTransaction(t)}
               onEdit={() => { setSelectedTransaction(t); setIsModalOpen(true) }}
               onDelete={() => handleDelete(t.id)}
             />
@@ -457,6 +607,22 @@ function TransactionsPage() {
             </p>
           )}
         </div>
+        {!loading && (
+          <div className="px-4 pb-4 pt-2 text-center">
+            <p className="text-xs text-muted-foreground mb-2">
+              Showing {displayedTransactions.length} of {transactions.length} transactions
+            </p>
+            {hasMoreTransactions ? (
+              <div ref={loadMoreRef} className="h-10 flex items-center justify-center">
+                <span className="text-xs text-muted-foreground">
+                  {loadingMore ? 'Loading older transactions...' : 'Scroll down to load older transactions'}
+                </span>
+              </div>
+            ) : transactions.length > 20 ? (
+              <span className="text-xs text-muted-foreground">All transactions loaded.</span>
+            ) : null}
+          </div>
+        )}
       </div>
 
       <TransactionModal
@@ -474,11 +640,13 @@ function TransactionsPage() {
 const TransactionRow = ({
   transaction: t,
   formatCurrency,
+  isImported,
   onEdit,
   onDelete
 }: {
   transaction: Transaction
   formatCurrency: (value: number) => string
+  isImported: boolean
   onEdit: () => void
   onDelete: () => void
 }) => (
@@ -490,7 +658,15 @@ const TransactionRow = ({
         {t.type === 'INCOME' ? <ArrowUp size={20} /> : <ArrowDown size={20} />}
       </div>
       <div>
-        <p className="font-bold">{t.description || 'Transaction'}</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="font-bold">{t.description || 'Transaction'}</p>
+          {isImported && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+              <Tag size={11} />
+              Imported
+            </span>
+          )}
+        </div>
         <p className="text-sm text-muted-foreground inline-flex items-center gap-2">
           <CategoryBadge icon={t.category?.icon} name={t.category?.name || 'Uncategorized'} />
           <span>-</span>
@@ -533,18 +709,28 @@ const TransactionSkeleton = () => (
 const MobileTransactionCard = ({
   transaction: t,
   formatCurrency,
+  isImported,
   onEdit,
   onDelete
 }: {
   transaction: Transaction
   formatCurrency: (value: number) => string
+  isImported: boolean
   onEdit: () => void
   onDelete: () => void
 }) => (
   <div className="rounded-xl border bg-background p-4 space-y-3">
     <div className="flex items-center justify-between gap-3">
       <div className="min-w-0">
-        <p className="font-bold truncate">{t.description || 'Transaction'}</p>
+        <div className="flex items-center gap-2">
+          <p className="font-bold truncate">{t.description || 'Transaction'}</p>
+          {isImported && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+              <Tag size={10} />
+              Imported
+            </span>
+          )}
+        </div>
         <p className="text-xs text-muted-foreground truncate inline-flex items-center gap-2">
           <CategoryBadge icon={t.category?.icon} name={t.category?.name || 'Uncategorized'} />
           <span>-</span>

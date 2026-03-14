@@ -11,6 +11,7 @@ export interface Transaction {
   description: string | null
   date: string
   type: TransactionType
+  metadata?: Record<string, unknown> | null
   categoryId?: string
   category?: {
     id: string
