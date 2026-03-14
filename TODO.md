@@ -19,5 +19,5 @@
 - [x] Add full subscription lifecycle (upgrade, downgrade, billing hooks).
 
 ## Premium Roadmap
-- [ ] Add monthly budget goals per category.
-- [ ] Add recurring transactions.
+- [x] Add monthly budget goals per category.
+- [x] Add recurring transactions.

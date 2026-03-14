@@ -4,6 +4,7 @@ import { API_BASE_URL } from './baseUrl'
 const API_URL = `${API_BASE_URL}/transactions`;
 
 export type TransactionType = 'INCOME' | 'EXPENSE'
+export type RecurringFrequency = 'DAILY' | 'WEEKLY' | 'MONTHLY'
 
 export interface Transaction {
   id: string
@@ -32,6 +33,31 @@ export interface TransactionSummary {
   totalExpenses: number
 }
 
+export interface RecurringTransaction {
+  id: string
+  amount: number
+  description: string | null
+  type: TransactionType
+  frequency: RecurringFrequency
+  startDate: string
+  nextRunDate: string
+  lastRunAt?: string | null
+  endDate?: string | null
+  isActive: boolean
+  categoryId: string
+  category?: {
+    id: string
+    name: string
+    icon?: string
+    type: TransactionType
+  }
+  accountId?: string | null
+  account?: {
+    id: string
+    name: string
+  } | null
+}
+
 export interface TransactionPayload {
   amount: string
   description: string
@@ -40,6 +66,18 @@ export interface TransactionPayload {
   categoryId: string
   accountId?: string
   metadata?: Record<string, unknown>
+}
+
+export interface RecurringTransactionPayload {
+  amount: string
+  description: string
+  type: TransactionType
+  categoryId: string
+  accountId?: string
+  frequency: RecurringFrequency
+  startDate: string
+  endDate?: string
+  isActive?: boolean
 }
 
 const getAuthHeaders = () => {
@@ -77,3 +115,40 @@ export const deleteTransaction = async (id: string) => {
   const response = await axios.delete(`${API_URL}/${id}`, { headers: getAuthHeaders() });
   return response.data;
 };
+
+export const getRecurringTransactions = async () => {
+  const response = await axios.get<RecurringTransaction[]>(`${API_URL}/recurring`, {
+    headers: getAuthHeaders()
+  })
+  return response.data
+}
+
+export const createRecurringTransaction = async (data: RecurringTransactionPayload) => {
+  const response = await axios.post<RecurringTransaction>(`${API_URL}/recurring`, data, {
+    headers: getAuthHeaders()
+  })
+  return response.data
+}
+
+export const updateRecurringTransaction = async (id: string, data: Partial<RecurringTransactionPayload>) => {
+  const response = await axios.put<RecurringTransaction>(`${API_URL}/recurring/${id}`, data, {
+    headers: getAuthHeaders()
+  })
+  return response.data
+}
+
+export const deleteRecurringTransaction = async (id: string) => {
+  const response = await axios.delete(`${API_URL}/recurring/${id}`, {
+    headers: getAuthHeaders()
+  })
+  return response.data
+}
+
+export const runDueRecurringTransactions = async () => {
+  const response = await axios.post<{ createdCount: number; transactions: Transaction[] }>(
+    `${API_URL}/recurring/run-due`,
+    {},
+    { headers: getAuthHeaders() }
+  )
+  return response.data
+}

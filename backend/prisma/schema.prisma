@@ -20,6 +20,7 @@ model User {
   accounts          Account[]
   categories        Category[]
   budgetGoals       BudgetGoal[]
+  recurringTransactions RecurringTransaction[]
   transferLogs      DataTransferLog[]
   transactions      Transaction[]
   subscription      Subscription?
@@ -35,6 +36,7 @@ model Account {
   userId       String
   user         User          @relation(fields: [userId], references: [id])
   transactions Transaction[]
+  recurringTransactions RecurringTransaction[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
@@ -53,6 +55,7 @@ model Category {
   subcategories Category[]      @relation("Subcategories")
   transactions  Transaction[]
   budgetGoals   BudgetGoal[]
+  recurringTransactions RecurringTransaction[]
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
@@ -157,6 +160,29 @@ model BudgetGoal {
   @@index([userId, monthStart])
 }
 
+model RecurringTransaction {
+  id          String             @id @default(uuid())
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId   String?
+  account     Account?           @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  categoryId  String
+  category    Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  amount      Float
+  description String?
+  type        TransactionType
+  frequency   RecurringFrequency
+  startDate   DateTime
+  nextRunDate DateTime
+  lastRunAt   DateTime?
+  endDate     DateTime?
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([userId, nextRunDate, isActive])
+}
+
 enum UserRole {
   BASIC
   PREMIUM
@@ -188,4 +214,10 @@ enum SubscriptionSource {
   BILLING_WEBHOOK
   ADMIN
   LEGACY_IMPORT
+}
+
+enum RecurringFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
 }

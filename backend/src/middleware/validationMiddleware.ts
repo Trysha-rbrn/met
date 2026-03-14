@@ -7,6 +7,7 @@ const TX_TYPES = new Set(['INCOME', 'EXPENSE'])
 const TRANSFER_ACTIONS = new Set(['IMPORT', 'EXPORT'])
 const TRANSFER_FORMATS = new Set(['EXCEL', 'PDF'])
 const BILLING_INTERVALS = new Set(['MONTHLY', 'YEARLY'])
+const RECURRING_FREQUENCIES = new Set(['DAILY', 'WEEKLY', 'MONTHLY'])
 const BILLING_EVENT_TYPES = new Set([
   'subscription.activated',
   'subscription.renewed',
@@ -208,6 +209,156 @@ export const validateUpdateTransaction = (req: Request, res: Response, next: Nex
 export const validateTransactionIdParam = (req: Request, res: Response, next: NextFunction) => {
   if (!isValidUuid(req.params.id)) {
     return sendValidationError(res, ['Transaction id must be a valid UUID.'])
+  }
+  return next()
+}
+
+export const validateCreateRecurringTransaction = (req: Request, res: Response, next: NextFunction) => {
+  if (!isPlainObject(req.body)) {
+    return sendValidationError(res, ['Invalid request body.'])
+  }
+
+  const errors: string[] = []
+  const amount = parseAmount(req.body.amount)
+  const description = req.body.description
+  const type = toTrimmedString(req.body.type).toUpperCase()
+  const categoryId = toTrimmedString(req.body.categoryId)
+  const accountId = typeof req.body.accountId === 'undefined' || req.body.accountId === null
+    ? undefined
+    : toTrimmedString(req.body.accountId)
+  const frequency = toTrimmedString(req.body.frequency).toUpperCase()
+  const startDate = req.body.startDate
+  const endDate = req.body.endDate
+
+  if (amount === null || amount <= 0) errors.push('Amount must be a positive number.')
+  if (typeof description !== 'undefined' && description !== null && typeof description !== 'string') {
+    errors.push('Description must be a string.')
+  }
+  if (typeof description === 'string' && description.length > 500) errors.push('Description can be up to 500 characters.')
+  if (!TX_TYPES.has(type)) errors.push('Type must be INCOME or EXPENSE.')
+  if (!isValidUuid(categoryId)) errors.push('categoryId must be a valid UUID.')
+  if (typeof accountId !== 'undefined' && accountId !== '' && !isValidUuid(accountId)) {
+    errors.push('accountId must be a valid UUID.')
+  }
+  if (!RECURRING_FREQUENCIES.has(frequency)) errors.push('frequency must be DAILY, WEEKLY or MONTHLY.')
+  if (Number.isNaN(new Date(String(startDate)).getTime())) errors.push('startDate must be a valid ISO date.')
+  if (typeof endDate !== 'undefined' && endDate !== null && Number.isNaN(new Date(String(endDate)).getTime())) {
+    errors.push('endDate must be a valid ISO date.')
+  }
+  if (
+    typeof endDate !== 'undefined' &&
+    endDate !== null &&
+    !Number.isNaN(new Date(String(startDate)).getTime()) &&
+    !Number.isNaN(new Date(String(endDate)).getTime()) &&
+    new Date(String(endDate)).getTime() < new Date(String(startDate)).getTime()
+  ) {
+    errors.push('endDate must be on or after startDate.')
+  }
+
+  if (errors.length > 0) return sendValidationError(res, errors)
+
+  req.body.amount = amount
+  req.body.description = typeof description === 'string' ? description.trim() : undefined
+  req.body.type = type
+  req.body.categoryId = categoryId
+  req.body.accountId = accountId || undefined
+  req.body.frequency = frequency
+  return next()
+}
+
+export const validateUpdateRecurringTransaction = (req: Request, res: Response, next: NextFunction) => {
+  if (!isValidUuid(req.params.id)) {
+    return sendValidationError(res, ['Recurring transaction id must be a valid UUID.'])
+  }
+
+  if (!isPlainObject(req.body)) {
+    return sendValidationError(res, ['Invalid request body.'])
+  }
+
+  const hasAnyField = ['amount', 'description', 'type', 'categoryId', 'accountId', 'frequency', 'startDate', 'endDate', 'isActive']
+    .some((field) => typeof req.body[field] !== 'undefined')
+  if (!hasAnyField) {
+    return sendValidationError(res, ['At least one field must be provided for update.'])
+  }
+
+  const errors: string[] = []
+  const { amount, description, type, categoryId, accountId, frequency, startDate, endDate, isActive } = req.body
+
+  if (typeof amount !== 'undefined') {
+    const parsedAmount = parseAmount(amount)
+    if (parsedAmount === null || parsedAmount <= 0) {
+      errors.push('Amount must be a positive number.')
+    } else {
+      req.body.amount = parsedAmount
+    }
+  }
+
+  if (typeof description !== 'undefined' && description !== null && typeof description !== 'string') {
+    errors.push('Description must be a string.')
+  }
+  if (typeof description === 'string' && description.length > 500) errors.push('Description can be up to 500 characters.')
+
+  if (typeof type !== 'undefined') {
+    const normalizedType = toTrimmedString(type).toUpperCase()
+    if (!TX_TYPES.has(normalizedType)) {
+      errors.push('Type must be INCOME or EXPENSE.')
+    } else {
+      req.body.type = normalizedType
+    }
+  }
+
+  if (typeof categoryId !== 'undefined' && !isValidUuid(categoryId)) {
+    errors.push('categoryId must be a valid UUID.')
+  }
+
+  if (typeof accountId !== 'undefined' && accountId !== null && toTrimmedString(accountId) !== '' && !isValidUuid(accountId)) {
+    errors.push('accountId must be a valid UUID.')
+  }
+  if (typeof accountId !== 'undefined') {
+    req.body.accountId = accountId === null ? null : toTrimmedString(accountId) || undefined
+  }
+
+  if (typeof frequency !== 'undefined') {
+    const normalizedFrequency = toTrimmedString(frequency).toUpperCase()
+    if (!RECURRING_FREQUENCIES.has(normalizedFrequency)) {
+      errors.push('frequency must be DAILY, WEEKLY or MONTHLY.')
+    } else {
+      req.body.frequency = normalizedFrequency
+    }
+  }
+
+  if (typeof startDate !== 'undefined' && Number.isNaN(new Date(String(startDate)).getTime())) {
+    errors.push('startDate must be a valid ISO date.')
+  }
+
+  if (typeof endDate !== 'undefined' && endDate !== null && Number.isNaN(new Date(String(endDate)).getTime())) {
+    errors.push('endDate must be a valid ISO date.')
+  }
+  if (
+    typeof startDate !== 'undefined' &&
+    typeof endDate !== 'undefined' &&
+    startDate !== null &&
+    endDate !== null &&
+    !Number.isNaN(new Date(String(startDate)).getTime()) &&
+    !Number.isNaN(new Date(String(endDate)).getTime()) &&
+    new Date(String(endDate)).getTime() < new Date(String(startDate)).getTime()
+  ) {
+    errors.push('endDate must be on or after startDate.')
+  }
+
+  if (typeof isActive !== 'undefined' && typeof isActive !== 'boolean') {
+    errors.push('isActive must be a boolean value.')
+  }
+
+  if (errors.length > 0) return sendValidationError(res, errors)
+
+  req.body.description = typeof description === 'string' ? description.trim() : description
+  return next()
+}
+
+export const validateRecurringTransactionIdParam = (req: Request, res: Response, next: NextFunction) => {
+  if (!isValidUuid(req.params.id)) {
+    return sendValidationError(res, ['Recurring transaction id must be a valid UUID.'])
   }
   return next()
 }

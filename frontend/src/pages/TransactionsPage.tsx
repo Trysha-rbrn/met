@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowDown, ArrowUp, Download, Edit2, FileUp, Plus, Search, Tag, Trash2, WalletCards, Gem, Sparkles, ShieldCheck, Lock, BookmarkPlus, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Download, Edit2, FileUp, Plus, Search, Tag, Trash2, WalletCards, Gem, Sparkles, ShieldCheck, Lock, BookmarkPlus, X, Repeat2 } from 'lucide-react'
 import ExcelJS from 'exceljs/dist/exceljs.min.js'
 import type { CellValue } from 'exceljs'
 import { jsPDF } from 'jspdf'
@@ -9,8 +9,10 @@ import * as api from '../api/transactionsApi'
 import * as accountsApi from '../api/accountsApi'
 import * as categoriesApi from '../api/categoriesApi'
 import * as dataTransferApi from '../api/dataTransferApi'
-import type { Transaction, TransactionPayload } from '../api/transactionsApi'
+import type { Category } from '../api/categoriesApi'
+import type { RecurringTransaction, RecurringTransactionPayload, Transaction, TransactionPayload } from '../api/transactionsApi'
 import type { Account } from '../api/accountsApi'
+import RecurringTransactionsPanel from '../components/RecurringTransactionsPanel'
 import TransactionModal from '../components/TransactionModal'
 import { extractApiError, notify } from '../lib/toast'
 import { renderCategoryIcon } from '../lib/categoryIcons'
@@ -31,10 +33,13 @@ interface TransactionsPageProps {
 
 function TransactionsPage({ userRole }: TransactionsPageProps) {
   const [accounts, setAccounts] = useState<Account[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [selectedAccountId, setSelectedAccountId] = useState<string>('')
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [recurringTransactions, setRecurringTransactions] = useState<RecurringTransaction[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [recurringLoading, setRecurringLoading] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
   const importInputRef = useRef<HTMLInputElement | null>(null)
@@ -48,10 +53,6 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
   const isPremiumUser = userRole === 'PREMIUM' || userRole === 'ADMIN'
   const maxAccounts = userRole === 'ADMIN' ? 20 : userRole === 'PREMIUM' ? 10 : 3
   const savedFiltersStorageKey = `met_saved_filters_${userRole.toLowerCase()}`
-
-  useEffect(() => {
-    void initialize()
-  }, [])
 
   useEffect(() => {
     if (!isPremiumUser) {
@@ -84,27 +85,6 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
     void fetchTransactions(selectedAccountId)
   }, [selectedAccountId])
 
-  const initialize = async () => {
-    try {
-      setLoading(true)
-      const fetchedAccounts = await accountsApi.getAccounts()
-      setAccounts(fetchedAccounts)
-
-      const storedId = localStorage.getItem('met_account_id')
-      const defaultAccountId = fetchedAccounts.find((acc) => acc.id === storedId)?.id || fetchedAccounts[0]?.id || ''
-      setSelectedAccountId(defaultAccountId)
-
-      if (defaultAccountId) {
-        const txs = await api.getTransactions(defaultAccountId)
-        setTransactions(txs)
-      }
-    } catch (error) {
-      console.error('Error initializing transactions page:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const fetchTransactions = async (accountId: string) => {
     try {
       setLoading(true)
@@ -118,6 +98,64 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
       setLoading(false)
     }
   }
+
+  const fetchRecurringTransactions = useCallback(async () => {
+    if (!isPremiumUser) {
+      setRecurringTransactions([])
+      return
+    }
+
+    try {
+      setRecurringLoading(true)
+      const data = await api.getRecurringTransactions()
+      setRecurringTransactions(data)
+    } catch (error) {
+      console.error('Error fetching recurring transactions:', error)
+      notify.error('Failed to load recurring templates.')
+    } finally {
+      setRecurringLoading(false)
+    }
+  }, [isPremiumUser])
+
+  useEffect(() => {
+    const run = async () => {
+      try {
+        setLoading(true)
+        const [fetchedAccounts, fetchedCategories] = await Promise.all([
+          accountsApi.getAccounts(),
+          categoriesApi.getCategories()
+        ])
+        setAccounts(fetchedAccounts)
+        setCategories(fetchedCategories)
+
+        const storedId = localStorage.getItem('met_account_id')
+        const defaultAccountId = fetchedAccounts.find((acc) => acc.id === storedId)?.id || fetchedAccounts[0]?.id || ''
+        setSelectedAccountId(defaultAccountId)
+
+        const tasks: Array<Promise<unknown>> = []
+
+        if (defaultAccountId) {
+          tasks.push(
+            api.getTransactions(defaultAccountId).then((txs) => {
+              setTransactions(txs)
+            })
+          )
+        }
+
+        if (isPremiumUser) {
+          tasks.push(fetchRecurringTransactions())
+        }
+
+        await Promise.all(tasks)
+      } catch (error) {
+        console.error('Error initializing transactions page:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void run()
+  }, [fetchRecurringTransactions, isPremiumUser])
 
   const handleCreateAccount = async () => {
     if (accounts.length >= maxAccounts) {
@@ -168,6 +206,63 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
       await api.deleteTransaction(id)
       notify.success('Transaction deleted.')
       await fetchTransactions(selectedAccountId)
+    }
+  }
+
+  const handleCreateRecurringTransaction = async (data: RecurringTransactionPayload) => {
+    try {
+      await api.createRecurringTransaction(data)
+      notify.success('Recurring template created.')
+      await fetchRecurringTransactions()
+    } catch (error) {
+      notify.error(extractApiError(error, 'Failed to create recurring template.'))
+      throw error
+    }
+  }
+
+  const handleUpdateRecurringTransaction = async (id: string, data: Partial<RecurringTransactionPayload>) => {
+    try {
+      await api.updateRecurringTransaction(id, data)
+      notify.success('Recurring template updated.')
+      await fetchRecurringTransactions()
+      if (selectedAccountId) {
+        await fetchTransactions(selectedAccountId)
+      }
+    } catch (error) {
+      notify.error(extractApiError(error, 'Failed to update recurring template.'))
+      throw error
+    }
+  }
+
+  const handleDeleteRecurringTransaction = async (id: string) => {
+    if (!window.confirm('Delete this recurring template? Future due items will no longer be generated.')) return
+
+    try {
+      await api.deleteRecurringTransaction(id)
+      notify.success('Recurring template deleted.')
+      await fetchRecurringTransactions()
+    } catch (error) {
+      notify.error(extractApiError(error, 'Failed to delete recurring template.'))
+      throw error
+    }
+  }
+
+  const handleRunDueRecurringTransactions = async () => {
+    try {
+      const result = await api.runDueRecurringTransactions()
+      if (result.createdCount === 0) {
+        notify.info('No recurring items are due right now.')
+      } else {
+        notify.success(`Generated ${result.createdCount} recurring transaction(s).`)
+      }
+
+      await Promise.all([
+        fetchRecurringTransactions(),
+        selectedAccountId ? fetchTransactions(selectedAccountId) : Promise.resolve()
+      ])
+    } catch (error) {
+      notify.error(extractApiError(error, 'Failed to run due recurring items.'))
+      throw error
     }
   }
 
@@ -419,6 +514,12 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
     if (!transaction.metadata || typeof transaction.metadata !== 'object') return false
     const importedValue = (transaction.metadata as Record<string, unknown>).imported
     return importedValue === true
+  }
+
+  const isRecurringTransaction = (transaction: Transaction) => {
+    if (!transaction.metadata || typeof transaction.metadata !== 'object') return false
+    const recurringValue = (transaction.metadata as Record<string, unknown>).recurring
+    return recurringValue === true
   }
 
   const normalizeExcelCell = (value: CellValue) => {
@@ -810,6 +911,20 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
         )}
       </header>
 
+      <RecurringTransactionsPanel
+        accounts={accounts}
+        categories={categories}
+        currencyCode={currencyCode}
+        isPremiumUser={isPremiumUser}
+        loading={recurringLoading}
+        recurringTransactions={recurringTransactions}
+        userRole={userRole}
+        onCreate={handleCreateRecurringTransaction}
+        onDelete={handleDeleteRecurringTransaction}
+        onRunDue={handleRunDueRecurringTransactions}
+        onUpdate={handleUpdateRecurringTransaction}
+      />
+
       <div className="bg-card border rounded-2xl shadow-sm overflow-hidden">
         <div className="px-5 md:px-6 py-4 border-b bg-muted/30 text-sm font-semibold text-muted-foreground">
           {selectedAccount ? `Showing transactions for ${selectedAccount.name}` : 'No account selected'}
@@ -825,6 +940,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
                   transaction={t}
                   formatCurrency={formatCurrency}
                   isImported={isImportedTransaction(t)}
+                  isRecurring={isRecurringTransaction(t)}
                   onEdit={() => { setSelectedTransaction(t); setIsModalOpen(true) }}
                   onDelete={() => handleDelete(t.id)}
                 />
@@ -847,6 +963,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
               transaction={t}
               formatCurrency={formatCurrency}
               isImported={isImportedTransaction(t)}
+              isRecurring={isRecurringTransaction(t)}
               onEdit={() => { setSelectedTransaction(t); setIsModalOpen(true) }}
               onDelete={() => handleDelete(t.id)}
             />
@@ -890,12 +1007,14 @@ const TransactionRow = ({
   transaction: t,
   formatCurrency,
   isImported,
+  isRecurring,
   onEdit,
   onDelete
 }: {
   transaction: Transaction
   formatCurrency: (value: number) => string
   isImported: boolean
+  isRecurring: boolean
   onEdit: () => void
   onDelete: () => void
 }) => (
@@ -913,6 +1032,12 @@ const TransactionRow = ({
             <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
               <Tag size={11} />
               Imported
+            </span>
+          )}
+          {isRecurring && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+              <Repeat2 size={11} />
+              Recurring
             </span>
           )}
         </div>
@@ -959,12 +1084,14 @@ const MobileTransactionCard = ({
   transaction: t,
   formatCurrency,
   isImported,
+  isRecurring,
   onEdit,
   onDelete
 }: {
   transaction: Transaction
   formatCurrency: (value: number) => string
   isImported: boolean
+  isRecurring: boolean
   onEdit: () => void
   onDelete: () => void
 }) => (
@@ -977,6 +1104,12 @@ const MobileTransactionCard = ({
             <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
               <Tag size={10} />
               Imported
+            </span>
+          )}
+          {isRecurring && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+              <Repeat2 size={10} />
+              Recurring
             </span>
           )}
         </div>
