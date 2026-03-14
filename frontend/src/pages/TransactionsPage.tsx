@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowDown, ArrowUp, Download, Edit2, FileUp, Plus, Trash2, WalletCards } from 'lucide-react'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import * as api from '../api/transactionsApi'
@@ -141,22 +141,43 @@ function TransactionsPage() {
       return
     }
 
-    const rows = transactions.map((tx) => ({
-      Date: new Date(tx.date).toLocaleDateString(),
-      Type: tx.type,
-      Category: tx.category?.name || '',
-      Account: tx.account?.name || '',
-      Description: tx.description || '',
-      Amount: tx.amount
-    }))
+    const workbook = new ExcelJS.Workbook()
+    const worksheet = workbook.addWorksheet('Transactions')
+    worksheet.columns = [
+      { header: 'Date', key: 'date', width: 14 },
+      { header: 'Type', key: 'type', width: 12 },
+      { header: 'Category', key: 'category', width: 20 },
+      { header: 'Account', key: 'account', width: 20 },
+      { header: 'Description', key: 'description', width: 32 },
+      { header: 'Amount', key: 'amount', width: 14 }
+    ]
 
-    const worksheet = XLSX.utils.json_to_sheet(rows)
-    const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Transactions')
-    XLSX.writeFile(workbook, `transactions-${new Date().toISOString().slice(0, 10)}.xlsx`)
+    transactions.forEach((tx) => {
+      worksheet.addRow({
+        date: new Date(tx.date).toISOString().slice(0, 10),
+        type: tx.type,
+        category: tx.category?.name || '',
+        account: tx.account?.name || '',
+        description: tx.description || '',
+        amount: tx.amount
+      })
+    })
+
+    const buffer = await workbook.xlsx.writeBuffer()
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `transactions-${new Date().toISOString().slice(0, 10)}.xlsx`
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    URL.revokeObjectURL(url)
 
     try {
-      await dataTransferApi.createTransferLog({ action: 'EXPORT', format: 'EXCEL', rows: rows.length })
+      await dataTransferApi.createTransferLog({ action: 'EXPORT', format: 'EXCEL', rows: transactions.length })
     } catch {
       // logging should not block export UX
     }
@@ -208,18 +229,44 @@ function TransactionsPage() {
     return null
   }
 
+  const normalizeExcelCell = (value: ExcelJS.CellValue) => {
+    if (value instanceof Date) return value.toISOString().slice(0, 10)
+    if (typeof value === 'object' && value !== null) {
+      if ('text' in value && typeof value.text === 'string') return value.text
+      if ('result' in value && typeof value.result !== 'undefined') return String(value.result)
+    }
+    return String(value ?? '').trim()
+  }
+
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
     try {
       const arrayBuffer = await file.arrayBuffer()
-      const workbook = XLSX.read(arrayBuffer, { type: 'array' })
-      const firstSheet = workbook.SheetNames[0]
-      const sheet = workbook.Sheets[firstSheet]
-      const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' })
+      const workbook = new ExcelJS.Workbook()
+      await workbook.xlsx.load(arrayBuffer)
+      const sheet = workbook.worksheets[0]
+      if (!sheet) {
+        notify.warning('Excel file has no sheets.')
+        return
+      }
 
-      if (!rawRows.length) {
+      const headerRow = sheet.getRow(1)
+      const headerIndexMap = new Map<string, number>()
+      headerRow.eachCell((cell, colNumber) => {
+        const key = normalizeExcelCell(cell.value).toLowerCase()
+        if (key) headerIndexMap.set(key, colNumber)
+      })
+
+      const requiredHeaders = ['type', 'category', 'amount']
+      const hasRequiredHeaders = requiredHeaders.every((key) => headerIndexMap.has(key))
+      if (!hasRequiredHeaders) {
+        notify.warning('Excel format invalid. Required headers: Type, Category, Amount.')
+        return
+      }
+
+      if (sheet.rowCount < 2) {
         notify.warning('Excel file has no rows.')
         return
       }
@@ -228,12 +275,19 @@ function TransactionsPage() {
       const flatCategories = categories.flatMap((cat) => [cat, ...(cat.subcategories || [])])
       let importedCount = 0
 
-      for (const row of rawRows) {
-        const amount = Number(row.Amount ?? row.amount ?? row.Value ?? row.value)
-        const type = parseTransactionType(row.Type ?? row.type)
-        const categoryName = String(row.Category ?? row.category ?? '').trim()
-        const description = String(row.Description ?? row.description ?? '').trim()
-        const dateValue = String(row.Date ?? row.date ?? '').trim()
+      for (let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber += 1) {
+        const row = sheet.getRow(rowNumber)
+        const getValue = (header: string) => {
+          const col = headerIndexMap.get(header.toLowerCase())
+          if (!col) return ''
+          return normalizeExcelCell(row.getCell(col).value)
+        }
+
+        const amount = Number(getValue('amount'))
+        const type = parseTransactionType(getValue('type'))
+        const categoryName = getValue('category')
+        const description = getValue('description')
+        const dateValue = getValue('date')
 
         if (!Number.isFinite(amount) || amount <= 0 || !type || !categoryName) {
           continue
@@ -323,7 +377,7 @@ function TransactionsPage() {
             <input
               ref={importInputRef}
               type="file"
-              accept=".xlsx,.xls"
+              accept=".xlsx"
               className="hidden"
               onChange={handleImportExcel}
             />

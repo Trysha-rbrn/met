@@ -212,6 +212,16 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
               </div>
 
               <form className="space-y-4 pt-2" onSubmit={(e) => e.preventDefault()}>
+                <input
+                  type="text"
+                  name="username"
+                  autoComplete="username"
+                  value={user?.email || ''}
+                  readOnly
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  className="sr-only"
+                />
                 <div className="flex items-center gap-2 text-foreground">
                   <Lock size={18} />
                   <h3 className="text-base font-bold">Password</h3>
@@ -327,6 +337,16 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
           </p>
 
           <form onSubmit={handleResetData} className="space-y-3 border rounded-xl p-4">
+            <input
+              type="text"
+              name="username"
+              autoComplete="username"
+              value={user?.email || ''}
+              readOnly
+              tabIndex={-1}
+              aria-hidden="true"
+              className="sr-only"
+            />
             <p className="text-sm font-semibold text-foreground flex items-center gap-2">
               <DatabaseZap size={16} />
               Reset financial data
@@ -354,6 +374,16 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
           </form>
 
           <form onSubmit={handleDeleteAccount} className="space-y-3 border rounded-xl p-4">
+            <input
+              type="text"
+              name="username"
+              autoComplete="username"
+              value={user?.email || ''}
+              readOnly
+              tabIndex={-1}
+              aria-hidden="true"
+              className="sr-only"
+            />
             <p className="text-sm font-semibold text-foreground">Delete account</p>
             <p className="text-xs text-muted-foreground">
               Permanently deletes your account and all related data.
