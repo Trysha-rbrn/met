@@ -211,6 +211,11 @@ function Dashboard({ isSidebarCollapsed }: DashboardProps) {
     ? `${customStart || '?'} to ${customEnd || '?'}`
     : rangeBoundaries.label
 
+  const recentTransactions = useMemo(
+    () => [...periodTransactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 6),
+    [periodTransactions]
+  )
+
   return (
     <div className="space-y-6 sm:space-y-8">
       <header className="space-y-3">
@@ -239,6 +244,34 @@ function Dashboard({ isSidebarCollapsed }: DashboardProps) {
           </span>
         </div>
       </header>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
+        <StatCard
+          title="Current Balance"
+          amount={formatCurrency(summary.totalBalance)}
+          icon={Coins}
+          color="text-primary"
+          glow
+        />
+        <StatCard
+          title="Period Net"
+          amount={formatCurrency(periodTotals.net)}
+          icon={TrendingUp}
+          color={periodTotals.net >= 0 ? 'text-emerald-500' : 'text-rose-500'}
+        />
+        <StatCard
+          title="Period Income"
+          amount={formatCurrency(periodTotals.income)}
+          icon={ArrowUp}
+          color="text-emerald-500"
+        />
+        <StatCard
+          title="Period Expenses"
+          amount={formatCurrency(periodTotals.expenses)}
+          icon={ArrowDown}
+          color="text-rose-500"
+        />
+      </div>
 
       <section className="bg-card border rounded-2xl p-5 md:p-6 space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -300,34 +333,6 @@ function Dashboard({ isSidebarCollapsed }: DashboardProps) {
         )}
       </section>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
-        <StatCard
-          title="Current Balance"
-          amount={formatCurrency(summary.totalBalance)}
-          icon={Coins}
-          color="text-primary"
-          glow
-        />
-        <StatCard
-          title="Period Net"
-          amount={formatCurrency(periodTotals.net)}
-          icon={TrendingUp}
-          color={periodTotals.net >= 0 ? 'text-emerald-500' : 'text-rose-500'}
-        />
-        <StatCard
-          title="Period Income"
-          amount={formatCurrency(periodTotals.income)}
-          icon={ArrowUp}
-          color="text-emerald-500"
-        />
-        <StatCard
-          title="Period Expenses"
-          amount={formatCurrency(periodTotals.expenses)}
-          icon={ArrowDown}
-          color="text-rose-500"
-        />
-      </div>
-
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 min-w-0">
         <div className="bg-card border rounded-2xl p-5 md:p-6 min-w-0">
           <h3 className="text-lg font-bold mb-4">Balance Trend</h3>
@@ -379,6 +384,32 @@ function Dashboard({ isSidebarCollapsed }: DashboardProps) {
           </div>
         </div>
       </div>
+
+      <section className="bg-card border rounded-2xl p-5 md:p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-bold">Recent Activity (Snapshot)</h3>
+          <span className="text-xs text-muted-foreground">Less critical detail</span>
+        </div>
+        {recentTransactions.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No transactions in selected period.</p>
+        ) : (
+          <div className="divide-y">
+            {recentTransactions.map((tx) => (
+              <div key={tx.id} className="py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold truncate">{tx.description || tx.category?.name || 'Transaction'}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {tx.category?.name || 'Uncategorized'} • {new Date(tx.date).toLocaleDateString()}
+                  </p>
+                </div>
+                <p className={`font-bold ${tx.type === 'INCOME' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                  {tx.type === 'INCOME' ? '+' : '-'}{formatCurrency(tx.amount)}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   )
 }

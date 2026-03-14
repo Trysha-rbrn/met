@@ -13,3 +13,6 @@
 ## Infrastructure
 - Integrate transactional email provider (e.g. Resend/SendGrid/SMTP) for auth-related emails.
 - Add retry + failure logging for outbound email jobs.
+
+## Roles / Subscription
+- Add `PREMIUM` user tier and subscription lifecycle (upgrade, downgrade, billing hooks).

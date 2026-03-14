@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, UserRole } from '@prisma/client'
+import { writeAuditLog } from '../lib/auditLog.ts'
 
 const prisma = new PrismaClient()
 const toParamString = (value: unknown) => {
@@ -28,6 +29,7 @@ export const getCategories = async (req: Request, res: Response, next: NextFunct
 
 export const createCategory = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).userId
+  const userRole = (req as any).userRole as UserRole
   const { name, type, parentId, icon } = req.body
   try {
     const category = await prisma.category.create({
@@ -39,6 +41,13 @@ export const createCategory = async (req: Request, res: Response, next: NextFunc
         parentId: parentId || null
       }
     })
+    await writeAuditLog({
+      actorUserId: userId,
+      actorRole: userRole,
+      targetUserId: userId,
+      action: 'CATEGORY_CREATE',
+      details: { categoryId: category.id, name: category.name, type: category.type }
+    })
     res.status(201).json(category)
   } catch (error) {
     next(error)
@@ -47,6 +56,7 @@ export const createCategory = async (req: Request, res: Response, next: NextFunc
 
 export const updateCategory = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).userId
+  const userRole = (req as any).userRole as UserRole
   const id = toParamString(req.params.id)
   const { name, type, parentId, icon } = req.body
   try {
@@ -67,6 +77,13 @@ export const updateCategory = async (req: Request, res: Response, next: NextFunc
         parentId: parentId || undefined
       }
     })
+    await writeAuditLog({
+      actorUserId: userId,
+      actorRole: userRole,
+      targetUserId: userId,
+      action: 'CATEGORY_UPDATE',
+      details: { categoryId: category.id }
+    })
     res.json(category)
   } catch (error) {
     next(error)
@@ -75,6 +92,7 @@ export const updateCategory = async (req: Request, res: Response, next: NextFunc
 
 export const deleteCategory = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).userId
+  const userRole = (req as any).userRole as UserRole
   const id = toParamString(req.params.id)
   try {
     if (!id) {
@@ -86,6 +104,13 @@ export const deleteCategory = async (req: Request, res: Response, next: NextFunc
 
     await prisma.category.delete({
       where: { id }
+    })
+    await writeAuditLog({
+      actorUserId: userId,
+      actorRole: userRole,
+      targetUserId: userId,
+      action: 'CATEGORY_DELETE',
+      details: { categoryId: id, categoryName: existing.name }
     })
     res.json({ message: 'Category deleted successfully' })
   } catch (error) {

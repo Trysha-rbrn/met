@@ -4,6 +4,8 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const ICON_KEY_REGEX = /^[A-Za-z][A-Za-z0-9]{0,39}$/
 const TX_TYPES = new Set(['INCOME', 'EXPENSE'])
+const TRANSFER_ACTIONS = new Set(['IMPORT', 'EXPORT'])
+const TRANSFER_FORMATS = new Set(['EXCEL', 'PDF'])
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -278,5 +280,52 @@ export const validateCategoryIdParam = (req: Request, res: Response, next: NextF
   if (!isValidUuid(req.params.id)) {
     return sendValidationError(res, ['Category id must be a valid UUID.'])
   }
+  return next()
+}
+
+export const validateCreateTransferLog = (req: Request, res: Response, next: NextFunction) => {
+  if (!isPlainObject(req.body)) {
+    return sendValidationError(res, ['Invalid request body.'])
+  }
+
+  const { action, format, rows } = req.body
+  const errors: string[] = []
+
+  if (!TRANSFER_ACTIONS.has(String(action))) errors.push('Action must be IMPORT or EXPORT.')
+  if (!TRANSFER_FORMATS.has(String(format))) errors.push('Format must be EXCEL or PDF.')
+  if (typeof rows !== 'undefined') {
+    const parsedRows = Number(rows)
+    if (!Number.isInteger(parsedRows) || parsedRows < 0) {
+      errors.push('Rows must be a non-negative integer.')
+    } else {
+      req.body.rows = parsedRows
+    }
+  } else {
+    req.body.rows = 0
+  }
+
+  if (errors.length > 0) return sendValidationError(res, errors)
+
+  req.body.action = String(action)
+  req.body.format = String(format)
+  return next()
+}
+
+export const validateUserIdParam = (req: Request, res: Response, next: NextFunction) => {
+  if (!isValidUuid(req.params.id)) {
+    return sendValidationError(res, ['User id must be a valid UUID.'])
+  }
+  return next()
+}
+
+export const validateAdminSetBanState = (req: Request, res: Response, next: NextFunction) => {
+  if (!isPlainObject(req.body)) {
+    return sendValidationError(res, ['Invalid request body.'])
+  }
+
+  if (typeof req.body.isBanned !== 'boolean') {
+    return sendValidationError(res, ['isBanned must be a boolean value.'])
+  }
+
   return next()
 }

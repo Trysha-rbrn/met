@@ -15,9 +15,14 @@ model User {
   email        String        @unique
   password     String
   name         String?
+  role         UserRole      @default(BASIC)
+  isBanned     Boolean       @default(false)
   accounts     Account[]
   categories   Category[]
+  transferLogs DataTransferLog[]
   transactions Transaction[]
+  auditLogsAsActor AuditLog[] @relation("AuditActor")
+  auditLogsAsTarget AuditLog[] @relation("AuditTarget")
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 }
@@ -71,4 +76,47 @@ model Transaction {
 enum TransactionType {
   INCOME
   EXPENSE
+}
+
+model DataTransferLog {
+  id        String             @id @default(uuid())
+  userId    String
+  user      User               @relation(fields: [userId], references: [id])
+  action    DataTransferAction
+  format    DataTransferFormat
+  rows      Int                @default(0)
+  createdAt DateTime           @default(now())
+
+  @@index([userId, createdAt])
+}
+
+enum DataTransferAction {
+  IMPORT
+  EXPORT
+}
+
+enum DataTransferFormat {
+  EXCEL
+  PDF
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorUserId String?
+  actorUser   User?    @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  targetUserId String?
+  targetUser  User?    @relation("AuditTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+  actorRole   UserRole @default(BASIC)
+  action      String
+  details     Json?
+  createdAt   DateTime @default(now())
+
+  @@index([actorUserId, createdAt])
+  @@index([targetUserId, createdAt])
+  @@index([action, createdAt])
+}
+
+enum UserRole {
+  BASIC
+  ADMIN
 }

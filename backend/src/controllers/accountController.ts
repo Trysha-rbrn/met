@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, UserRole } from '@prisma/client'
+import { writeAuditLog } from '../lib/auditLog.ts'
 
 const prisma = new PrismaClient()
 const MAX_ACCOUNTS_PER_USER = 3
@@ -20,6 +21,7 @@ export const getAccounts = async (req: Request, res: Response, next: NextFunctio
 
 export const createAccount = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).userId
+  const userRole = (req as any).userRole as UserRole
   const { name } = req.body
 
   try {
@@ -51,6 +53,13 @@ export const createAccount = async (req: Request, res: Response, next: NextFunct
         userId,
         name: normalizedName
       }
+    })
+    await writeAuditLog({
+      actorUserId: userId,
+      actorRole: userRole,
+      targetUserId: userId,
+      action: 'ACCOUNT_CREATE',
+      details: { accountId: account.id, accountName: account.name }
     })
 
     res.status(201).json(account)

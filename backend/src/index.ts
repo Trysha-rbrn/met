@@ -5,6 +5,8 @@ import categoryRoutes from './routes/categoryRoutes.ts'
 import transactionRoutes from './routes/transactionRoutes.ts'
 import authRoutes from './routes/authRoutes.ts'
 import accountRoutes from './routes/accountRoutes.ts'
+import dataTransferRoutes from './routes/dataTransferRoutes.ts'
+import adminRoutes from './routes/adminRoutes.ts'
 import { errorHandler, notFoundHandler } from './middleware/errorMiddleware.ts'
 import { env } from './config/env.ts'
 
@@ -45,6 +47,8 @@ app.use('/api/auth', authRoutes)
 app.use('/api/categories', categoryRoutes)
 app.use('/api/transactions', transactionRoutes)
 app.use('/api/accounts', accountRoutes)
+app.use('/api/data-transfer', dataTransferRoutes)
+app.use('/api/admin', adminRoutes)
 
 app.get('/health', (req, res) => {
   res.json({ status: 'API is running' })

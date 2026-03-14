@@ -1,8 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowDown, ArrowUp, Edit2, Plus, Trash2, WalletCards } from 'lucide-react'
+import { ArrowDown, ArrowUp, Download, Edit2, FileUp, Plus, Trash2, WalletCards } from 'lucide-react'
+import * as XLSX from 'xlsx'
+import { jsPDF } from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import * as api from '../api/transactionsApi'
 import * as accountsApi from '../api/accountsApi'
+import * as categoriesApi from '../api/categoriesApi'
+import * as dataTransferApi from '../api/dataTransferApi'
 import type { Transaction, TransactionPayload } from '../api/transactionsApi'
 import type { Account } from '../api/accountsApi'
 import TransactionModal from '../components/TransactionModal'
@@ -18,6 +23,7 @@ function TransactionsPage() {
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
+  const importInputRef = useRef<HTMLInputElement | null>(null)
 
   const currencyCode = localStorage.getItem('met_currency') || 'USD'
 
@@ -129,6 +135,142 @@ function TransactionsPage() {
     [accounts, selectedAccountId]
   )
 
+  const exportExcel = async () => {
+    if (!transactions.length) {
+      notify.info('No transactions to export.')
+      return
+    }
+
+    const rows = transactions.map((tx) => ({
+      Date: new Date(tx.date).toLocaleDateString(),
+      Type: tx.type,
+      Category: tx.category?.name || '',
+      Account: tx.account?.name || '',
+      Description: tx.description || '',
+      Amount: tx.amount
+    }))
+
+    const worksheet = XLSX.utils.json_to_sheet(rows)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Transactions')
+    XLSX.writeFile(workbook, `transactions-${new Date().toISOString().slice(0, 10)}.xlsx`)
+
+    try {
+      await dataTransferApi.createTransferLog({ action: 'EXPORT', format: 'EXCEL', rows: rows.length })
+    } catch {
+      // logging should not block export UX
+    }
+
+    notify.success('Excel export completed.')
+  }
+
+  const exportPdf = async () => {
+    if (!transactions.length) {
+      notify.info('No transactions to export.')
+      return
+    }
+
+    const doc = new jsPDF()
+    doc.setFontSize(14)
+    doc.text('Transactions Export', 14, 14)
+
+    autoTable(doc, {
+      startY: 22,
+      head: [['Date', 'Type', 'Category', 'Account', 'Description', 'Amount']],
+      body: transactions.map((tx) => [
+        new Date(tx.date).toLocaleDateString(),
+        tx.type,
+        tx.category?.name || '',
+        tx.account?.name || '',
+        tx.description || '',
+        tx.amount.toFixed(2)
+      ])
+    })
+
+    doc.save(`transactions-${new Date().toISOString().slice(0, 10)}.pdf`)
+
+    try {
+      await dataTransferApi.createTransferLog({ action: 'EXPORT', format: 'PDF', rows: transactions.length })
+    } catch {
+      // logging should not block export UX
+    }
+
+    notify.success('PDF export completed.')
+  }
+
+  const handleImportExcelClick = () => {
+    importInputRef.current?.click()
+  }
+
+  const parseTransactionType = (value: unknown): 'INCOME' | 'EXPENSE' | null => {
+    const normalized = String(value || '').trim().toUpperCase()
+    if (normalized === 'INCOME' || normalized === 'EXPENSE') return normalized
+    return null
+  }
+
+  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    try {
+      const arrayBuffer = await file.arrayBuffer()
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' })
+      const firstSheet = workbook.SheetNames[0]
+      const sheet = workbook.Sheets[firstSheet]
+      const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' })
+
+      if (!rawRows.length) {
+        notify.warning('Excel file has no rows.')
+        return
+      }
+
+      const categories = await categoriesApi.getCategories()
+      const flatCategories = categories.flatMap((cat) => [cat, ...(cat.subcategories || [])])
+      let importedCount = 0
+
+      for (const row of rawRows) {
+        const amount = Number(row.Amount ?? row.amount ?? row.Value ?? row.value)
+        const type = parseTransactionType(row.Type ?? row.type)
+        const categoryName = String(row.Category ?? row.category ?? '').trim()
+        const description = String(row.Description ?? row.description ?? '').trim()
+        const dateValue = String(row.Date ?? row.date ?? '').trim()
+
+        if (!Number.isFinite(amount) || amount <= 0 || !type || !categoryName) {
+          continue
+        }
+
+        const category = flatCategories.find(
+          (c) => c.type === type && c.name.toLowerCase() === categoryName.toLowerCase()
+        )
+        if (!category) continue
+
+        await api.createTransaction({
+          amount: amount.toString(),
+          description,
+          date: dateValue || new Date().toISOString().slice(0, 10),
+          type,
+          categoryId: category.id,
+          accountId: selectedAccountId
+        })
+        importedCount += 1
+      }
+
+      await fetchTransactions(selectedAccountId)
+
+      try {
+        await dataTransferApi.createTransferLog({ action: 'IMPORT', format: 'EXCEL', rows: importedCount })
+      } catch {
+        // logging should not block import UX
+      }
+
+      notify.success(`Excel import completed. Imported ${importedCount} transaction(s).`)
+    } catch (error) {
+      notify.error(extractApiError(error, 'Failed to import Excel file.'))
+    } finally {
+      e.target.value = ''
+    }
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -143,16 +285,49 @@ function TransactionsPage() {
             <h1 className="text-2xl sm:text-3xl font-black tracking-tighter">Transactions</h1>
             <p className="text-sm sm:text-base text-muted-foreground font-medium">All your income and expense records for selected account.</p>
           </div>
-          <motion.button
-            onClick={() => { setSelectedTransaction(null); setIsModalOpen(true) }}
-            className="w-full md:w-auto min-h-11 flex items-center justify-center gap-2 bg-primary text-primary-foreground px-5 py-3 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 active:scale-95"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            disabled={!selectedAccountId}
-          >
-            <Plus size={20} />
-            New Transaction
-          </motion.button>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full md:w-auto">
+            <button
+              type="button"
+              onClick={exportExcel}
+              className="min-h-11 px-4 py-2.5 rounded-xl border font-semibold inline-flex items-center justify-center gap-2 hover:bg-muted"
+            >
+              <Download size={16} />
+              Export Excel
+            </button>
+            <button
+              type="button"
+              onClick={exportPdf}
+              className="min-h-11 px-4 py-2.5 rounded-xl border font-semibold inline-flex items-center justify-center gap-2 hover:bg-muted"
+            >
+              <Download size={16} />
+              Export PDF
+            </button>
+            <button
+              type="button"
+              onClick={handleImportExcelClick}
+              className="min-h-11 px-4 py-2.5 rounded-xl border font-semibold inline-flex items-center justify-center gap-2 hover:bg-muted"
+            >
+              <FileUp size={16} />
+              Import Excel
+            </button>
+            <motion.button
+              onClick={() => { setSelectedTransaction(null); setIsModalOpen(true) }}
+              className="sm:col-span-3 min-h-11 flex items-center justify-center gap-2 bg-primary text-primary-foreground px-5 py-3 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 active:scale-95"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              disabled={!selectedAccountId}
+            >
+              <Plus size={20} />
+              New Transaction
+            </motion.button>
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={handleImportExcel}
+            />
+          </div>
         </div>
 
         <div className="bg-card border rounded-2xl p-4 md:p-5 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">

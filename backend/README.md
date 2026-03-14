@@ -83,3 +83,20 @@ Komande:
 npx prisma migrate dev
 npx prisma generate
 ```
+
+## Admin role i panel
+- Role sistem: `BASIC` i `ADMIN`.
+- `ADMIN` se dodeljuje pri registraciji ako je email u `ADMIN_EMAILS`.
+- Novi middleware: `auth` puni `userId` + `userRole` i blokira banovane korisnike.
+- Novi admin routes (`/api/admin`):
+  - `GET /users`
+  - `GET /users/:id`
+  - `PATCH /users/:id/ban`
+  - `DELETE /users/:id`
+  - `GET /audit-logs`
+
+## Audit
+- Dodata `AuditLog` tabela za kljucne user/admin akcije.
+
+## Dodatni env
+- `ADMIN_EMAILS` (comma-separated lista admin email adresa)

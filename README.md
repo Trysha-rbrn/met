@@ -195,3 +195,54 @@ Repo sada ima workflow-e za automatizaciju kvaliteta, sigurnosti, dokumentacije 
 - `frontend/Dockerfile`
 - `frontend/nginx.conf` (SPA fallback)
 - `.dockerignore` fajlovi za oba servisa
+
+## Settings update (#1)
+- Settings su podeljene u jasne pod-sekcije:
+  - `Account Profile`: name, email (read-only), password, currency
+  - `Appearance`: theme mode
+  - `Danger Zone`: 
+    - `Clear User Data` (uz lozinku) -> brise transakcije, kategorije i dodatne naloge, ostavlja samo `Primary`
+    - `Delete Account` (uz lozinku)
+
+## Novi Auth endpoint
+- `POST /api/auth/reset-data`
+  - body: `{ password }`
+  - efekat: ciscenje korisnickih finansijskih podataka i zadrzavanje samo `Primary` naloga
+
+## Data Transfer (Issue #3)
+- Transactions stranica podrzava:
+  - Export u Excel (`.xlsx`)
+  - Export u PDF (`.pdf`)
+  - Import iz Excel (`.xlsx/.xls`)
+- Svaki import/export upisuje aktivnost u Data Transfer log.
+- Settings prikazuje poslednje import/export aktivnosti u posebnoj pod-sekciji.
+
+### Data Transfer API
+- `GET /api/data-transfer`
+- `POST /api/data-transfer`
+  - body: `{ action: 'IMPORT'|'EXPORT', format: 'EXCEL'|'PDF', rows: number }`
+
+## Administrator (#4)
+- Uveden role sistem: `BASIC` i `ADMIN`.
+- `BASIC` je default za sve korisnike.
+- `ADMIN` se dodeljuje pri registraciji ako je email u `ADMIN_EMAILS` listi.
+- Frontend ruta `/admin` je dostupna samo admin korisnicima.
+
+### Admin API (ADMIN only)
+- `GET /api/admin/users` (pretraga, filter, sortiranje)
+- `GET /api/admin/users/:id` (detalji korisnika i podaci)
+- `PATCH /api/admin/users/:id/ban` (ban/unban)
+- `DELETE /api/admin/users/:id` (brisanje korisnika i podataka)
+- `GET /api/admin/audit-logs` (audit zapisi)
+
+### Audit Log
+- Uveden `AuditLog` model za bitne user/admin akcije.
+- Loguju se auth, profile, account/category/transaction i import/export akcije.
+
+### Novi backend env parametar
+- `ADMIN_EMAILS`
+  - comma-separated email lista za admin registraciju
+  - primer: `ADMIN_EMAILS=admin@example.com,owner@example.com`
+
+### Napomena
+- Premium/subscription tier je ostavljen kao sledeci korak (trenutno implementirano `BASIC` + `ADMIN`).

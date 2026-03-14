@@ -7,6 +7,8 @@ export interface AuthUser {
   id: string
   name: string
   email: string
+  role: 'BASIC' | 'ADMIN'
+  isBanned: boolean
 }
 
 export interface AuthResponse {
@@ -62,3 +64,10 @@ export const deleteAccount = async (password: string) => {
   });
   return response.data;
 };
+
+export const resetUserData = async (password: string) => {
+  const response = await axios.post(`${API_URL}/reset-data`, { password }, {
+    headers: getAuthHeaders()
+  })
+  return response.data
+}

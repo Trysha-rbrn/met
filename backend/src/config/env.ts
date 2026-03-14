@@ -28,6 +28,10 @@ export const env = {
     .filter(Boolean),
   authRateLimitWindowMs: parsePositiveInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000),
   authRateLimitMax: parsePositiveInt(process.env.AUTH_RATE_LIMIT_MAX, 20),
+  adminEmails: (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean),
   allowPrivateNetworkOrigins: process.env.ALLOW_PRIVATE_NETWORK_ORIGINS === 'true',
   serverInstanceId: randomUUID(),
 }

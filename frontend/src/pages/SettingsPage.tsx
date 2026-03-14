@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
-import { User, Lock, Trash2, AlertCircle, Coins, Palette } from 'lucide-react'
+﻿import { useEffect, useRef, useState } from 'react'
+import { User, Lock, Trash2, AlertCircle, Coins, Palette, DatabaseZap } from 'lucide-react'
 import * as api from '../api/authApi'
+import * as dataTransferApi from '../api/dataTransferApi'
 import type { AuthUser } from '../api/authApi'
+import type { TransferLog } from '../api/dataTransferApi'
 import { extractApiError, notify } from '../lib/toast'
 
 type ThemeMode = 'light' | 'dark' | 'system'
@@ -27,7 +29,9 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [deletePassword, setDeletePassword] = useState('')
+  const [resetDataPassword, setResetDataPassword] = useState('')
   const [currency, setCurrency] = useState(localStorage.getItem('met_currency') || 'USD')
+  const [transferLogs, setTransferLogs] = useState<TransferLog[]>([])
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [isSavingPassword, setIsSavingPassword] = useState(false)
   const didHydrateRef = useRef(false)
@@ -42,6 +46,18 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
     setName(user?.name || '')
     lastSavedRef.current.name = user?.name || ''
   }, [user])
+
+  useEffect(() => {
+    const loadTransferLogs = async () => {
+      try {
+        const logs = await dataTransferApi.getTransferLogs()
+        setTransferLogs(logs)
+      } catch {
+        // no-op
+      }
+    }
+    void loadTransferLogs()
+  }, [])
 
   useEffect(() => {
     if (!didHydrateRef.current) {
@@ -105,6 +121,30 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
     onThemeModeChange(mode)
   }
 
+  const handleResetData = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!resetDataPassword) {
+      notify.warning('Please enter your password to clear data.')
+      return
+    }
+
+    if (!window.confirm('This will delete transactions, categories and extra accounts. Only Primary account will remain. Continue?')) {
+      return
+    }
+
+    try {
+      await api.resetUserData(resetDataPassword)
+      setResetDataPassword('')
+      localStorage.removeItem('met_account_id')
+      notify.success('Financial data cleared. Primary account preserved.')
+      const logs = await dataTransferApi.getTransferLogs()
+      setTransferLogs(logs)
+      window.location.reload()
+    } catch (error: unknown) {
+      notify.error(extractApiError(error, 'Failed to clear data.'))
+    }
+  }
+
   const handleDeleteAccount = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!deletePassword) {
@@ -136,13 +176,13 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
         </p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-card border rounded-2xl overflow-hidden">
-          <div className="p-6 md:p-8 space-y-6">
-            <section className="space-y-4">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="xl:col-span-2 space-y-6">
+          <section className="bg-card border rounded-2xl overflow-hidden">
+            <div className="p-6 md:p-8 space-y-6">
               <div className="flex items-center gap-2 text-foreground">
                 <User size={18} />
-                <h2 className="text-lg font-bold">Profile</h2>
+                <h2 className="text-lg font-bold">Account Profile</h2>
               </div>
 
               <div className="space-y-2">
@@ -158,38 +198,58 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                   className="w-full px-4 py-3 bg-background border rounded-xl outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
-            </section>
-
-            <section className="space-y-4 pt-2">
-              <div className="flex items-center gap-2 text-foreground">
-                <Palette size={18} />
-                <h2 className="text-lg font-bold">Theme</h2>
-              </div>
 
               <div className="space-y-2">
-                <label htmlFor="settings-theme" className="text-sm font-semibold text-muted-foreground">Theme mode</label>
-                <select
-                  id="settings-theme"
-                  name="theme"
-                  value={themeMode}
-                  onChange={(e) => handleThemeModeChange(e.target.value as ThemeMode)}
-                  className="w-full px-4 py-3 bg-background border rounded-xl outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  <option value="system">System</option>
-                  <option value="light">Light</option>
-                  <option value="dark">Dark</option>
-                </select>
+                <label htmlFor="settings-email" className="text-sm font-semibold text-muted-foreground">Email</label>
+                <input
+                  id="settings-email"
+                  name="email"
+                  type="email"
+                  value={user?.email || ''}
+                  readOnly
+                  className="w-full px-4 py-3 bg-muted/50 border rounded-xl outline-none text-muted-foreground"
+                />
               </div>
-            </section>
 
-            <section className="space-y-4 pt-2">
-              <div className="flex items-center gap-2 text-foreground">
-                <Coins size={18} />
-                <h2 className="text-lg font-bold">Currency</h2>
-              </div>
+              <form className="space-y-4 pt-2" onSubmit={(e) => e.preventDefault()}>
+                <div className="flex items-center gap-2 text-foreground">
+                  <Lock size={18} />
+                  <h3 className="text-base font-bold">Password</h3>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="settings-current-password" className="text-sm font-semibold text-muted-foreground">Current password</label>
+                  <input
+                    id="settings-current-password"
+                    name="currentPassword"
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="Required to change password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="w-full px-4 py-3 bg-background border rounded-xl outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="settings-password" className="text-sm font-semibold text-muted-foreground">New password</label>
+                  <input
+                    id="settings-password"
+                    name="newPassword"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="Leave blank to keep current password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full px-4 py-3 bg-background border rounded-xl outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+              </form>
 
               <div className="space-y-2">
-                <label htmlFor="settings-currency" className="text-sm font-semibold text-muted-foreground">Preferred currency</label>
+                <label htmlFor="settings-currency" className="text-sm font-semibold text-muted-foreground inline-flex items-center gap-2">
+                  <Coins size={15} /> Preferred currency
+                </label>
                 <select
                   id="settings-currency"
                   name="currency"
@@ -203,62 +263,101 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                   ))}
                 </select>
               </div>
-            </section>
-
-            <form
-              className="space-y-4 pt-2"
-              onSubmit={(e) => e.preventDefault()}
-            >
-              <div className="flex items-center gap-2 text-foreground">
-                <Lock size={18} />
-                <h2 className="text-lg font-bold">Password</h2>
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="settings-current-password" className="text-sm font-semibold text-muted-foreground">Current password</label>
-                <input
-                  id="settings-current-password"
-                  name="currentPassword"
-                  type="password"
-                  autoComplete="current-password"
-                  placeholder="Required to change password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-background border rounded-xl outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="settings-password" className="text-sm font-semibold text-muted-foreground">New password</label>
-                <input
-                  id="settings-password"
-                  name="newPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="Leave blank to keep current password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-background border rounded-xl outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-            </form>
-
-            <div className="p-3 rounded-xl text-sm font-semibold flex items-center gap-2 bg-muted/40 border border-border text-muted-foreground">
-              <AlertCircle size={16} />
-              Settings are auto-saved and status is shown via toast notifications.
             </div>
+          </section>
+
+          <section className="bg-card border rounded-2xl p-6 md:p-8 space-y-4">
+            <div className="flex items-center gap-2 text-foreground">
+              <Palette size={18} />
+              <h2 className="text-lg font-bold">Appearance</h2>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="settings-theme" className="text-sm font-semibold text-muted-foreground">Theme mode</label>
+              <select
+                id="settings-theme"
+                name="theme"
+                value={themeMode}
+                onChange={(e) => handleThemeModeChange(e.target.value as ThemeMode)}
+                className="w-full px-4 py-3 bg-background border rounded-xl outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="system">System</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+            </div>
+          </section>
+
+          <section className="bg-card border rounded-2xl p-6 md:p-8 space-y-4">
+            <div className="flex items-center gap-2 text-foreground">
+              <DatabaseZap size={18} />
+              <h2 className="text-lg font-bold">Import/Export Activity</h2>
+            </div>
+            {transferLogs.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No import/export activity yet.</p>
+            ) : (
+              <div className="divide-y rounded-xl border bg-background">
+                {transferLogs.slice(0, 10).map((log) => (
+                  <div key={log.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold">
+                      {log.action} • {log.format}
+                      <span className="text-xs text-muted-foreground ml-2">Rows: {log.rows}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(log.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <div className="p-3 rounded-xl text-sm font-semibold flex items-center gap-2 bg-muted/40 border border-border text-muted-foreground">
+            <AlertCircle size={16} />
+            Settings are auto-saved and status is shown via toast notifications.
           </div>
         </div>
 
-        <aside className="bg-card border rounded-2xl p-6 space-y-4 h-fit">
+        <aside className="bg-card border rounded-2xl p-6 space-y-5 h-fit">
           <div className="flex items-center gap-2 text-rose-600">
             <AlertCircle size={18} />
             <h2 className="text-lg font-bold">Danger Zone</h2>
           </div>
           <p className="text-sm text-muted-foreground">
-            Enter your password and confirm to permanently delete your account and all financial data.
+            Sensitive actions require your password confirmation.
           </p>
-          <form onSubmit={handleDeleteAccount} className="space-y-3">
+
+          <form onSubmit={handleResetData} className="space-y-3 border rounded-xl p-4">
+            <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <DatabaseZap size={16} />
+              Reset financial data
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Deletes transactions, categories and extra accounts. Keeps only Primary account.
+            </p>
+            <input
+              id="settings-reset-data-password"
+              name="resetDataPassword"
+              type="password"
+              autoComplete="current-password"
+              placeholder="Confirm password"
+              value={resetDataPassword}
+              onChange={(e) => setResetDataPassword(e.target.value)}
+              className="w-full px-4 py-3 bg-background border rounded-xl outline-none focus:ring-2 focus:ring-amber-500/20"
+            />
+            <button
+              type="submit"
+              className="w-full flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-xl font-bold transition-colors"
+            >
+              <DatabaseZap size={18} />
+              Clear User Data
+            </button>
+          </form>
+
+          <form onSubmit={handleDeleteAccount} className="space-y-3 border rounded-xl p-4">
+            <p className="text-sm font-semibold text-foreground">Delete account</p>
+            <p className="text-xs text-muted-foreground">
+              Permanently deletes your account and all related data.
+            </p>
             <input
               id="settings-delete-password"
               name="deletePassword"

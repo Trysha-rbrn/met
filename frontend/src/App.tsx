@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom'
-import { Wallet, Settings, LayoutDashboard, LogOut, User, BarChart, PanelLeftClose, PanelLeftOpen, Sparkles, ShieldCheck, Smartphone } from 'lucide-react'
+import { Wallet, Settings, LayoutDashboard, LogOut, User, BarChart, PanelLeftClose, PanelLeftOpen, Sparkles, ShieldCheck, Smartphone, Shield } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ToastContainer } from 'react-toastify'
 
@@ -10,15 +10,17 @@ import TransactionsPage from './pages/TransactionsPage'
 import AuthPage from './pages/AuthPage'
 import SettingsPage from './pages/SettingsPage'
 import NotFoundPage from './pages/NotFoundPage'
+import AdminPage from './pages/AdminPage'
 import * as authApi from './api/authApi'
 import type { AuthUser } from './api/authApi'
 import { notify } from './lib/toast'
 
-const navItems = [
+const baseNavItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/transactions', label: 'Transactions', icon: BarChart },
   { path: '/categories', label: 'Categories', icon: Settings },
   { path: '/settings', label: 'Settings', icon: User },
+  { path: '/admin', label: 'Admin', icon: Shield, adminOnly: true },
 ]
 
 type ThemeMode = 'light' | 'dark' | 'system'
@@ -149,6 +151,7 @@ function App() {
         ) : (
           <div className="min-h-screen">
             <Sidebar
+              user={user}
               isCollapsed={isSidebarCollapsed}
               onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             />
@@ -161,13 +164,14 @@ function App() {
                     <Route path="/transactions" element={<TransactionsPage />} />
                     <Route path="/categories" element={<CategoriesPage />} />
                     <Route path="/settings" element={<SettingsPage user={user} onUserUpdate={setUser} themeMode={themeMode} onThemeModeChange={setThemeMode} />} />
+                    <Route path="/admin" element={user?.role === 'ADMIN' ? <AdminPage /> : <NotFoundPage isAuthenticated />} />
                     <Route path="*" element={<NotFoundPage isAuthenticated />} />
                   </Routes>
                 </AnimatePresence>
               </main>
               <AppFooter />
             </div>
-            <MobileNav />
+            <MobileNav user={user} />
           </div>
         )}
       </div>
@@ -181,13 +185,16 @@ function App() {
 }
 
 function Sidebar({
+  user,
   isCollapsed,
   onToggle
 }: {
+  user: AuthUser | null
   isCollapsed: boolean
   onToggle: () => void
 }) {
   const location = useLocation()
+  const navItems = baseNavItems.filter((item) => !item.adminOnly || user?.role === 'ADMIN')
   
   return (
     <aside className={`hidden lg:flex flex-col border-r bg-background fixed top-0 left-0 h-screen z-40 transition-[width] duration-200 ease-out will-change-[width] ${isCollapsed ? 'w-24' : 'w-64'}`}>
@@ -258,12 +265,13 @@ function Header({ user, onLogout }: HeaderProps) {
   )
 }
 
-function MobileNav() {
+function MobileNav({ user }: { user: AuthUser | null }) {
   const location = useLocation()
+  const navItems = baseNavItems.filter((item) => !item.adminOnly || user?.role === 'ADMIN')
 
   return (
     <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="grid grid-cols-4 px-2 py-2">
+      <div className={`grid px-2 py-2 ${navItems.length === 5 ? 'grid-cols-5' : 'grid-cols-4'}`}>
         {navItems.map((item) => (
           <Link
             key={item.path}

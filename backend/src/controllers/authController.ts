@@ -1,9 +1,10 @@
 import { NextFunction, Request, Response } from 'express'
-import { PrismaClient, Prisma } from '@prisma/client'
+import { PrismaClient, Prisma, UserRole } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import type { SignOptions } from 'jsonwebtoken'
 import { env } from '../config/env.ts'
+import { writeAuditLog } from '../lib/auditLog.ts'
 
 const prisma = new PrismaClient()
 
@@ -15,12 +16,15 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     if (existingUser) return res.status(400).json({ error: 'User already exists' })
 
     const hashedPassword = await bcrypt.hash(password, env.bcryptRounds)
+    const role: UserRole = env.adminEmails.includes(email.toLowerCase()) ? 'ADMIN' : 'BASIC'
+
     const user = await prisma.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
         data: {
           email,
           password: hashedPassword,
-          name
+          name,
+          role
         }
       })
 
@@ -56,13 +60,23 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 
       return createdUser
     })
+    await writeAuditLog({
+      actorUserId: user.id,
+      actorRole: user.role,
+      targetUserId: user.id,
+      action: 'AUTH_REGISTER',
+      details: { email: user.email }
+    })
 
     const token = jwt.sign(
       { userId: user.id, sid: env.serverInstanceId },
       env.jwtSecret,
       { expiresIn: env.jwtExpiresIn as SignOptions['expiresIn'] }
     )
-    res.status(201).json({ user: { id: user.id, email: user.email, name: user.name }, token })
+    res.status(201).json({
+      user: { id: user.id, email: user.email, name: user.name, role: user.role, isBanned: user.isBanned },
+      token
+    })
   } catch (error) {
     next(error)
   }
@@ -73,6 +87,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
   try {
     const user = await prisma.user.findUnique({ where: { email } })
     if (!user) return res.status(400).json({ error: 'Invalid credentials' })
+    if (user.isBanned) return res.status(403).json({ error: 'Your account is banned. Contact support.' })
 
     const isPasswordValid = await bcrypt.compare(password, user.password)
     if (!isPasswordValid) return res.status(400).json({ error: 'Invalid credentials' })
@@ -82,7 +97,16 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       env.jwtSecret,
       { expiresIn: env.jwtExpiresIn as SignOptions['expiresIn'] }
     )
-    res.json({ user: { id: user.id, email: user.email, name: user.name }, token })
+    await writeAuditLog({
+      actorUserId: user.id,
+      actorRole: user.role,
+      targetUserId: user.id,
+      action: 'AUTH_LOGIN_SUCCESS'
+    })
+    res.json({
+      user: { id: user.id, email: user.email, name: user.name, role: user.role, isBanned: user.isBanned },
+      token
+    })
   } catch (error) {
     next(error)
   }
@@ -92,7 +116,7 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
   try {
     const user = await prisma.user.findUnique({
       where: { id: (req as any).userId },
-      select: { id: true, email: true, name: true }
+      select: { id: true, email: true, name: true, role: true, isBanned: true }
     })
     res.json(user)
   } catch (error) {
@@ -102,6 +126,7 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
 
 export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).userId
+  const userRole = (req as any).userRole as UserRole
   const { name, currentPassword, newPassword } = req.body
   try {
     const updateData: Prisma.UserUpdateInput = {}
@@ -130,7 +155,14 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
     const user = await prisma.user.update({
       where: { id: userId },
       data: updateData,
-      select: { id: true, email: true, name: true }
+      select: { id: true, email: true, name: true, role: true, isBanned: true }
+    })
+    await writeAuditLog({
+      actorUserId: userId,
+      actorRole: userRole,
+      targetUserId: userId,
+      action: newPassword ? 'PROFILE_PASSWORD_CHANGE' : 'PROFILE_UPDATE',
+      details: { nameUpdated: typeof name !== 'undefined' }
     })
     res.json(user)
   } catch (error) {
@@ -140,6 +172,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
 
 export const deleteUser = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).userId
+  const userRole = (req as any).userRole as UserRole
   const { password } = req.body
   try {
     if (!password) {
@@ -153,13 +186,82 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
     if (!isPasswordValid) {
       return res.status(400).json({ error: 'Password is incorrect.' })
     }
+    await writeAuditLog({
+      actorUserId: userId,
+      actorRole: userRole,
+      targetUserId: userId,
+      action: 'ACCOUNT_DELETE_SELF',
+      details: { email: existingUser.email }
+    })
 
     // Delete all related data (Prisma can do this if onDelete is set, but manually here to be safe)
     await prisma.transaction.deleteMany({ where: { userId } })
     await prisma.account.deleteMany({ where: { userId } })
     await prisma.category.deleteMany({ where: { userId } })
+    await prisma.dataTransferLog.deleteMany({ where: { userId } })
     await prisma.user.delete({ where: { id: userId } })
     res.json({ message: 'User and all related data deleted successfully' })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const resetUserData = async (req: Request, res: Response, next: NextFunction) => {
+  const userId = (req as any).userId
+  const userRole = (req as any).userRole as UserRole
+  const { password } = req.body
+
+  try {
+    const existingUser = await prisma.user.findUnique({ where: { id: userId } })
+    if (!existingUser) return res.status(404).json({ error: 'User not found' })
+
+    const isPasswordValid = await bcrypt.compare(password, existingUser.password)
+    if (!isPasswordValid) {
+      return res.status(400).json({ error: 'Password is incorrect.' })
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.transaction.deleteMany({ where: { userId } })
+
+      // Delete subcategories first, then top-level categories.
+      await tx.category.deleteMany({ where: { userId, parentId: { not: null } } })
+      await tx.category.deleteMany({ where: { userId, parentId: null } })
+
+      const accounts = await tx.account.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'asc' }
+      })
+
+      let primaryAccount = accounts.find((acc) => acc.name.toLowerCase() === 'primary') || null
+
+      if (!primaryAccount && accounts.length > 0) {
+        primaryAccount = await tx.account.update({
+          where: { id: accounts[0].id },
+          data: { name: 'Primary' }
+        })
+      }
+
+      if (!primaryAccount) {
+        primaryAccount = await tx.account.create({
+          data: { userId, name: 'Primary' }
+        })
+      }
+
+      await tx.account.deleteMany({
+        where: {
+          userId,
+          id: { not: primaryAccount.id }
+        }
+      })
+    })
+    await writeAuditLog({
+      actorUserId: userId,
+      actorRole: userRole,
+      targetUserId: userId,
+      action: 'ACCOUNT_RESET_DATA'
+    })
+
+    res.json({ message: 'User financial data cleared. Primary account preserved.' })
   } catch (error) {
     next(error)
   }
