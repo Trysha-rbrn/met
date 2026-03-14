@@ -7,6 +7,7 @@ import type { Transaction, TransactionPayload } from '../api/transactionsApi'
 import type { Account } from '../api/accountsApi'
 import TransactionModal from '../components/TransactionModal'
 import { extractApiError, notify } from '../lib/toast'
+import { renderCategoryIcon } from '../lib/categoryIcons'
 
 const MAX_ACCOUNTS = 3
 
@@ -261,7 +262,11 @@ const TransactionRow = ({
       </div>
       <div>
         <p className="font-bold">{t.description || 'Transaction'}</p>
-        <p className="text-sm text-muted-foreground">{t.category?.name || 'Uncategorized'} - {t.account?.name || 'No account'}</p>
+        <p className="text-sm text-muted-foreground inline-flex items-center gap-2">
+          <CategoryBadge icon={t.category?.icon} name={t.category?.name || 'Uncategorized'} />
+          <span>-</span>
+          <span>{t.account?.name || 'No account'}</span>
+        </p>
       </div>
     </td>
     <td className="p-4 md:p-6 text-right">
@@ -311,7 +316,11 @@ const MobileTransactionCard = ({
     <div className="flex items-center justify-between gap-3">
       <div className="min-w-0">
         <p className="font-bold truncate">{t.description || 'Transaction'}</p>
-        <p className="text-xs text-muted-foreground truncate">{t.category?.name || 'Uncategorized'} - {t.account?.name || 'No account'}</p>
+        <p className="text-xs text-muted-foreground truncate inline-flex items-center gap-2">
+          <CategoryBadge icon={t.category?.icon} name={t.category?.name || 'Uncategorized'} />
+          <span>-</span>
+          <span>{t.account?.name || 'No account'}</span>
+        </p>
       </div>
       <div className={`text-right font-bold ${t.type === 'INCOME' ? 'text-emerald-500' : 'text-rose-500'}`}>
         {t.type === 'INCOME' ? '+' : '-'}{formatCurrency(t.amount)}
@@ -330,6 +339,17 @@ const MobileTransactionCard = ({
     </div>
   </div>
 )
+
+const CategoryBadge = ({ icon, name }: { icon?: string; name: string }) => {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className="h-4 w-4 rounded-full bg-muted inline-flex items-center justify-center">
+        {renderCategoryIcon(icon, 10)}
+      </span>
+      <span>{name}</span>
+    </span>
+  )
+}
 
 const MobileTransactionSkeleton = () => (
   <div className="rounded-xl border p-4 space-y-3 animate-pulse">

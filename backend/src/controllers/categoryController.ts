@@ -28,11 +28,12 @@ export const getCategories = async (req: Request, res: Response, next: NextFunct
 
 export const createCategory = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).userId
-  const { name, type, parentId } = req.body
+  const { name, type, parentId, icon } = req.body
   try {
     const category = await prisma.category.create({
       data: {
         name,
+        icon: icon || 'Tag',
         type, 
         userId,
         parentId: parentId || null
@@ -47,7 +48,7 @@ export const createCategory = async (req: Request, res: Response, next: NextFunc
 export const updateCategory = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).userId
   const id = toParamString(req.params.id)
-  const { name, type, parentId } = req.body
+  const { name, type, parentId, icon } = req.body
   try {
     if (!id) {
       return res.status(400).json({ error: 'Category id is required.' })
@@ -61,6 +62,7 @@ export const updateCategory = async (req: Request, res: Response, next: NextFunc
       where: { id },
       data: {
         name,
+        icon: typeof icon !== 'undefined' ? icon : undefined,
         type,
         parentId: parentId || undefined
       }

@@ -4,10 +4,12 @@ import * as categoryApi from '../api/categoriesApi'
 import type { Transaction, TransactionPayload, TransactionType } from '../api/transactionsApi'
 import type { Account } from '../api/accountsApi'
 import { notify } from '../lib/toast'
+import { renderCategoryIcon } from '../lib/categoryIcons'
 
 interface Category {
   id: string
   name: string
+  icon: string
   type: 'INCOME' | 'EXPENSE'
   subcategories?: Category[]
 }
@@ -92,6 +94,9 @@ function TransactionModal({ isOpen, onClose, onSave, initialData, accounts, defa
   }
 
   const filteredCategories = categories.filter((c) => c.type === type)
+  const selectedCategory = filteredCategories
+    .flatMap((cat) => [cat, ...(cat.subcategories || [])])
+    .find((cat) => cat.id === categoryId)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/55 backdrop-blur-md">
@@ -210,6 +215,14 @@ function TransactionModal({ isOpen, onClose, onSave, initialData, accounts, defa
                 </React.Fragment>
               ))}
             </select>
+            {selectedCategory && (
+              <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="h-5 w-5 rounded-full bg-muted inline-flex items-center justify-center">
+                  {renderCategoryIcon(selectedCategory.icon, 12)}
+                </span>
+                {selectedCategory.name}
+              </span>
+            )}
           </label>
 
           <label className="space-y-2">

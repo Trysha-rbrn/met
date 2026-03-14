@@ -1,16 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Plus, Edit2, Trash2, ChevronRight, ChevronDown, Tag } from 'lucide-react'
 import * as api from '../api/categoriesApi'
+import type { Category } from '../api/categoriesApi'
 import CategoryModal from '../components/CategoryModal'
 import { notify } from '../lib/toast'
-
-interface Category {
-  id: string
-  name: string
-  type: 'INCOME' | 'EXPENSE'
-  parentId: string | null
-  subcategories?: Category[]
-}
+import { renderCategoryIcon } from '../lib/categoryIcons'
 
 function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([])
@@ -77,7 +71,7 @@ function CategoriesPage() {
     }
   }
 
-  const handleSaveCategory = async (data: { name: string; type: string; parentId: string | null }) => {
+  const handleSaveCategory = async (data: { name: string; icon: string; type: string; parentId: string | null }) => {
     try {
       if (modalInitialData) {
         await api.updateCategory(modalInitialData.id, data)
@@ -202,6 +196,7 @@ function CategoryItem({ category, isExpanded, onToggle, onEdit, onDelete, onSubE
             <div className="w-5" />
           )}
           <span className="font-semibold text-slate-700 dark:text-slate-200">{category.name}</span>
+          <CategoryIcon icon={category.icon} />
         </div>
         
         <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
@@ -226,7 +221,10 @@ function CategoryItem({ category, isExpanded, onToggle, onEdit, onDelete, onSubE
         <div className="bg-slate-50/50 dark:bg-slate-800/20 pl-12 pr-4 py-2 space-y-1 border-t border-slate-100 dark:border-slate-800">
           {category.subcategories?.map(sub => (
             <div key={sub.id} className="flex items-center justify-between py-2 group/sub">
-              <span className="text-slate-600 dark:text-slate-400 text-sm font-medium">{sub.name}</span>
+              <span className="text-slate-600 dark:text-slate-400 text-sm font-medium inline-flex items-center gap-2">
+                <CategoryIcon icon={sub.icon} small />
+                {sub.name}
+              </span>
               <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover/sub:opacity-100 transition-opacity">
                 <button 
                   onClick={() => onSubEdit(sub)}
@@ -253,6 +251,14 @@ function CategoryItem({ category, isExpanded, onToggle, onEdit, onDelete, onSubE
         </div>
       )}
     </div>
+  )
+}
+
+function CategoryIcon({ icon, small = false }: { icon: string; small?: boolean }) {
+  return (
+    <span className={`inline-flex items-center justify-center rounded-full bg-muted/60 ${small ? 'h-5 w-5' : 'h-7 w-7'}`}>
+      {renderCategoryIcon(icon, small ? 12 : 15, 'text-muted-foreground')}
+    </span>
   )
 }
 

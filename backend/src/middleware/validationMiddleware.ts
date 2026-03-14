@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const ICON_KEY_REGEX = /^[A-Za-z][A-Za-z0-9]{0,39}$/
 const TX_TYPES = new Set(['INCOME', 'EXPENSE'])
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
@@ -196,6 +197,86 @@ export const validateUpdateTransaction = (req: Request, res: Response, next: Nex
 export const validateTransactionIdParam = (req: Request, res: Response, next: NextFunction) => {
   if (!isValidUuid(req.params.id)) {
     return sendValidationError(res, ['Transaction id must be a valid UUID.'])
+  }
+  return next()
+}
+
+export const validateCreateCategory = (req: Request, res: Response, next: NextFunction) => {
+  if (!isPlainObject(req.body)) {
+    return sendValidationError(res, ['Invalid request body.'])
+  }
+
+  const { name, type, parentId, icon } = req.body
+  const normalizedName = toTrimmedString(name)
+  const normalizedIcon = typeof icon === 'string' ? icon.trim() : 'Tag'
+  const errors: string[] = []
+
+  if (!normalizedName || normalizedName.length > 80) errors.push('Category name must be between 1 and 80 characters.')
+  if (!TX_TYPES.has(String(type))) errors.push('Type must be INCOME or EXPENSE.')
+  if (typeof parentId !== 'undefined' && parentId !== null && !isValidUuid(parentId)) {
+    errors.push('parentId must be a valid UUID or null.')
+  }
+  if (!ICON_KEY_REGEX.test(normalizedIcon)) errors.push('Icon key is invalid.')
+
+  if (errors.length > 0) return sendValidationError(res, errors)
+
+  req.body.name = normalizedName
+  req.body.icon = normalizedIcon
+  req.body.type = String(type)
+  req.body.parentId = parentId ?? null
+  return next()
+}
+
+export const validateUpdateCategory = (req: Request, res: Response, next: NextFunction) => {
+  if (!isValidUuid(req.params.id)) {
+    return sendValidationError(res, ['Category id must be a valid UUID.'])
+  }
+
+  if (!isPlainObject(req.body)) {
+    return sendValidationError(res, ['Invalid request body.'])
+  }
+
+  const hasAnyField = ['name', 'type', 'parentId', 'icon'].some((field) => typeof req.body[field] !== 'undefined')
+  if (!hasAnyField) {
+    return sendValidationError(res, ['At least one field must be provided for update.'])
+  }
+
+  const { name, type, parentId, icon } = req.body
+  const errors: string[] = []
+
+  if (typeof name !== 'undefined') {
+    const normalizedName = toTrimmedString(name)
+    if (!normalizedName || normalizedName.length > 80) {
+      errors.push('Category name must be between 1 and 80 characters.')
+    } else {
+      req.body.name = normalizedName
+    }
+  }
+
+  if (typeof type !== 'undefined' && !TX_TYPES.has(String(type))) errors.push('Type must be INCOME or EXPENSE.')
+  if (typeof type !== 'undefined') req.body.type = String(type)
+
+  if (typeof parentId !== 'undefined' && parentId !== null && !isValidUuid(parentId)) {
+    errors.push('parentId must be a valid UUID or null.')
+  }
+  if (typeof parentId !== 'undefined') req.body.parentId = parentId ?? null
+
+  if (typeof icon !== 'undefined') {
+    const normalizedIcon = toTrimmedString(icon)
+    if (!ICON_KEY_REGEX.test(normalizedIcon)) {
+      errors.push('Icon key is invalid.')
+    } else {
+      req.body.icon = normalizedIcon
+    }
+  }
+
+  if (errors.length > 0) return sendValidationError(res, errors)
+  return next()
+}
+
+export const validateCategoryIdParam = (req: Request, res: Response, next: NextFunction) => {
+  if (!isValidUuid(req.params.id)) {
+    return sendValidationError(res, ['Category id must be a valid UUID.'])
   }
   return next()
 }

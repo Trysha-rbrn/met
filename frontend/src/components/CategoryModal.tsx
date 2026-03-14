@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { notify } from '../lib/toast'
+import { CATEGORY_ICON_OPTIONS, renderCategoryIcon, type CategoryIconKey } from '../lib/categoryIcons'
 
 interface Category {
   id: string
   name: string
+  icon: string
   type: 'INCOME' | 'EXPENSE'
   parentId: string | null
 }
@@ -12,7 +14,7 @@ interface Category {
 interface CategoryModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (data: { name: string; type: string; parentId: string | null }) => Promise<void>
+  onSave: (data: { name: string; icon: string; type: string; parentId: string | null }) => Promise<void>
   initialData?: Category | null
   parentId?: string | null
   type?: 'INCOME' | 'EXPENSE'
@@ -20,15 +22,18 @@ interface CategoryModalProps {
 
 function CategoryModal({ isOpen, onClose, onSave, initialData, parentId, type }: CategoryModalProps) {
   const [name, setName] = useState('')
+  const [icon, setIcon] = useState<CategoryIconKey>('Tag')
   const [selectedType, setSelectedType] = useState<'INCOME' | 'EXPENSE'>(type || 'EXPENSE')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     if (initialData) {
       setName(initialData.name)
+      setIcon((initialData.icon as CategoryIconKey) || 'Tag')
       setSelectedType(initialData.type)
     } else {
       setName('')
+      setIcon('Tag')
       setSelectedType(type || 'EXPENSE')
     }
   }, [initialData, type, isOpen])
@@ -43,6 +48,7 @@ function CategoryModal({ isOpen, onClose, onSave, initialData, parentId, type }:
     try {
       await onSave({
         name,
+        icon,
         type: selectedType,
         parentId: initialData ? initialData.parentId : (parentId || null)
       })
@@ -116,6 +122,33 @@ function CategoryModal({ isOpen, onClose, onSave, initialData, parentId, type }:
               </div>
             </div>
           )}
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Icon
+            </label>
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+              {CATEGORY_ICON_OPTIONS.map((option) => {
+                const active = option.key === icon
+                return (
+                  <button
+                    key={option.key}
+                    type="button"
+                    onClick={() => setIcon(option.key)}
+                    className={`px-2 py-2 rounded-xl border transition-all flex flex-col items-center gap-1 ${
+                      active
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }`}
+                    title={option.label}
+                  >
+                    {renderCategoryIcon(option.key, 16)}
+                    <span className="text-[10px] font-semibold leading-none">{option.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
 
           <div className="pt-2">
             <button

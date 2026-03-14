@@ -25,12 +25,25 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       })
 
       // Seed initial categories for new user
-      const incomeCategories = ['Salary', 'Family', 'Bonus']
-      const expenseCategories = ['Rent', 'Groceries', 'Transport', 'Entertainment']
+      const incomeCategories: Array<{ name: string; icon: string }> = [
+        { name: 'Salary', icon: 'Wallet' },
+        { name: 'Family', icon: 'HeartHandshake' },
+        { name: 'Bonus', icon: 'Sparkles' }
+      ]
+      const expenseCategories: Array<{ name: string; icon: string }> = [
+        { name: 'Rent', icon: 'House' },
+        { name: 'Groceries', icon: 'ShoppingCart' },
+        { name: 'Transport', icon: 'Car' },
+        { name: 'Entertainment', icon: 'Gamepad2' }
+      ]
 
       await Promise.all([
-        ...incomeCategories.map((categoryName) => tx.category.create({ data: { name: categoryName, type: 'INCOME', userId: createdUser.id } })),
-        ...expenseCategories.map((categoryName) => tx.category.create({ data: { name: categoryName, type: 'EXPENSE', userId: createdUser.id } }))
+        ...incomeCategories.map((category) => tx.category.create({
+          data: { name: category.name, icon: category.icon, type: 'INCOME', userId: createdUser.id }
+        })),
+        ...expenseCategories.map((category) => tx.category.create({
+          data: { name: category.name, icon: category.icon, type: 'EXPENSE', userId: createdUser.id }
+        }))
       ])
 
       // Create default bank-like account

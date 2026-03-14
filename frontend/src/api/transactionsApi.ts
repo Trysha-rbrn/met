@@ -15,6 +15,7 @@ export interface Transaction {
   category?: {
     id: string
     name: string
+    icon?: string
     type: TransactionType
   }
   accountId?: string | null

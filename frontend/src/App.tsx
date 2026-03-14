@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom'
 import { Wallet, Settings, LayoutDashboard, LogOut, User, BarChart, PanelLeftClose, PanelLeftOpen, Sparkles, ShieldCheck, Smartphone } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ToastContainer } from 'react-toastify'
@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard'
 import TransactionsPage from './pages/TransactionsPage'
 import AuthPage from './pages/AuthPage'
 import SettingsPage from './pages/SettingsPage'
+import NotFoundPage from './pages/NotFoundPage'
 import * as authApi from './api/authApi'
 import type { AuthUser } from './api/authApi'
 import { notify } from './lib/toast'
@@ -138,7 +139,10 @@ function App() {
         {!token ? (
           <div className="min-h-screen flex flex-col">
             <div className="flex-1">
-              <AuthPage onLogin={handleLogin} />
+              <Routes>
+                <Route path="/" element={<AuthPage onLogin={handleLogin} />} />
+                <Route path="*" element={<NotFoundPage isAuthenticated={false} />} />
+              </Routes>
             </div>
             <AppFooter />
           </div>
@@ -157,7 +161,7 @@ function App() {
                     <Route path="/transactions" element={<TransactionsPage />} />
                     <Route path="/categories" element={<CategoriesPage />} />
                     <Route path="/settings" element={<SettingsPage user={user} onUserUpdate={setUser} themeMode={themeMode} onThemeModeChange={setThemeMode} />} />
-                    <Route path="*" element={<Navigate to="/" />} />
+                    <Route path="*" element={<NotFoundPage isAuthenticated />} />
                   </Routes>
                 </AnimatePresence>
               </main>

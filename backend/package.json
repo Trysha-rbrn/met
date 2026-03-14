@@ -5,7 +5,11 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit --allowImportingTsExtensions",
+    "prisma:generate": "prisma generate",
+    "test": "npm run typecheck",
+    "test:security": "npm audit --audit-level=high"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

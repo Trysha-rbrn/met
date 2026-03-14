@@ -37,6 +37,7 @@ model Account {
 model Category {
   id            String          @id @default(uuid())
   name          String
+  icon          String          @default("Tag")
   type          TransactionType // INCOME or EXPENSE
   userId        String
   user          User            @relation(fields: [userId], references: [id])

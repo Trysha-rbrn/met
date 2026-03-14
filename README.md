@@ -168,3 +168,30 @@ Ako na telefonu dobijes "An unexpected error occurred" ili poruku da server nije
 - Posle restarta backend servera, svi prethodno izdati tokeni postaju nevalidni i korisnici se automatski izloguju pri sledecoj proveri.
 - Frontend radi heartbeat proveru sesije na svakih 15 sekundi (`/api/auth/me`) i pri `401` radi auto-logout.
 - Ako korisnik izgubi konekciju (offline -> online), aplikacija obavezno radi logout i trazi novo logovanje.
+
+## GitHub Actions (CI/CD)
+Repo sada ima workflow-e za automatizaciju kvaliteta, sigurnosti, dokumentacije i Docker image-a:
+
+- `.github/workflows/ci.yml`
+  - Frontend: `npm ci`, `lint`, `typecheck`, `build`
+  - Backend: `npm ci`, `prisma generate`, `typecheck`
+
+- `.github/workflows/security.yml`
+  - `npm audit` (high+) za frontend i backend
+  - CodeQL analiza za JavaScript/TypeScript
+
+- `.github/workflows/docs.yml`
+  - Automatski generise docs artefakte (`docs/auto`) putem `scripts/generate-docs.mjs`
+  - Uploaduje artefakt na svaki PR/push/main/manual run
+
+- `.github/workflows/docker.yml`
+  - Gradi Docker image-e za frontend i backend
+  - Na `main` push-u publikuje na GHCR:
+    - `ghcr.io/<owner>/met-backend`
+    - `ghcr.io/<owner>/met-frontend`
+
+## Docker fajlovi
+- `backend/Dockerfile`
+- `frontend/Dockerfile`
+- `frontend/nginx.conf` (SPA fallback)
+- `.dockerignore` fajlovi za oba servisa
