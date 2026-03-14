@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { ChangeEvent } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowDown, ArrowUp, Download, Edit2, FileUp, Plus, Search, Tag, Trash2, WalletCards, Gem, Sparkles, ShieldCheck, Lock, BookmarkPlus, X, Repeat2 } from 'lucide-react'
-import ExcelJS from 'exceljs/dist/exceljs.min.js'
 import type { CellValue } from 'exceljs'
-import { jsPDF } from 'jspdf'
-import autoTable from 'jspdf-autotable'
 import * as api from '../api/transactionsApi'
 import * as accountsApi from '../api/accountsApi'
 import * as categoriesApi from '../api/categoriesApi'
@@ -333,6 +331,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
       return
     }
 
+    const { default: ExcelJS } = await import('exceljs/dist/exceljs.min.js')
     const workbook = new ExcelJS.Workbook()
     const worksheet = workbook.addWorksheet('Transactions')
     worksheet.columns = [
@@ -383,6 +382,10 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
       return
     }
 
+    const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable')
+    ])
     const doc = new jsPDF()
     doc.setFontSize(14)
     doc.text('Transactions Export', 14, 14)
@@ -531,12 +534,13 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
     return String(value ?? '').trim()
   }
 
-  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportExcel = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
     try {
       const arrayBuffer = await file.arrayBuffer()
+      const { default: ExcelJS } = await import('exceljs/dist/exceljs.min.js')
       const workbook = new ExcelJS.Workbook()
       await workbook.xlsx.load(arrayBuffer)
       const sheet = workbook.worksheets[0]

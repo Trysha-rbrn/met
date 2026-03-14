@@ -1,19 +1,20 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom'
 import { Wallet, Settings, LayoutDashboard, LogOut, User, BarChart, PanelLeftClose, PanelLeftOpen, Sparkles, ShieldCheck, Smartphone, Shield } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ToastContainer } from 'react-toastify'
 
-import CategoriesPage from './pages/CategoriesPage'
-import Dashboard from './pages/Dashboard'
-import TransactionsPage from './pages/TransactionsPage'
 import AuthPage from './pages/AuthPage'
-import SettingsPage from './pages/SettingsPage'
 import NotFoundPage from './pages/NotFoundPage'
-import AdminPage from './pages/AdminPage'
 import * as authApi from './api/authApi'
 import type { AuthUser } from './api/authApi'
 import { notify } from './lib/toast'
+
+const CategoriesPage = lazy(() => import('./pages/CategoriesPage'))
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const TransactionsPage = lazy(() => import('./pages/TransactionsPage'))
+const SettingsPage = lazy(() => import('./pages/SettingsPage'))
+const AdminPage = lazy(() => import('./pages/AdminPage'))
 
 const baseNavItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -166,16 +167,18 @@ function App() {
             <div className={`flex min-h-screen flex-col ${isSidebarCollapsed ? 'lg:pl-24' : 'lg:pl-64'}`}>
               <Header user={user} onLogout={handleLogout} />
               <main className="flex-1 p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 lg:pb-8">
-                <AnimatePresence mode="wait">
-                  <Routes>
-                    <Route path="/" element={<Dashboard isSidebarCollapsed={isSidebarCollapsed} userRole={user?.role || 'BASIC'} />} />
-                    <Route path="/transactions" element={<TransactionsPage userRole={user?.role || 'BASIC'} />} />
-                    <Route path="/categories" element={<CategoriesPage userRole={user?.role || 'BASIC'} />} />
-                    <Route path="/settings" element={<SettingsPage user={user} onUserUpdate={setUser} themeMode={themeMode} onThemeModeChange={setThemeMode} />} />
-                    <Route path="/admin" element={user?.role === 'ADMIN' ? <AdminPage /> : <NotFoundPage isAuthenticated />} />
-                    <Route path="*" element={<NotFoundPage isAuthenticated />} />
-                  </Routes>
-                </AnimatePresence>
+                <Suspense fallback={<PageLoader />}>
+                  <AnimatePresence mode="wait">
+                    <Routes>
+                      <Route path="/" element={<Dashboard isSidebarCollapsed={isSidebarCollapsed} userRole={user?.role || 'BASIC'} />} />
+                      <Route path="/transactions" element={<TransactionsPage userRole={user?.role || 'BASIC'} />} />
+                      <Route path="/categories" element={<CategoriesPage userRole={user?.role || 'BASIC'} />} />
+                      <Route path="/settings" element={<SettingsPage user={user} onUserUpdate={setUser} themeMode={themeMode} onThemeModeChange={setThemeMode} />} />
+                      <Route path="/admin" element={user?.role === 'ADMIN' ? <AdminPage /> : <NotFoundPage isAuthenticated />} />
+                      <Route path="*" element={<NotFoundPage isAuthenticated />} />
+                    </Routes>
+                  </AnimatePresence>
+                </Suspense>
               </main>
               <AppFooter />
             </div>
@@ -189,6 +192,17 @@ function App() {
         toastClassName="!rounded-xl !border !border-border !bg-card !text-card-foreground"
       />
     </Router>
+  )
+}
+
+function PageLoader() {
+  return (
+    <div className="flex min-h-[40vh] items-center justify-center rounded-3xl border border-border/70 bg-background/90">
+      <div className="flex items-center gap-3 text-sm font-semibold text-muted-foreground">
+        <Wallet size={18} className="animate-pulse text-primary" />
+        Loading workspace...
+      </div>
+    </div>
   )
 }
 
