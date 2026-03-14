@@ -18,7 +18,8 @@ const userSelect = {
   email: true,
   name: true,
   role: true,
-  isBanned: true
+  isBanned: true,
+  preferredCurrency: true
 } as const
 
 const getSubscriptionPayload = async (userId: string) => {
@@ -43,7 +44,8 @@ const getSubscriptionPayload = async (userId: string) => {
       email: user.email,
       name: user.name,
       role: user.role,
-      isBanned: user.isBanned
+      isBanned: user.isBanned,
+      preferredCurrency: user.preferredCurrency
     },
     subscription: serializeSubscription(subscription)
   }

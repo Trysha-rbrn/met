@@ -22,17 +22,19 @@ const CURRENCIES = [
   { code: 'RUB', name: 'Russian Ruble', symbol: 'RUB' },
   { code: 'RSD', name: 'Serbian Dinar', symbol: 'din' },
   { code: 'TRY', name: 'Turkish Lira', symbol: 'TRY' }
-]
+] as const
+
+type CurrencyCode = typeof CURRENCIES[number]['code']
 
 function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: SettingsPageProps) {
   const [name, setName] = useState(user?.name || '')
+  const [currency, setCurrency] = useState<CurrencyCode>(user?.preferredCurrency || 'USD')
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [deletePassword, setDeletePassword] = useState('')
   const [resetDataPassword, setResetDataPassword] = useState('')
   const [premiumCode, setPremiumCode] = useState('')
   const [billingInterval, setBillingInterval] = useState<'MONTHLY' | 'YEARLY'>('MONTHLY')
-  const [currency, setCurrency] = useState(localStorage.getItem('met_currency') || 'USD')
   const [subscription, setSubscription] = useState<SubscriptionSummary | null>(null)
   const [transferLogs, setTransferLogs] = useState<TransferLog[]>([])
   const [isSavingProfile, setIsSavingProfile] = useState(false)
@@ -42,7 +44,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
   const didHydrateRef = useRef(false)
   const lastSavedRef = useRef({
     name: user?.name || '',
-    currency: localStorage.getItem('met_currency') || 'USD',
+    currency: (user?.preferredCurrency || 'USD') as CurrencyCode,
     theme: themeMode as ThemeMode
   })
   const lastPasswordAttemptRef = useRef('')
@@ -50,6 +52,9 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
   useEffect(() => {
     setName(user?.name || '')
     lastSavedRef.current.name = user?.name || ''
+    const nextCurrency = (user?.preferredCurrency || 'USD') as CurrencyCode
+    setCurrency(nextCurrency)
+    lastSavedRef.current.currency = nextCurrency
   }, [user])
 
   useEffect(() => {
@@ -105,7 +110,10 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
     const timer = window.setTimeout(async () => {
       setIsSavingProfile(true)
       try {
-        const updatedUser = await api.updateProfile({ name: nextName || undefined })
+        const updatedUser = await api.updateProfile({
+          name: nextName || undefined,
+          preferredCurrency: currency
+        })
         onUserUpdate(updatedUser)
         localStorage.setItem('met_currency', currency)
         lastSavedRef.current = { name: updatedUser.name || '', currency, theme: themeMode }
@@ -375,7 +383,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                   name="currency"
                   autoComplete="off"
                   value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
+                  onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
                   className="w-full px-4 py-3 bg-background border rounded-xl outline-none focus:ring-2 focus:ring-primary/20"
                 >
                   {CURRENCIES.map((c) => (

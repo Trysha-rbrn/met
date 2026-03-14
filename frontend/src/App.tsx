@@ -64,6 +64,7 @@ function App() {
   useEffect(() => {
     if (!user) return
     localStorage.setItem('met_user_role', user.role)
+    localStorage.setItem('met_currency', user.preferredCurrency || 'USD')
   }, [user])
 
   const handleLogout = useCallback(() => {
@@ -136,6 +137,7 @@ function App() {
     setToken(userToken)
     localStorage.setItem('met_token', userToken)
     localStorage.setItem('met_user_role', userData.role)
+    localStorage.setItem('met_currency', userData.preferredCurrency || 'USD')
   }
 
   if (loading) {

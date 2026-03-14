@@ -4,6 +4,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const ICON_KEY_REGEX = /^[A-Za-z][A-Za-z0-9]{0,39}$/
 const TX_TYPES = new Set(['INCOME', 'EXPENSE'])
+const SUPPORTED_CURRENCIES = new Set(['USD', 'EUR', 'CAD', 'RUB', 'RSD', 'TRY'])
 const TRANSFER_ACTIONS = new Set(['IMPORT', 'EXPORT'])
 const TRANSFER_FORMATS = new Set(['EXCEL', 'PDF'])
 const BILLING_INTERVALS = new Set(['MONTHLY', 'YEARLY'])
@@ -85,11 +86,19 @@ export const validateUpdateProfile = (req: Request, res: Response, next: NextFun
     return sendValidationError(res, ['Invalid request body.'])
   }
 
-  const { name, currentPassword, newPassword } = req.body
+  const { name, currentPassword, newPassword, preferredCurrency } = req.body
   const errors: string[] = []
 
   if (typeof name !== 'undefined' && typeof name !== 'string') errors.push('Name must be a string.')
   if (typeof name === 'string' && name.trim().length > 80) errors.push('Name can be up to 80 characters.')
+  if (typeof preferredCurrency !== 'undefined') {
+    const normalizedCurrency = toTrimmedString(preferredCurrency).toUpperCase()
+    if (!SUPPORTED_CURRENCIES.has(normalizedCurrency)) {
+      errors.push('Preferred currency is not supported.')
+    } else {
+      req.body.preferredCurrency = normalizedCurrency
+    }
+  }
 
   if (typeof currentPassword !== 'undefined' && !isNonEmptyString(currentPassword)) {
     errors.push('Current password must be a non-empty string.')

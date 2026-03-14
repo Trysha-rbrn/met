@@ -15,6 +15,7 @@ model User {
   email             String           @unique
   password          String
   name              String?
+  preferredCurrency String           @default("USD")
   role              UserRole         @default(BASIC)
   isBanned          Boolean          @default(false)
   accounts          Account[]

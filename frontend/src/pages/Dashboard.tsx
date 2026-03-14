@@ -1,6 +1,5 @@
-import { memo, useState, useEffect, useMemo, type ComponentType } from 'react'
+import { lazy, memo, Suspense, useState, useEffect, useMemo, type ComponentType } from 'react'
 import { Coins, ArrowUp, ArrowDown, CalendarDays, TrendingUp, WalletCards, Gem, Sparkles, LineChart, ShieldCheck, Lock } from 'lucide-react'
-import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts'
 import * as api from '../api/transactionsApi'
 import * as accountsApi from '../api/accountsApi'
 import * as categoriesApi from '../api/categoriesApi'
@@ -12,6 +11,7 @@ type RangeKey = '1D' | '7D' | '30D' | '90D' | 'YTD' | 'ALL' | 'CUSTOM'
 type UserRole = 'BASIC' | 'PREMIUM' | 'ADMIN'
 
 const DAY_MS = 24 * 60 * 60 * 1000
+const DashboardCharts = lazy(() => import('../components/DashboardCharts'))
 
 interface DashboardProps {
   isSidebarCollapsed: boolean
@@ -450,71 +450,14 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
         )}
       </section>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 min-w-0">
-        <div className="bg-card border rounded-2xl p-5 md:p-6 min-w-0">
-          <h3 className="text-lg font-bold mb-4">Balance Trend</h3>
-          <div className="h-64 sm:h-72 min-h-[16rem] sm:min-h-[18rem] min-w-0">
-            {loading ? (
-              <ChartSkeleton />
-            ) : showCharts ? (
-              <ResponsiveContainer width="100%" height={256} minWidth={1} minHeight={256} debounce={300}>
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="balanceFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.35} />
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.05} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis
-                    dataKey="dayKey"
-                    tick={{ fontSize: 12 }}
-                    tickFormatter={(value) => formatDayLabelFromKey(String(value))}
-                  />
-                  <YAxis tickFormatter={(value) => formatCompactCurrency(value)} tick={{ fontSize: 12 }} />
-                  <Tooltip
-                    formatter={formatTooltipCurrency}
-                    labelFormatter={(label) => formatFullDateLabelFromKey(String(label))}
-                  />
-                  <Area type="monotone" dataKey="runningBalance" stroke="#3b82f6" fill="url(#balanceFill)" strokeWidth={2.5} isAnimationActive={false} />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <ChartSkeleton />
-            )}
-          </div>
-        </div>
-
-        <div className="bg-card border rounded-2xl p-5 md:p-6 min-w-0">
-          <h3 className="text-lg font-bold mb-4">Income vs Expenses</h3>
-          <div className="h-64 sm:h-72 min-h-[16rem] sm:min-h-[18rem] min-w-0">
-            {loading ? (
-              <ChartSkeleton />
-            ) : showCharts ? (
-              <ResponsiveContainer width="100%" height={256} minWidth={1} minHeight={256} debounce={120}>
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis
-                    dataKey="dayKey"
-                    tick={{ fontSize: 12 }}
-                    tickFormatter={(value) => formatDayLabelFromKey(String(value))}
-                  />
-                  <YAxis tickFormatter={(value) => formatCompactCurrency(value)} tick={{ fontSize: 12 }} />
-                  <Tooltip
-                    formatter={formatTooltipCurrency}
-                    labelFormatter={(label) => formatFullDateLabelFromKey(String(label))}
-                  />
-                  <Legend />
-                  <Bar dataKey="income" fill="#10b981" radius={[6, 6, 0, 0]} isAnimationActive={false} />
-                  <Bar dataKey="expenses" fill="#f43f5e" radius={[6, 6, 0, 0]} isAnimationActive={false} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <ChartSkeleton />
-            )}
-          </div>
-        </div>
-      </div>
+      <Suspense fallback={<ChartsSectionSkeleton />}>
+        <DashboardCharts
+          chartData={chartData}
+          loading={loading}
+          showCharts={showCharts}
+          formatTooltipCurrency={formatTooltipCurrency}
+        />
+      </Suspense>
 
       {isPremiumUser ? (
         <section className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.98),rgba(255,255,255,0.98))] p-5 md:p-6 space-y-5">
@@ -796,25 +739,6 @@ function formatDayLabel(date: Date) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-function formatDayLabelFromKey(value: string) {
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return value
-  return formatDayLabel(parsed)
-}
-
-function formatFullDateLabelFromKey(value: string) {
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return value
-  return parsed.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-}
-
-function formatCompactCurrency(value: number) {
-  return new Intl.NumberFormat('en-US', {
-    notation: 'compact',
-    maximumFractionDigits: 1
-  }).format(value)
-}
-
 const StatCard = ({ title, amount, icon: Icon, color, glow = false }: { title: string; amount: string; icon: ComponentType<{ size?: number; className?: string }>; color: string; glow?: boolean }) => (
   <div className="bg-card border rounded-2xl p-4 sm:p-6 flex flex-col justify-between gap-3 sm:gap-4 transition-all hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5">
     <div className="flex items-center justify-between text-muted-foreground">
@@ -830,8 +754,17 @@ const StatCard = ({ title, amount, icon: Icon, color, glow = false }: { title: s
   </div>
 )
 
-const ChartSkeleton = () => (
-  <div className="h-full w-full rounded-xl bg-muted/60 animate-pulse" />
+const ChartsSectionSkeleton = () => (
+  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 min-w-0">
+    <div className="bg-card border rounded-2xl p-5 md:p-6 min-w-0">
+      <div className="h-6 w-40 rounded-md bg-muted/70 mb-4" />
+      <div className="h-64 sm:h-72 min-h-[16rem] sm:min-h-[18rem] min-w-0 rounded-xl bg-muted/60 animate-pulse" />
+    </div>
+    <div className="bg-card border rounded-2xl p-5 md:p-6 min-w-0">
+      <div className="h-6 w-44 rounded-md bg-muted/70 mb-4" />
+      <div className="h-64 sm:h-72 min-h-[16rem] sm:min-h-[18rem] min-w-0 rounded-xl bg-muted/60 animate-pulse" />
+    </div>
+  </div>
 )
 
 const PremiumPill = ({

@@ -25,6 +25,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
           email,
           password: hashedPassword,
           name,
+          preferredCurrency: 'USD',
           role
         }
       })
@@ -85,7 +86,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       { expiresIn: env.jwtExpiresIn as SignOptions['expiresIn'] }
     )
     res.status(201).json({
-      user: { id: user.id, email: user.email, name: user.name, role: user.role, isBanned: user.isBanned },
+      user: { id: user.id, email: user.email, name: user.name, role: user.role, isBanned: user.isBanned, preferredCurrency: user.preferredCurrency },
       token
     })
   } catch (error) {
@@ -115,7 +116,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       action: 'AUTH_LOGIN_SUCCESS'
     })
     res.json({
-      user: { id: user.id, email: user.email, name: user.name, role: user.role, isBanned: user.isBanned },
+      user: { id: user.id, email: user.email, name: user.name, role: user.role, isBanned: user.isBanned, preferredCurrency: user.preferredCurrency },
       token
     })
   } catch (error) {
@@ -127,7 +128,7 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
   try {
     const user = await prisma.user.findUnique({
       where: { id: (req as any).userId },
-      select: { id: true, email: true, name: true, role: true, isBanned: true }
+      select: { id: true, email: true, name: true, role: true, isBanned: true, preferredCurrency: true }
     })
     res.json(user)
   } catch (error) {
@@ -138,12 +139,16 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
 export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).userId
   const userRole = (req as any).userRole as UserRole
-  const { name, currentPassword, newPassword } = req.body
+  const { name, currentPassword, newPassword, preferredCurrency } = req.body
   try {
     const updateData: Prisma.UserUpdateInput = {}
 
     if (typeof name !== 'undefined') {
       updateData.name = name
+    }
+
+    if (typeof preferredCurrency !== 'undefined') {
+      updateData.preferredCurrency = preferredCurrency
     }
 
     if (newPassword) {
@@ -166,14 +171,14 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
     const user = await prisma.user.update({
       where: { id: userId },
       data: updateData,
-      select: { id: true, email: true, name: true, role: true, isBanned: true }
+      select: { id: true, email: true, name: true, role: true, isBanned: true, preferredCurrency: true }
     })
     await writeAuditLog({
       actorUserId: userId,
       actorRole: userRole,
       targetUserId: userId,
       action: newPassword ? 'PROFILE_PASSWORD_CHANGE' : 'PROFILE_UPDATE',
-      details: { nameUpdated: typeof name !== 'undefined' }
+      details: { nameUpdated: typeof name !== 'undefined', preferredCurrencyUpdated: typeof preferredCurrency !== 'undefined' }
     })
     res.json(user)
   } catch (error) {
@@ -300,7 +305,7 @@ export const activatePremium = async (req: Request, res: Response, next: NextFun
       await ensureSubscriptionRecord(prisma, { id: userId, role: userRole })
       const existingUser = await prisma.user.findUnique({
         where: { id: userId },
-        select: { id: true, email: true, name: true, role: true, isBanned: true }
+        select: { id: true, email: true, name: true, role: true, isBanned: true, preferredCurrency: true }
       })
       return res.json(existingUser)
     }
@@ -323,7 +328,7 @@ export const activatePremium = async (req: Request, res: Response, next: NextFun
 
       return tx.user.findUnique({
         where: { id: userId },
-        select: { id: true, email: true, name: true, role: true, isBanned: true }
+        select: { id: true, email: true, name: true, role: true, isBanned: true, preferredCurrency: true }
       })
     })
 

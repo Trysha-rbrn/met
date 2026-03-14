@@ -9,6 +9,7 @@ export interface AuthUser {
   email: string
   role: 'BASIC' | 'PREMIUM' | 'ADMIN'
   isBanned: boolean
+  preferredCurrency: 'USD' | 'EUR' | 'CAD' | 'RUB' | 'RSD' | 'TRY'
 }
 
 export interface SubscriptionSummary {
@@ -50,6 +51,7 @@ export interface AuthPayload {
 
 export interface UpdateProfilePayload {
   name?: string
+  preferredCurrency?: AuthUser['preferredCurrency']
   currentPassword?: string
   newPassword?: string
 }
