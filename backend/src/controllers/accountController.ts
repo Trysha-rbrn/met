@@ -3,8 +3,16 @@ import { PrismaClient, UserRole } from '@prisma/client'
 import { writeAuditLog } from '../lib/auditLog.ts'
 
 const prisma = new PrismaClient()
-const MAX_ACCOUNTS_PER_USER = 3
+const MAX_ACCOUNTS_BASIC = 3
+const MAX_ACCOUNTS_PREMIUM = 10
+const MAX_ACCOUNTS_ADMIN = 20
 const DEFAULT_ACCOUNT_NAMES = ['Primary', 'Savings', 'Reserve']
+
+const resolveAccountLimit = (role: UserRole) => {
+  if (role === 'ADMIN') return MAX_ACCOUNTS_ADMIN
+  if (role === 'PREMIUM') return MAX_ACCOUNTS_PREMIUM
+  return MAX_ACCOUNTS_BASIC
+}
 
 export const getAccounts = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).userId
@@ -25,9 +33,10 @@ export const createAccount = async (req: Request, res: Response, next: NextFunct
   const { name } = req.body
 
   try {
+    const maxAccounts = resolveAccountLimit(userRole)
     const existingCount = await prisma.account.count({ where: { userId } })
-    if (existingCount >= MAX_ACCOUNTS_PER_USER) {
-      return res.status(400).json({ error: `Maximum ${MAX_ACCOUNTS_PER_USER} accounts allowed.` })
+    if (existingCount >= maxAccounts) {
+      return res.status(400).json({ error: `Maximum ${maxAccounts} accounts allowed for ${userRole} plan.` })
     }
 
     const normalizedName = typeof name === 'string' && name.trim()

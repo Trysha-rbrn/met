@@ -246,3 +246,30 @@ Repo sada ima workflow-e za automatizaciju kvaliteta, sigurnosti, dokumentacije 
 
 ### Napomena
 - Premium/subscription tier je ostavljen kao sledeci korak (trenutno implementirano `BASIC` + `ADMIN`).
+
+## Premium Plan
+Implementiran je `PREMIUM` tier iznad `BASIC` (uz `ADMIN`).
+
+Premium funkcionalnosti:
+- veci limit naloga (`PREMIUM`: 10, `BASIC`: 3, `ADMIN`: 20)
+- Premium Insights na Dashboard-u:
+  - avg daily net
+  - 30-day projection
+  - savings rate
+- dodatni period tab: `90D` (Premium/Admin)
+- napredni filteri transakcija (search + type) za Premium/Admin
+- aktivacija premium naloga kroz `Settings` sa activation code-om
+
+### Novi endpoint
+- `POST /api/auth/activate-premium`
+  - body: `{ code }`
+  - validacija prema `PREMIUM_ACCESS_CODE` iz backend `.env`
+
+### Admin upravljanje rolama
+- `PATCH /api/admin/users/:id/role`
+  - podrzani target role: `BASIC`, `PREMIUM`
+  - `ADMIN` rola ostaje zasticena
+
+### Novi env parametar
+- `PREMIUM_ACCESS_CODE`
+  - activation code za korisnicki upgrade na Premium

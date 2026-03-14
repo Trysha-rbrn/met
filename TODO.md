@@ -15,4 +15,9 @@
 - Add retry + failure logging for outbound email jobs.
 
 ## Roles / Subscription
-- Add `PREMIUM` user tier and subscription lifecycle (upgrade, downgrade, billing hooks).
+- [x] Add `PREMIUM` user tier (implemented).
+- [x] Add full subscription lifecycle (upgrade, downgrade, billing hooks).
+
+## Premium Roadmap
+- [ ] Add monthly budget goals per category.
+- [ ] Add recurring transactions.

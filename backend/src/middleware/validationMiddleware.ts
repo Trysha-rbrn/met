@@ -6,6 +6,14 @@ const ICON_KEY_REGEX = /^[A-Za-z][A-Za-z0-9]{0,39}$/
 const TX_TYPES = new Set(['INCOME', 'EXPENSE'])
 const TRANSFER_ACTIONS = new Set(['IMPORT', 'EXPORT'])
 const TRANSFER_FORMATS = new Set(['EXCEL', 'PDF'])
+const BILLING_INTERVALS = new Set(['MONTHLY', 'YEARLY'])
+const BILLING_EVENT_TYPES = new Set([
+  'subscription.activated',
+  'subscription.renewed',
+  'subscription.canceled',
+  'subscription.expired',
+  'subscription.payment_failed'
+])
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -327,5 +335,101 @@ export const validateAdminSetBanState = (req: Request, res: Response, next: Next
     return sendValidationError(res, ['isBanned must be a boolean value.'])
   }
 
+  return next()
+}
+
+export const validatePremiumActivation = (req: Request, res: Response, next: NextFunction) => {
+  if (!isPlainObject(req.body)) {
+    return sendValidationError(res, ['Invalid request body.'])
+  }
+
+  const code = toTrimmedString(req.body.code)
+  if (!code) {
+    return sendValidationError(res, ['Premium activation code is required.'])
+  }
+
+  req.body.code = code
+  return next()
+}
+
+export const validateAdminSetUserRole = (req: Request, res: Response, next: NextFunction) => {
+  if (!isPlainObject(req.body)) {
+    return sendValidationError(res, ['Invalid request body.'])
+  }
+
+  const role = toTrimmedString(req.body.role).toUpperCase()
+  if (role !== 'BASIC' && role !== 'PREMIUM') {
+    return sendValidationError(res, ['Role must be BASIC or PREMIUM.'])
+  }
+
+  req.body.role = role
+  return next()
+}
+
+export const validateSubscriptionUpgrade = (req: Request, res: Response, next: NextFunction) => {
+  if (!isPlainObject(req.body)) {
+    return sendValidationError(res, ['Invalid request body.'])
+  }
+
+  const billingInterval = toTrimmedString(req.body.billingInterval).toUpperCase() || 'MONTHLY'
+  const code = typeof req.body.code === 'string' ? req.body.code.trim() : ''
+
+  if (!BILLING_INTERVALS.has(billingInterval)) {
+    return sendValidationError(res, ['billingInterval must be MONTHLY or YEARLY.'])
+  }
+
+  req.body.billingInterval = billingInterval
+  req.body.code = code || undefined
+  return next()
+}
+
+export const validateSubscriptionDowngrade = (req: Request, res: Response, next: NextFunction) => {
+  if (typeof req.body === 'undefined') {
+    req.body = {}
+  }
+
+  if (!isPlainObject(req.body)) {
+    return sendValidationError(res, ['Invalid request body.'])
+  }
+
+  if (typeof req.body.immediate !== 'undefined' && typeof req.body.immediate !== 'boolean') {
+    return sendValidationError(res, ['immediate must be a boolean value.'])
+  }
+
+  req.body.immediate = Boolean(req.body.immediate)
+  return next()
+}
+
+export const validateBillingWebhook = (req: Request, res: Response, next: NextFunction) => {
+  if (!isPlainObject(req.body)) {
+    return sendValidationError(res, ['Invalid request body.'])
+  }
+
+  const eventId = toTrimmedString(req.body.eventId)
+  const type = toTrimmedString(req.body.type)
+  const externalSubscriptionId = toTrimmedString(req.body.externalSubscriptionId)
+  const userId = typeof req.body.userId === 'string' ? req.body.userId.trim() : ''
+  const billingInterval = toTrimmedString(req.body.billingInterval).toUpperCase()
+  const errors: string[] = []
+
+  if (!eventId) errors.push('eventId is required.')
+  if (!BILLING_EVENT_TYPES.has(type)) errors.push('Unsupported billing event type.')
+  if (!userId && !externalSubscriptionId) errors.push('userId or externalSubscriptionId is required.')
+  if (userId && !isValidUuid(userId)) errors.push('userId must be a valid UUID.')
+  if (billingInterval && !BILLING_INTERVALS.has(billingInterval)) errors.push('billingInterval must be MONTHLY or YEARLY.')
+
+  for (const key of ['currentPeriodStart', 'currentPeriodEnd', 'occurredAt'] as const) {
+    if (typeof req.body[key] !== 'undefined' && Number.isNaN(new Date(String(req.body[key])).getTime())) {
+      errors.push(`${key} must be a valid ISO date.`)
+    }
+  }
+
+  if (errors.length > 0) return sendValidationError(res, errors)
+
+  req.body.eventId = eventId
+  req.body.type = type
+  req.body.userId = userId || undefined
+  req.body.externalSubscriptionId = externalSubscriptionId || undefined
+  req.body.billingInterval = billingInterval || undefined
   return next()
 }

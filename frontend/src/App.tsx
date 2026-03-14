@@ -60,10 +60,16 @@ function App() {
     }
   }, [themeMode])
 
+  useEffect(() => {
+    if (!user) return
+    localStorage.setItem('met_user_role', user.role)
+  }, [user])
+
   const handleLogout = useCallback(() => {
     setUser(null)
     setToken(null)
     localStorage.removeItem('met_token')
+    localStorage.removeItem('met_user_role')
   }, [])
 
   useEffect(() => {
@@ -73,6 +79,7 @@ function App() {
         try {
           const userData = await authApi.getMe()
           setUser(userData)
+          localStorage.setItem('met_user_role', userData.role)
         } catch {
           handleLogout()
         }
@@ -127,6 +134,7 @@ function App() {
     setUser(userData)
     setToken(userToken)
     localStorage.setItem('met_token', userToken)
+    localStorage.setItem('met_user_role', userData.role)
   }
 
   if (loading) {
@@ -160,8 +168,8 @@ function App() {
               <main className="flex-1 p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 lg:pb-8">
                 <AnimatePresence mode="wait">
                   <Routes>
-                    <Route path="/" element={<Dashboard isSidebarCollapsed={isSidebarCollapsed} />} />
-                    <Route path="/transactions" element={<TransactionsPage />} />
+                    <Route path="/" element={<Dashboard isSidebarCollapsed={isSidebarCollapsed} userRole={user?.role || 'BASIC'} />} />
+                    <Route path="/transactions" element={<TransactionsPage userRole={user?.role || 'BASIC'} />} />
                     <Route path="/categories" element={<CategoriesPage />} />
                     <Route path="/settings" element={<SettingsPage user={user} onUserUpdate={setUser} themeMode={themeMode} onThemeModeChange={setThemeMode} />} />
                     <Route path="/admin" element={user?.role === 'ADMIN' ? <AdminPage /> : <NotFoundPage isAuthenticated />} />

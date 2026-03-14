@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Shield, Search, Ban, Trash2, RefreshCw, Activity, Users, Filter } from 'lucide-react'
+import { Shield, Search, Ban, Trash2, RefreshCw, Activity, Users, Filter, Gem } from 'lucide-react'
 import * as adminApi from '../api/adminApi'
 import { extractApiError, notify } from '../lib/toast'
 
 const defaultQuery = {
   search: '',
-  role: 'ALL' as 'BASIC' | 'ADMIN' | 'ALL',
+  role: 'ALL' as 'BASIC' | 'PREMIUM' | 'ADMIN' | 'ALL',
   status: 'all' as 'active' | 'banned' | 'all',
   sortBy: 'createdAt' as 'createdAt' | 'email' | 'name',
   sortOrder: 'desc' as 'asc' | 'desc'
@@ -119,6 +119,17 @@ function AdminPage() {
     }
   }
 
+  const handleSetRole = async (role: 'BASIC' | 'PREMIUM') => {
+    if (!selectedUserListItem) return
+    try {
+      await adminApi.setAdminUserRole(selectedUserListItem.id, role)
+      notify.success(`User role updated to ${role}.`)
+      await Promise.all([loadUsers(), loadLogs(), loadDetails(selectedUserListItem.id)])
+    } catch (error: unknown) {
+      notify.error(extractApiError(error, 'Failed to update user role.'))
+    }
+  }
+
   return (
     <div className="space-y-6">
       <header className="space-y-1">
@@ -144,11 +155,12 @@ function AdminPage() {
           </label>
           <select
             value={query.role}
-            onChange={(e) => setQuery((prev) => ({ ...prev, role: e.target.value as 'BASIC' | 'ADMIN' | 'ALL' }))}
+            onChange={(e) => setQuery((prev) => ({ ...prev, role: e.target.value as 'BASIC' | 'PREMIUM' | 'ADMIN' | 'ALL' }))}
             className="h-11 rounded-xl border bg-background px-3 text-sm"
           >
             <option value="ALL">All roles</option>
             <option value="BASIC">Basic</option>
+            <option value="PREMIUM">Premium</option>
             <option value="ADMIN">Administrator</option>
           </select>
           <select
@@ -206,6 +218,24 @@ function AdminPage() {
               <div className="flex gap-2">
                 <button
                   type="button"
+                  onClick={() => handleSetRole('PREMIUM')}
+                  disabled={!selectedUserListItem || selectedUserListItem.role === 'PREMIUM' || selectedUserListItem.role === 'ADMIN'}
+                  className="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold bg-background hover:bg-muted disabled:opacity-50"
+                >
+                  <Gem size={15} />
+                  Set Premium
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetRole('BASIC')}
+                  disabled={!selectedUserListItem || selectedUserListItem.role === 'BASIC' || selectedUserListItem.role === 'ADMIN'}
+                  className="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold bg-background hover:bg-muted disabled:opacity-50"
+                >
+                  <Users size={15} />
+                  Set Basic
+                </button>
+                <button
+                  type="button"
                   onClick={handleToggleBan}
                   disabled={!selectedUserListItem}
                   className="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold bg-background hover:bg-muted disabled:opacity-50"
@@ -240,6 +270,10 @@ function AdminPage() {
                   <p><span className="text-muted-foreground">Email:</span> {selectedUser.email}</p>
                   <p><span className="text-muted-foreground">Role:</span> {selectedUser.role}</p>
                   <p><span className="text-muted-foreground">Status:</span> {selectedUser.isBanned ? 'BANNED' : 'ACTIVE'}</p>
+                  <p><span className="text-muted-foreground">Subscription:</span> {selectedUser.subscription ? `${selectedUser.subscription.plan} / ${selectedUser.subscription.status}` : 'N/A'}</p>
+                  {selectedUser.subscription?.billingInterval && (
+                    <p><span className="text-muted-foreground">Billing:</span> {selectedUser.subscription.billingInterval}</p>
+                  )}
                 </div>
               </div>
             )}

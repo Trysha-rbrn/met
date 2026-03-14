@@ -12,7 +12,7 @@ export interface AdminUserListItem {
   id: string
   email: string
   name: string | null
-  role: 'BASIC' | 'ADMIN'
+  role: 'BASIC' | 'PREMIUM' | 'ADMIN'
   isBanned: boolean
   createdAt: string
   _count: {
@@ -27,9 +27,17 @@ export interface AdminUserDetails {
   id: string
   email: string
   name: string | null
-  role: 'BASIC' | 'ADMIN'
+  role: 'BASIC' | 'PREMIUM' | 'ADMIN'
   isBanned: boolean
   createdAt: string
+  subscription: {
+    plan: 'BASIC' | 'PREMIUM'
+    status: 'ACTIVE' | 'PENDING' | 'PAST_DUE' | 'CANCELED' | 'EXPIRED'
+    billingInterval: 'MONTHLY' | 'YEARLY' | null
+    cancelAtPeriodEnd: boolean
+    currentPeriodEnd: string | null
+    source: 'SYSTEM' | 'PROMO_CODE' | 'BILLING' | 'BILLING_WEBHOOK' | 'ADMIN' | 'LEGACY_IMPORT'
+  } | null
   accounts: Array<{ id: string; name: string; createdAt: string }>
   categories: Array<{ id: string; name: string; type: 'INCOME' | 'EXPENSE'; createdAt: string }>
   transactions: Array<{
@@ -47,16 +55,16 @@ export interface AdminUserDetails {
 export interface AdminAuditLog {
   id: string
   action: string
-  actorRole: 'BASIC' | 'ADMIN'
+  actorRole: 'BASIC' | 'PREMIUM' | 'ADMIN'
   createdAt: string
   details: unknown
-  actorUser: { id: string; email: string; name: string | null; role: 'BASIC' | 'ADMIN' } | null
-  targetUser: { id: string; email: string; name: string | null; role: 'BASIC' | 'ADMIN' } | null
+  actorUser: { id: string; email: string; name: string | null; role: 'BASIC' | 'PREMIUM' | 'ADMIN' } | null
+  targetUser: { id: string; email: string; name: string | null; role: 'BASIC' | 'PREMIUM' | 'ADMIN' } | null
 }
 
 export const getAdminUsers = async (params: {
   search?: string
-  role?: 'BASIC' | 'ADMIN' | 'ALL'
+  role?: 'BASIC' | 'PREMIUM' | 'ADMIN' | 'ALL'
   status?: 'active' | 'banned' | 'all'
   sortBy?: 'createdAt' | 'email' | 'name'
   sortOrder?: 'asc' | 'desc'
@@ -82,6 +90,13 @@ export const getAdminUserDetails = async (id: string) => {
 
 export const setAdminUserBan = async (id: string, isBanned: boolean) => {
   const response = await axios.patch(`${API_URL}/users/${id}/ban`, { isBanned }, {
+    headers: getAuthHeaders()
+  })
+  return response.data
+}
+
+export const setAdminUserRole = async (id: string, role: 'BASIC' | 'PREMIUM') => {
+  const response = await axios.patch(`${API_URL}/users/${id}/role`, { role }, {
     headers: getAuthHeaders()
   })
   return response.data

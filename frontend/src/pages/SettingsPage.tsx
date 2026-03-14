@@ -1,8 +1,8 @@
 ﻿import { useEffect, useRef, useState } from 'react'
-import { User, Lock, Trash2, AlertCircle, Coins, Palette, DatabaseZap } from 'lucide-react'
+import { User, Lock, Trash2, AlertCircle, Coins, Palette, DatabaseZap, Gem, Sparkles, ShieldCheck, LineChart, WalletCards } from 'lucide-react'
 import * as api from '../api/authApi'
 import * as dataTransferApi from '../api/dataTransferApi'
-import type { AuthUser } from '../api/authApi'
+import type { AuthUser, SubscriptionSummary } from '../api/authApi'
 import type { TransferLog } from '../api/dataTransferApi'
 import { extractApiError, notify } from '../lib/toast'
 
@@ -30,10 +30,15 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
   const [newPassword, setNewPassword] = useState('')
   const [deletePassword, setDeletePassword] = useState('')
   const [resetDataPassword, setResetDataPassword] = useState('')
+  const [premiumCode, setPremiumCode] = useState('')
+  const [billingInterval, setBillingInterval] = useState<'MONTHLY' | 'YEARLY'>('MONTHLY')
   const [currency, setCurrency] = useState(localStorage.getItem('met_currency') || 'USD')
+  const [subscription, setSubscription] = useState<SubscriptionSummary | null>(null)
   const [transferLogs, setTransferLogs] = useState<TransferLog[]>([])
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [isSavingPassword, setIsSavingPassword] = useState(false)
+  const [isLoadingSubscription, setIsLoadingSubscription] = useState(false)
+  const [isSubmittingSubscription, setIsSubmittingSubscription] = useState(false)
   const didHydrateRef = useRef(false)
   const lastSavedRef = useRef({
     name: user?.name || '',
@@ -58,6 +63,30 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
     }
     void loadTransferLogs()
   }, [])
+
+  useEffect(() => {
+    if (!user) {
+      setSubscription(null)
+      return
+    }
+
+    const loadSubscription = async () => {
+      setIsLoadingSubscription(true)
+      try {
+        const response = await api.getSubscription()
+        setSubscription(response.subscription)
+        if (response.subscription.billingInterval) {
+          setBillingInterval(response.subscription.billingInterval)
+        }
+      } catch {
+        // no-op
+      } finally {
+        setIsLoadingSubscription(false)
+      }
+    }
+
+    void loadSubscription()
+  }, [user])
 
   useEffect(() => {
     if (!didHydrateRef.current) {
@@ -166,6 +195,56 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
     }
   }
 
+  const handleActivatePremium = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    try {
+      setIsSubmittingSubscription(true)
+      const response = await api.upgradeSubscription(billingInterval, premiumCode.trim() || undefined)
+      onUserUpdate(response.user)
+      setSubscription(response.subscription)
+      notify.success(response.message || 'Subscription updated.')
+      setPremiumCode('')
+    } catch (error: unknown) {
+      notify.error(extractApiError(error, 'Failed to update subscription.'))
+    } finally {
+      setIsSubmittingSubscription(false)
+    }
+  }
+
+  const handleDowngradeSubscription = async (immediate: boolean) => {
+    try {
+      setIsSubmittingSubscription(true)
+      const response = await api.downgradeSubscription(immediate)
+      onUserUpdate(response.user)
+      setSubscription(response.subscription)
+      notify.success(response.message || 'Subscription updated.')
+    } catch (error: unknown) {
+      notify.error(extractApiError(error, 'Failed to change subscription.'))
+    } finally {
+      setIsSubmittingSubscription(false)
+    }
+  }
+
+  const handleResumeSubscription = async () => {
+    try {
+      setIsSubmittingSubscription(true)
+      const response = await api.resumeSubscription()
+      onUserUpdate(response.user)
+      setSubscription(response.subscription)
+      notify.success(response.message || 'Subscription resumed.')
+    } catch (error: unknown) {
+      notify.error(extractApiError(error, 'Failed to resume subscription.'))
+    } finally {
+      setIsSubmittingSubscription(false)
+    }
+  }
+
+  const isPremiumUser = user?.role === 'PREMIUM' || user?.role === 'ADMIN'
+  const periodEndLabel = subscription?.currentPeriodEnd
+    ? new Date(subscription.currentPeriodEnd).toLocaleDateString()
+    : null
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <header className="space-y-1">
@@ -178,6 +257,33 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 space-y-6">
+          <section className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-6 md:p-8">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+              <div className="space-y-3">
+                <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-black tracking-[0.24em] text-amber-800">
+                  <Gem size={14} />
+                  {isPremiumUser ? 'PREMIUM MEMBERSHIP' : 'PREMIUM PREVIEW'}
+                </div>
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                    {isPremiumUser ? 'You are inside the premium lane.' : 'Premium should feel unmistakably better.'}
+                  </h2>
+                  <p className="max-w-2xl text-sm sm:text-base text-slate-600">
+                    {isPremiumUser
+                      ? 'Your workspace now has deeper analysis, longer range visibility and a more flexible transaction review flow.'
+                      : 'Upgrade to unlock stronger visibility into trends, a wider analysis horizon and advanced filtering.'}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[31rem]">
+                <MembershipChip icon={LineChart} label="Insights" value={isPremiumUser ? 'Enabled' : 'Locked'} />
+                <MembershipChip icon={Sparkles} label="90D Range" value={isPremiumUser ? 'Enabled' : 'Locked'} />
+                <MembershipChip icon={WalletCards} label="Accounts" value={isPremiumUser ? (user?.role === 'ADMIN' ? '20' : '10') : '3'} />
+                <MembershipChip icon={ShieldCheck} label="Plan" value={user?.role || 'BASIC'} />
+              </div>
+            </div>
+          </section>
+
           <section className="bg-card border rounded-2xl overflow-hidden">
             <div className="p-6 md:p-8 space-y-6">
               <div className="flex items-center gap-2 text-foreground">
@@ -209,6 +315,10 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                   readOnly
                   className="w-full px-4 py-3 bg-muted/50 border rounded-xl outline-none text-muted-foreground"
                 />
+              </div>
+
+              <div className="text-xs text-muted-foreground">
+                Current plan: <span className="font-semibold text-foreground">{user?.role || 'BASIC'}</span>
               </div>
 
               <form className="space-y-4 pt-2" onSubmit={(e) => e.preventDefault()}>
@@ -274,6 +384,170 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                 </select>
               </div>
             </div>
+          </section>
+
+          <section className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-6 md:p-8 space-y-5">
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-amber-800">
+              <Gem size={13} />
+              SUBSCRIPTION CONTROL
+            </div>
+            {isLoadingSubscription ? (
+              <p className="text-sm text-muted-foreground">Loading subscription...</p>
+            ) : user?.role === 'ADMIN' ? (
+              <p className="text-sm text-muted-foreground">
+                Admin access already includes premium capabilities. Billing lifecycle controls are disabled for admin accounts.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-[24px] border border-white/60 bg-white/90 p-5 space-y-4 shadow-sm">
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 font-semibold text-amber-900">
+                      Plan: {subscription?.plan || user?.role || 'BASIC'}
+                    </span>
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-semibold text-slate-700">
+                      Status: {subscription?.status || (isPremiumUser ? 'ACTIVE' : 'ACTIVE')}
+                    </span>
+                    {subscription?.billingInterval && (
+                      <span className="rounded-full border border-slate-200 bg-white px-3 py-1 font-semibold text-slate-700">
+                        {subscription.billingInterval}
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <SubscriptionInfoCard
+                      label="Plan posture"
+                      value={isPremiumUser ? 'Premium unlocked' : 'Basic active'}
+                      description={isPremiumUser ? 'Your premium features are available across the product.' : 'Upgrade whenever you want stronger analysis tools.'}
+                    />
+                    <SubscriptionInfoCard
+                      label="Billing cadence"
+                      value={subscription?.billingInterval || 'N/A'}
+                      description={subscription?.billingInterval ? 'Current billing interval on file.' : 'No recurring premium billing yet.'}
+                    />
+                    <SubscriptionInfoCard
+                      label="Current period"
+                      value={periodEndLabel || 'Not started'}
+                      description={periodEndLabel ? 'Displayed as the active period end date.' : 'Will appear after activation or webhook confirmation.'}
+                    />
+                  </div>
+                  <p className="text-sm text-slate-600">
+                    {subscription?.status === 'PENDING'
+                      ? 'Upgrade is waiting for a billing confirmation webhook.'
+                      : isPremiumUser
+                        ? `Premium features are enabled${periodEndLabel ? `. Current period ends on ${periodEndLabel}.` : '.'}`
+                        : 'Unlock Premium features: advanced dashboard insights, smart transaction filters and higher account limits.'}
+                  </p>
+                  {subscription?.externalSubscriptionId && subscription.status === 'PENDING' && (
+                    <p className="text-xs text-slate-500">
+                      Checkout reference: <span className="font-mono">{subscription.externalSubscriptionId}</span>
+                    </p>
+                  )}
+                </div>
+
+                {!isPremiumUser ? (
+                  <form onSubmit={handleActivatePremium} className="space-y-4 rounded-[24px] border border-dashed border-amber-300/80 bg-white/80 p-5">
+                    <div className="space-y-1">
+                      <h3 className="text-lg font-black tracking-tight text-slate-900">Upgrade path</h3>
+                      <p className="text-sm text-slate-600">Choose a billing interval or use a promo code for instant local activation.</p>
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="settings-billing-interval" className="text-sm font-semibold text-slate-600">Billing interval</label>
+                      <select
+                        id="settings-billing-interval"
+                        value={billingInterval}
+                        onChange={(e) => setBillingInterval(e.target.value as 'MONTHLY' | 'YEARLY')}
+                        className="w-full rounded-2xl border border-amber-200 bg-white px-4 py-3 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-200/40"
+                      >
+                        <option value="MONTHLY">Monthly</option>
+                        <option value="YEARLY">Yearly</option>
+                      </select>
+                    </div>
+                    <input
+                      id="settings-premium-code"
+                      name="premiumCode"
+                      type="text"
+                      autoComplete="off"
+                      value={premiumCode}
+                      onChange={(e) => setPremiumCode(e.target.value)}
+                      placeholder="Optional promo code for instant activation"
+                      className="w-full rounded-2xl border border-amber-200 bg-white px-4 py-3 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-200/40"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isSubmittingSubscription}
+                      className="w-full sm:w-auto rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-5 py-3 font-black text-white shadow-lg shadow-amber-500/20 transition hover:opacity-95 disabled:opacity-60"
+                    >
+                      {subscription?.status === 'PENDING' ? 'Request Again' : 'Upgrade to Premium'}
+                    </button>
+                  </form>
+                ) : (
+                  <div className="rounded-[24px] border border-white/60 bg-white/80 p-5">
+                    <div className="mb-4 space-y-1">
+                      <h3 className="text-lg font-black tracking-tight text-slate-900">Membership actions</h3>
+                      <p className="text-sm text-slate-600">Control renewal behavior while keeping the premium state clearly visible.</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                    {subscription?.cancelAtPeriodEnd ? (
+                      <button
+                        type="button"
+                        onClick={handleResumeSubscription}
+                        disabled={isSubmittingSubscription}
+                        className="rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-3 font-black text-white shadow-lg shadow-emerald-500/20 transition hover:opacity-95 disabled:opacity-60"
+                      >
+                        Resume Renewal
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleDowngradeSubscription(false)}
+                        disabled={isSubmittingSubscription}
+                        className="rounded-2xl border border-slate-300 bg-white px-5 py-3 font-black text-slate-800 transition hover:bg-slate-50 disabled:opacity-60"
+                      >
+                        Cancel At Period End
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleDowngradeSubscription(true)}
+                      disabled={isSubmittingSubscription}
+                      className="rounded-2xl border border-rose-300 bg-rose-50 px-5 py-3 font-black text-rose-700 transition hover:bg-rose-100 disabled:opacity-60"
+                    >
+                      Downgrade Now
+                    </button>
+                    </div>
+                  </div>
+                )}
+                {!isPremiumUser && (
+                  <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50/70 p-5">
+                    <div className="mb-4 space-y-1">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700">
+                        <Lock size={13} />
+                        LOCKED PREVIEW
+                      </div>
+                      <h3 className="text-lg font-black tracking-tight text-slate-900">What unlocks with premium</h3>
+                      <p className="text-sm text-slate-600">These features are already wired into the product and become visible once your subscription is active.</p>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <SubscriptionInfoCard
+                        label="Dashboard"
+                        value="Insights"
+                        description="Average daily net, forward projection and savings quality."
+                      />
+                      <SubscriptionInfoCard
+                        label="Transactions"
+                        value="Advanced filters"
+                        description="Search by content and narrow by type without leaving the ledger."
+                      />
+                      <SubscriptionInfoCard
+                        label="Workspace"
+                        value="Higher limits"
+                        description="More accounts for clearer separation of budgets, cash pools and goals."
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </section>
 
           <section className="bg-card border rounded-2xl p-6 md:p-8 space-y-4">
@@ -411,5 +685,39 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
     </div>
   )
 }
+
+const MembershipChip = ({
+  icon: Icon,
+  label,
+  value
+}: {
+  icon: typeof Gem
+  label: string
+  value: string
+}) => (
+  <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-slate-900">
+    <div className="flex items-center gap-2">
+      <Icon size={15} className="text-amber-600" />
+      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{label}</span>
+    </div>
+    <p className="mt-2 text-sm font-black tracking-tight">{value}</p>
+  </div>
+)
+
+const SubscriptionInfoCard = ({
+  label,
+  value,
+  description
+}: {
+  label: string
+  value: string
+  description: string
+}) => (
+  <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{label}</p>
+    <p className="mt-2 text-lg font-black tracking-tight text-slate-900">{value}</p>
+    <p className="mt-2 text-xs text-slate-500">{description}</p>
+  </div>
+)
 
 export default SettingsPage

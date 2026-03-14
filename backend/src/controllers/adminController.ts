@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express'
 import { PrismaClient, Prisma, UserRole } from '@prisma/client'
 import { writeAuditLog } from '../lib/auditLog.ts'
+import { buildBasicSubscriptionState, buildPremiumSubscriptionState, ensureSubscriptionRecord, syncUserRoleFromSubscription } from '../lib/subscription.ts'
 
 const prisma = new PrismaClient()
 
@@ -33,7 +34,7 @@ export const listUsers = async (req: Request, res: Response, next: NextFunction)
           ]
         }
       : {}),
-    ...(role === 'BASIC' || role === 'ADMIN' ? { role: role as UserRole } : {}),
+    ...(role === 'BASIC' || role === 'PREMIUM' || role === 'ADMIN' ? { role: role as UserRole } : {}),
     ...(status === 'banned' ? { isBanned: true } : status === 'active' ? { isBanned: false } : {})
   }
 
@@ -85,6 +86,7 @@ export const getUserDetails = async (req: Request, res: Response, next: NextFunc
     const user = await prisma.user.findUnique({
       where: { id: targetUserId },
       include: {
+        subscription: true,
         accounts: { orderBy: { createdAt: 'asc' } },
         categories: { orderBy: { createdAt: 'asc' } },
         transactions: {
@@ -142,6 +144,68 @@ export const setUserBanState = async (req: Request, res: Response, next: NextFun
       targetUserId,
       action: isBanned ? 'ADMIN_BAN_USER' : 'ADMIN_UNBAN_USER',
       details: { targetEmail: targetUser.email }
+    })
+
+    res.json(updated)
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const setUserRoleAsAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  const adminUserId = (req as any).userId as string
+  const adminRole = (req as any).userRole as UserRole
+  const targetUserId = String(req.params.id)
+  const nextRole = String(req.body?.role || '').toUpperCase() as 'BASIC' | 'PREMIUM'
+
+  try {
+    const targetUser = await prisma.user.findUnique({ where: { id: targetUserId } })
+    if (!targetUser) return res.status(404).json({ error: 'User not found.' })
+
+    if (targetUser.id === adminUserId) {
+      return res.status(400).json({ error: 'Admin cannot change own role from admin panel.' })
+    }
+
+    if (targetUser.role === 'ADMIN') {
+      return res.status(400).json({ error: 'Cannot change role for another admin.' })
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const existingSubscription = await ensureSubscriptionRecord(tx, { id: targetUserId, role: targetUser.role })
+
+      const updatedSubscription = nextRole === 'PREMIUM'
+        ? await tx.subscription.update({
+            where: { userId: targetUserId },
+            data: {
+              ...buildPremiumSubscriptionState(existingSubscription.billingInterval || 'MONTHLY', 'ADMIN'),
+              metadata: { grantedByAdmin: adminUserId }
+            }
+          })
+        : await tx.subscription.update({
+            where: { userId: targetUserId },
+            data: {
+              ...buildBasicSubscriptionState('ADMIN', {
+                canceledAt: new Date(),
+                externalCustomerId: existingSubscription.externalCustomerId,
+                metadata: { changedByAdmin: adminUserId }
+              })
+            }
+          })
+
+      await syncUserRoleFromSubscription(tx, targetUserId, updatedSubscription)
+
+      return tx.user.findUnique({
+        where: { id: targetUserId },
+        select: { id: true, email: true, name: true, role: true, isBanned: true }
+      })
+    })
+
+    await writeAuditLog({
+      actorUserId: adminUserId,
+      actorRole: adminRole,
+      targetUserId,
+      action: 'ADMIN_CHANGE_ROLE',
+      details: { targetEmail: targetUser.email, role: nextRole }
     })
 
     res.json(updated)

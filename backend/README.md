@@ -100,3 +100,82 @@ npx prisma generate
 
 ## Dodatni env
 - `ADMIN_EMAILS` (comma-separated lista admin email adresa)
+
+## Premium
+- Novi env parametar: `PREMIUM_ACCESS_CODE`
+- Novi env parametar: `BILLING_WEBHOOK_SECRET`
+- Endpoint: `POST /api/auth/activate-premium` (`{ code }`)
+- Endpoint: `GET /api/auth/subscription`
+- Endpoint: `POST /api/auth/subscription/upgrade` (`{ billingInterval, code? }`)
+- Endpoint: `POST /api/auth/subscription/downgrade` (`{ immediate? }`)
+- Endpoint: `POST /api/auth/subscription/resume`
+- Endpoint: `POST /api/auth/billing-hook` (`x-billing-hook-secret`)
+- Account limit po roli:
+  - BASIC: 3
+  - PREMIUM: 10
+  - ADMIN: 20
+- Billing hook event-ovi:
+  - `subscription.activated`
+  - `subscription.renewed`
+  - `subscription.canceled`
+  - `subscription.expired`
+  - `subscription.payment_failed`
+
+## Billing webhook primeri
+
+Header:
+- `x-billing-hook-secret: <BILLING_WEBHOOK_SECRET>`
+
+### `subscription.activated`
+```json
+{
+  "eventId": "evt_sub_activated_001",
+  "type": "subscription.activated",
+  "userId": "11111111-1111-1111-1111-111111111111",
+  "externalSubscriptionId": "sub_demo_001",
+  "billingInterval": "MONTHLY",
+  "currentPeriodStart": "2026-03-14T10:00:00.000Z",
+  "currentPeriodEnd": "2026-04-14T10:00:00.000Z",
+  "occurredAt": "2026-03-14T10:00:01.000Z"
+}
+```
+
+### `subscription.payment_failed`
+```json
+{
+  "eventId": "evt_sub_failed_001",
+  "type": "subscription.payment_failed",
+  "externalSubscriptionId": "sub_demo_001",
+  "billingInterval": "MONTHLY",
+  "occurredAt": "2026-03-20T08:30:00.000Z"
+}
+```
+
+### `subscription.expired`
+```json
+{
+  "eventId": "evt_sub_expired_001",
+  "type": "subscription.expired",
+  "externalSubscriptionId": "sub_demo_001",
+  "occurredAt": "2026-04-14T10:05:00.000Z"
+}
+```
+
+### PowerShell test poziv
+```powershell
+Invoke-RestMethod `
+  -Method Post `
+  -Uri "http://localhost:3000/api/auth/billing-hook" `
+  -Headers @{ "x-billing-hook-secret" = "<BILLING_WEBHOOK_SECRET>" } `
+  -ContentType "application/json" `
+  -Body (@{
+    eventId = "evt_sub_activated_001"
+    type = "subscription.activated"
+    userId = "11111111-1111-1111-1111-111111111111"
+    externalSubscriptionId = "sub_demo_001"
+    billingInterval = "MONTHLY"
+    currentPeriodStart = "2026-03-14T10:00:00.000Z"
+    currentPeriodEnd = "2026-04-14T10:00:00.000Z"
+    occurredAt = "2026-03-14T10:00:01.000Z"
+  } | ConvertTo-Json)
+```

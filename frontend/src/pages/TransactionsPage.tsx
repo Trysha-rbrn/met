@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowDown, ArrowUp, Download, Edit2, FileUp, Plus, Tag, Trash2, WalletCards } from 'lucide-react'
+import { ArrowDown, ArrowUp, Download, Edit2, FileUp, Plus, Search, Tag, Trash2, WalletCards, Gem, Sparkles, ShieldCheck, Lock, BookmarkPlus, X } from 'lucide-react'
 import ExcelJS from 'exceljs/dist/exceljs.min.js'
 import type { CellValue } from 'exceljs'
 import { jsPDF } from 'jspdf'
@@ -15,9 +15,21 @@ import TransactionModal from '../components/TransactionModal'
 import { extractApiError, notify } from '../lib/toast'
 import { renderCategoryIcon } from '../lib/categoryIcons'
 
-const MAX_ACCOUNTS = 3
+type UserRole = 'BASIC' | 'PREMIUM' | 'ADMIN'
+type SavedFilterType = 'ALL' | 'INCOME' | 'EXPENSE'
 
-function TransactionsPage() {
+type SavedFilter = {
+  id: string
+  name: string
+  searchTerm: string
+  typeFilter: SavedFilterType
+}
+
+interface TransactionsPageProps {
+  userRole: UserRole
+}
+
+function TransactionsPage({ userRole }: TransactionsPageProps) {
   const [accounts, setAccounts] = useState<Account[]>([])
   const [selectedAccountId, setSelectedAccountId] = useState<string>('')
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -28,12 +40,43 @@ function TransactionsPage() {
   const importInputRef = useRef<HTMLInputElement | null>(null)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
   const [visibleCount, setVisibleCount] = useState(20)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [typeFilter, setTypeFilter] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL')
+  const [savedFilters, setSavedFilters] = useState<SavedFilter[]>([])
 
   const currencyCode = localStorage.getItem('met_currency') || 'USD'
+  const isPremiumUser = userRole === 'PREMIUM' || userRole === 'ADMIN'
+  const maxAccounts = userRole === 'ADMIN' ? 20 : userRole === 'PREMIUM' ? 10 : 3
+  const savedFiltersStorageKey = `met_saved_filters_${userRole.toLowerCase()}`
 
   useEffect(() => {
     void initialize()
   }, [])
+
+  useEffect(() => {
+    if (!isPremiumUser) {
+      setSavedFilters([])
+      return
+    }
+
+    const raw = localStorage.getItem(savedFiltersStorageKey)
+    if (!raw) {
+      setSavedFilters([])
+      return
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as SavedFilter[]
+      setSavedFilters(Array.isArray(parsed) ? parsed : [])
+    } catch {
+      setSavedFilters([])
+    }
+  }, [isPremiumUser, savedFiltersStorageKey])
+
+  useEffect(() => {
+    if (!isPremiumUser) return
+    localStorage.setItem(savedFiltersStorageKey, JSON.stringify(savedFilters))
+  }, [isPremiumUser, savedFilters, savedFiltersStorageKey])
 
   useEffect(() => {
     if (!selectedAccountId) return
@@ -77,8 +120,8 @@ function TransactionsPage() {
   }
 
   const handleCreateAccount = async () => {
-    if (accounts.length >= MAX_ACCOUNTS) {
-      notify.warning('Maximum 3 accounts allowed.')
+    if (accounts.length >= maxAccounts) {
+      notify.warning(`Maximum ${maxAccounts} accounts allowed for ${userRole} plan.`)
       return
     }
 
@@ -140,12 +183,33 @@ function TransactionsPage() {
     [accounts, selectedAccountId]
   )
 
+  const filteredTransactions = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase()
+    return transactions.filter((t) => {
+      if (typeFilter !== 'ALL' && t.type !== typeFilter) return false
+      if (!normalizedSearch) return true
+      const description = (t.description || '').toLowerCase()
+      const categoryName = (t.category?.name || '').toLowerCase()
+      const accountName = (t.account?.name || '').toLowerCase()
+      return description.includes(normalizedSearch) || categoryName.includes(normalizedSearch) || accountName.includes(normalizedSearch)
+    })
+  }, [transactions, searchTerm, typeFilter])
+
+  const activeSavedFilterId = useMemo(() => {
+    const normalizedSearch = searchTerm.trim()
+    return savedFilters.find((filter) => filter.searchTerm === normalizedSearch && filter.typeFilter === typeFilter)?.id || null
+  }, [savedFilters, searchTerm, typeFilter])
+
+  useEffect(() => {
+    setVisibleCount(20)
+  }, [searchTerm, typeFilter, selectedAccountId])
+
   const displayedTransactions = useMemo(
-    () => transactions.slice(0, visibleCount),
-    [transactions, visibleCount]
+    () => filteredTransactions.slice(0, visibleCount),
+    [filteredTransactions, visibleCount]
   )
 
-  const hasMoreTransactions = displayedTransactions.length < transactions.length
+  const hasMoreTransactions = displayedTransactions.length < filteredTransactions.length
 
   useEffect(() => {
     const node = loadMoreRef.current
@@ -157,7 +221,7 @@ function TransactionsPage() {
         if (!first?.isIntersecting) return
         setLoadingMore(true)
         window.setTimeout(() => {
-          setVisibleCount((prev) => Math.min(prev + 20, transactions.length))
+          setVisibleCount((prev) => Math.min(prev + 20, filteredTransactions.length))
           setLoadingMore(false)
         }, 120)
       },
@@ -166,7 +230,7 @@ function TransactionsPage() {
 
     observer.observe(node)
     return () => observer.disconnect()
-  }, [hasMoreTransactions, loading, transactions.length])
+  }, [filteredTransactions.length, hasMoreTransactions, loading])
 
   const exportExcel = async () => {
     if (!transactions.length) {
@@ -473,6 +537,51 @@ function TransactionsPage() {
     }
   }
 
+  const handleSaveCurrentFilter = () => {
+    if (!isPremiumUser) return
+
+    const normalizedSearch = searchTerm.trim()
+    if (!normalizedSearch && typeFilter === 'ALL') {
+      notify.info('Apply a search term or type filter before saving a smart view.')
+      return
+    }
+
+    const suggestedName = normalizedSearch
+      ? normalizedSearch.slice(0, 32)
+      : typeFilter === 'ALL'
+        ? 'All transactions'
+        : `${typeFilter.toLowerCase()} only`
+    const input = window.prompt('Name this smart view', suggestedName)
+    if (input === null) return
+
+    const name = input.trim()
+    if (!name) {
+      notify.warning('Smart view name is required.')
+      return
+    }
+
+    const nextFilter: SavedFilter = {
+      id: `view_${Date.now()}`,
+      name,
+      searchTerm: normalizedSearch,
+      typeFilter
+    }
+
+    setSavedFilters((prev) => [nextFilter, ...prev].slice(0, 8))
+    notify.success('Smart view saved.')
+  }
+
+  const handleApplySavedFilter = (filter: SavedFilter) => {
+    setSearchTerm(filter.searchTerm)
+    setTypeFilter(filter.typeFilter)
+    notify.info(`Applied "${filter.name}".`)
+  }
+
+  const handleDeleteSavedFilter = (filterId: string) => {
+    setSavedFilters((prev) => prev.filter((filter) => filter.id !== filterId))
+    notify.success('Smart view removed.')
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -532,6 +641,33 @@ function TransactionsPage() {
           </div>
         </div>
 
+        <section className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-5 md:p-6">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="space-y-3">
+              <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-black tracking-[0.24em] text-amber-800">
+                <Gem size={14} />
+                {isPremiumUser ? 'PREMIUM FLOW' : 'PREMIUM PREVIEW'}
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                  {isPremiumUser ? 'Filter faster. Scan less. Find patterns sooner.' : 'Premium turns transactions into a faster review workspace.'}
+                </h2>
+                <p className="max-w-2xl text-sm sm:text-base text-slate-600">
+                  {isPremiumUser
+                    ? 'Advanced search and type filtering are active, with a higher account cap for segmented budgets and cleaner ledgers.'
+                    : 'Unlock premium filters plus a larger account limit for cleaner cash-flow organization.'}
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[30rem]">
+              <PremiumSignal icon={Search} label="Search" value={isPremiumUser ? 'Enabled' : 'Locked'} />
+              <PremiumSignal icon={Sparkles} label="Type Filter" value={isPremiumUser ? 'Advanced' : 'Basic'} />
+              <PremiumSignal icon={WalletCards} label="Account Limit" value={String(maxAccounts)} />
+              <PremiumSignal icon={ShieldCheck} label="Plan" value={userRole} />
+            </div>
+          </div>
+        </section>
+
         <div className="bg-card border rounded-2xl p-4 md:p-5 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
           <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
             <WalletCards size={16} />
@@ -553,12 +689,125 @@ function TransactionsPage() {
               type="button"
               onClick={handleCreateAccount}
               className="w-full sm:w-auto min-h-11 px-4 py-2.5 rounded-xl border font-semibold hover:bg-muted transition-colors"
-              disabled={accounts.length >= MAX_ACCOUNTS}
+              disabled={accounts.length >= maxAccounts}
             >
-              {accounts.length >= MAX_ACCOUNTS ? 'Account limit reached' : 'Create Account'}
+              {accounts.length >= maxAccounts ? 'Account limit reached' : 'Create Account'}
             </button>
           </div>
         </div>
+        <p className="text-xs text-muted-foreground">
+          Plan: <span className="font-semibold">{userRole}</span> • Account limit: {maxAccounts}
+        </p>
+        {isPremiumUser ? (
+          <div className="space-y-3">
+            <div className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-4 md:p-5">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="space-y-1">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-amber-800">
+                    <Gem size={13} />
+                    PREMIUM FILTERS
+                  </div>
+                  <p className="text-sm font-semibold text-slate-800">Refine by text, category context and transaction type without leaving the ledger.</p>
+                  <p className="text-xs text-slate-500">Search hits check description, category and account labels.</p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                  <label className="relative block w-full sm:min-w-80">
+                    <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-amber-700" />
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Search description, category, account..."
+                      className="w-full min-h-12 rounded-2xl border border-amber-200 bg-white/90 pl-11 pr-4 text-sm shadow-sm outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-200/40"
+                    />
+                  </label>
+                  <select
+                    value={typeFilter}
+                    onChange={(e) => setTypeFilter(e.target.value as 'ALL' | 'INCOME' | 'EXPENSE')}
+                    className="w-full sm:w-44 min-h-12 rounded-2xl border border-amber-200 bg-white/90 px-4 text-sm font-semibold shadow-sm outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-200/40"
+                  >
+                    <option value="ALL">All types</option>
+                    <option value="INCOME">Income</option>
+                    <option value="EXPENSE">Expense</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-[24px] border bg-card p-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="space-y-1">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700">
+                    <BookmarkPlus size={13} />
+                    SMART VIEWS
+                  </div>
+                  <p className="text-sm font-semibold text-slate-800">Save your current premium filter setup and reuse it instantly.</p>
+                  <p className="text-xs text-slate-500">Best for recurring reviews like payroll, groceries or expense-only scans.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSaveCurrentFilter}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-800 transition hover:bg-slate-50"
+                >
+                  <BookmarkPlus size={15} />
+                  Save Current View
+                </button>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {savedFilters.length === 0 ? (
+                  <p className="text-sm text-slate-500">No saved views yet. Build one with search or type filter, then save it.</p>
+                ) : (
+                  savedFilters.map((filter) => (
+                    <div
+                      key={filter.id}
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm ${
+                        activeSavedFilterId === filter.id
+                          ? 'border-amber-300 bg-amber-50 text-amber-900'
+                          : 'border-slate-200 bg-white text-slate-700'
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleApplySavedFilter(filter)}
+                        className="font-semibold"
+                      >
+                        {filter.name}
+                      </button>
+                      <span className="text-xs text-slate-400">•</span>
+                      <span className="text-xs text-slate-500">
+                        {filter.typeFilter}{filter.searchTerm ? ` / ${filter.searchTerm}` : ''}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSavedFilter(filter.id)}
+                        className="rounded-full p-0.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                        aria-label={`Delete ${filter.name}`}
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-[24px] border border-dashed border-slate-300 bg-[linear-gradient(135deg,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] p-4 md:p-5">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700">
+                  <Lock size={13} />
+                  LOCKED FILTER PREVIEW
+                </div>
+                <p className="text-sm font-semibold text-slate-800">Premium adds instant search and type-based narrowing inside the ledger.</p>
+                <p className="text-xs text-slate-500">Search covers description, category and account names.</p>
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:min-w-[27rem]">
+                <LockedMiniCard title="Text search" subtitle="Jump directly to matching transactions." />
+                <LockedMiniCard title="Type filter" subtitle="Slice income and expense activity in one click." />
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       <div className="bg-card border rounded-2xl shadow-sm overflow-hidden">
@@ -610,7 +859,7 @@ function TransactionsPage() {
         {!loading && (
           <div className="px-4 pb-4 pt-2 text-center">
             <p className="text-xs text-muted-foreground mb-2">
-              Showing {displayedTransactions.length} of {transactions.length} transactions
+              Showing {displayedTransactions.length} of {filteredTransactions.length} transaction(s)
             </p>
             {hasMoreTransactions ? (
               <div ref={loadMoreRef} className="h-10 flex items-center justify-center">
@@ -775,3 +1024,31 @@ const MobileTransactionSkeleton = () => (
 )
 
 export default TransactionsPage
+
+const PremiumSignal = ({
+  icon: Icon,
+  label,
+  value
+}: {
+  icon: typeof Search
+  label: string
+  value: string
+}) => (
+  <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-slate-900">
+    <div className="flex items-center gap-2">
+      <Icon size={15} className="text-amber-600" />
+      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{label}</span>
+    </div>
+    <p className="mt-2 text-sm font-black tracking-tight">{value}</p>
+  </div>
+)
+
+const LockedMiniCard = ({ title, subtitle }: { title: string; subtitle: string }) => (
+  <div className="rounded-2xl border border-slate-200 bg-white p-4">
+    <div className="flex items-center justify-between">
+      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{title}</p>
+      <Lock size={14} className="text-slate-400" />
+    </div>
+    <p className="mt-3 text-sm text-slate-600">{subtitle}</p>
+  </div>
+)

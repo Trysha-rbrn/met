@@ -11,20 +11,21 @@ datasource db {
 }
 
 model User {
-  id           String        @id @default(uuid())
-  email        String        @unique
-  password     String
-  name         String?
-  role         UserRole      @default(BASIC)
-  isBanned     Boolean       @default(false)
-  accounts     Account[]
-  categories   Category[]
-  transferLogs DataTransferLog[]
-  transactions Transaction[]
+  id                String           @id @default(uuid())
+  email             String           @unique
+  password          String
+  name              String?
+  role              UserRole         @default(BASIC)
+  isBanned          Boolean          @default(false)
+  accounts          Account[]
+  categories        Category[]
+  transferLogs      DataTransferLog[]
+  transactions      Transaction[]
+  subscription      Subscription?
   auditLogsAsActor AuditLog[] @relation("AuditActor")
   auditLogsAsTarget AuditLog[] @relation("AuditTarget")
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 }
 
 model Account {
@@ -116,7 +117,58 @@ model AuditLog {
   @@index([action, createdAt])
 }
 
+model Subscription {
+  id                     String             @id @default(uuid())
+  userId                 String             @unique
+  user                   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan                   SubscriptionPlan   @default(BASIC)
+  status                 SubscriptionStatus @default(ACTIVE)
+  billingInterval        BillingInterval?
+  source                 SubscriptionSource @default(SYSTEM)
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  cancelAtPeriodEnd      Boolean            @default(false)
+  canceledAt             DateTime?
+  externalCustomerId     String?
+  externalSubscriptionId String?            @unique
+  lastWebhookEventId     String?
+  lastWebhookEventAt     DateTime?
+  metadata               Json?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  @@index([status, currentPeriodEnd])
+}
+
 enum UserRole {
   BASIC
+  PREMIUM
   ADMIN
+}
+
+enum SubscriptionPlan {
+  BASIC
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PENDING
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+}
+
+enum SubscriptionSource {
+  SYSTEM
+  PROMO_CODE
+  BILLING
+  BILLING_WEBHOOK
+  ADMIN
+  LEGACY_IMPORT
 }

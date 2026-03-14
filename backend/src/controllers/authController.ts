@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken'
 import type { SignOptions } from 'jsonwebtoken'
 import { env } from '../config/env.ts'
 import { writeAuditLog } from '../lib/auditLog.ts'
+import { buildPremiumSubscriptionState, ensureSubscriptionRecord, syncUserRoleFromSubscription } from '../lib/subscription.ts'
 
 const prisma = new PrismaClient()
 
@@ -55,6 +56,16 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         data: {
           name: 'Primary',
           userId: createdUser.id
+        }
+      })
+
+      await tx.subscription.create({
+        data: {
+          userId: createdUser.id,
+          plan: 'BASIC',
+          status: 'ACTIVE',
+          billingInterval: null,
+          source: 'SYSTEM'
         }
       })
 
@@ -262,6 +273,68 @@ export const resetUserData = async (req: Request, res: Response, next: NextFunct
     })
 
     res.json({ message: 'User financial data cleared. Primary account preserved.' })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const activatePremium = async (req: Request, res: Response, next: NextFunction) => {
+  const userId = (req as any).userId
+  const userRole = (req as any).userRole as UserRole
+  const providedCode = String(req.body?.code || '').trim()
+
+  try {
+    if (!env.premiumAccessCode) {
+      return res.status(400).json({ error: 'Premium activation is not configured.' })
+    }
+
+    if (!providedCode) {
+      return res.status(400).json({ error: 'Premium activation code is required.' })
+    }
+
+    if (providedCode !== env.premiumAccessCode) {
+      return res.status(400).json({ error: 'Invalid premium activation code.' })
+    }
+
+    if (userRole === 'PREMIUM' || userRole === 'ADMIN') {
+      await ensureSubscriptionRecord(prisma, { id: userId, role: userRole })
+      const existingUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, email: true, name: true, role: true, isBanned: true }
+      })
+      return res.json(existingUser)
+    }
+
+    const updatedUser = await prisma.$transaction(async (tx) => {
+      const upgradedSubscription = await tx.subscription.upsert({
+        where: { userId },
+        update: {
+          ...buildPremiumSubscriptionState('MONTHLY', 'PROMO_CODE'),
+          metadata: { activationMethod: 'legacy_promo_endpoint' }
+        },
+        create: {
+          userId,
+          ...buildPremiumSubscriptionState('MONTHLY', 'PROMO_CODE'),
+          metadata: { activationMethod: 'legacy_promo_endpoint' }
+        }
+      })
+
+      await syncUserRoleFromSubscription(tx, userId, upgradedSubscription)
+
+      return tx.user.findUnique({
+        where: { id: userId },
+        select: { id: true, email: true, name: true, role: true, isBanned: true }
+      })
+    })
+
+    await writeAuditLog({
+      actorUserId: userId,
+      actorRole: userRole,
+      targetUserId: userId,
+      action: 'ROLE_UPGRADE_PREMIUM'
+    })
+
+    res.json(updatedUser)
   } catch (error) {
     next(error)
   }

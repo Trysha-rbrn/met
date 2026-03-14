@@ -32,6 +32,8 @@ export const env = {
     .split(',')
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean),
+  premiumAccessCode: process.env.PREMIUM_ACCESS_CODE?.trim() || '',
+  billingWebhookSecret: process.env.BILLING_WEBHOOK_SECRET?.trim() || '',
   allowPrivateNetworkOrigins: process.env.ALLOW_PRIVATE_NETWORK_ORIGINS === 'true',
   serverInstanceId: randomUUID(),
 }
