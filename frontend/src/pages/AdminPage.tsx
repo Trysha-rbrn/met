@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Shield, Search, Ban, Trash2, RefreshCw, Activity, Users, Filter, Gem } from 'lucide-react'
+import { Shield, Search, Ban, Trash2, RefreshCw, Activity, Users, Filter, Gem, TicketPercent } from 'lucide-react'
 import * as adminApi from '../api/adminApi'
 import { extractApiError, notify } from '../lib/toast'
 
@@ -19,6 +19,10 @@ function AdminPage() {
   const [logs, setLogs] = useState<adminApi.AdminAuditLog[]>([])
   const [isLoadingUsers, setIsLoadingUsers] = useState(false)
   const [isLoadingDetails, setIsLoadingDetails] = useState(false)
+  const [promoCodes, setPromoCodes] = useState<adminApi.PromoCodeItem[]>([])
+  const [promoCode, setPromoCode] = useState('')
+  const [promoMaxUses, setPromoMaxUses] = useState('')
+  const [promoExpiresAt, setPromoExpiresAt] = useState('')
 
   const selectedUserListItem = useMemo(
     () => users.find((u) => u.id === selectedUserId) || null,
@@ -80,6 +84,15 @@ function AdminPage() {
     }
   }, [])
 
+  const loadPromoCodes = useCallback(async () => {
+    try {
+      const items = await adminApi.getPromoCodes()
+      setPromoCodes(items)
+    } catch {
+      setPromoCodes([])
+    }
+  }, [])
+
   useEffect(() => {
     void loadUsers()
   }, [loadUsers])
@@ -91,6 +104,10 @@ function AdminPage() {
   useEffect(() => {
     void loadDetails(selectedUserId)
   }, [selectedUserId, loadDetails])
+
+  useEffect(() => {
+    void loadPromoCodes()
+  }, [loadPromoCodes])
 
   const handleToggleBan = async () => {
     if (!selectedUserListItem) return
@@ -127,6 +144,39 @@ function AdminPage() {
       await Promise.all([loadUsers(), loadLogs(), loadDetails(selectedUserListItem.id)])
     } catch (error: unknown) {
       notify.error(extractApiError(error, 'Failed to update user role.'))
+    }
+  }
+
+  const handleCreatePromoCode = async () => {
+    const code = promoCode.trim().toUpperCase()
+    if (!code) {
+      notify.warning('Promo code is required.')
+      return
+    }
+
+    try {
+      await adminApi.createPromoCode({
+        code,
+        maxRedemptions: promoMaxUses ? Number(promoMaxUses) : undefined,
+        expiresAt: promoExpiresAt ? new Date(promoExpiresAt).toISOString() : undefined
+      })
+      notify.success('Promo code created.')
+      setPromoCode('')
+      setPromoMaxUses('')
+      setPromoExpiresAt('')
+      await loadPromoCodes()
+    } catch (error: unknown) {
+      notify.error(extractApiError(error, 'Failed to create promo code.'))
+    }
+  }
+
+  const handleTogglePromoCode = async (item: adminApi.PromoCodeItem) => {
+    try {
+      await adminApi.setPromoCodeState(item.id, !item.isActive)
+      notify.success(item.isActive ? 'Promo code disabled.' : 'Promo code enabled.')
+      await loadPromoCodes()
+    } catch (error: unknown) {
+      notify.error(extractApiError(error, 'Failed to update promo code state.'))
     }
   }
 
@@ -183,6 +233,64 @@ function AdminPage() {
         </div>
       </section>
 
+      <section className="rounded-2xl border bg-card p-4 sm:p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <TicketPercent size={18} className="text-primary" />
+          <h2 className="text-lg font-black tracking-tight">Premium Promo Codes</h2>
+        </div>
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-[1.1fr,0.7fr,0.8fr,auto]">
+          <input
+            value={promoCode}
+            onChange={(e) => setPromoCode(e.target.value)}
+            placeholder="Code (e.g. SPRING2026)"
+            className="h-11 rounded-xl border bg-background px-3 text-sm"
+          />
+          <input
+            type="number"
+            value={promoMaxUses}
+            onChange={(e) => setPromoMaxUses(e.target.value)}
+            placeholder="Max uses (optional)"
+            className="h-11 rounded-xl border bg-background px-3 text-sm"
+          />
+          <input
+            type="date"
+            value={promoExpiresAt}
+            onChange={(e) => setPromoExpiresAt(e.target.value)}
+            className="h-11 rounded-xl border bg-background px-3 text-sm"
+          />
+          <button
+            type="button"
+            onClick={handleCreatePromoCode}
+            className="h-11 rounded-xl border bg-background px-4 text-sm font-semibold hover:bg-muted"
+          >
+            Create
+          </button>
+        </div>
+        <div className="max-h-56 overflow-auto rounded-xl border bg-background">
+          {promoCodes.length === 0 ? (
+            <p className="p-3 text-sm text-muted-foreground">No promo codes yet.</p>
+          ) : (
+            promoCodes.map((item) => (
+              <div key={item.id} className="border-b last:border-b-0 p-3 text-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-bold">{item.code}</p>
+                  <button
+                    type="button"
+                    onClick={() => void handleTogglePromoCode(item)}
+                    className="rounded-lg border px-2 py-1 text-xs font-semibold hover:bg-muted"
+                  >
+                    {item.isActive ? 'Disable' : 'Enable'}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Uses: {item.redemptionCount}{item.maxRedemptions ? ` / ${item.maxRedemptions}` : ''} | Expires: {item.expiresAt ? new Date(item.expiresAt).toLocaleDateString() : 'Never'}
+                </p>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <section className="xl:col-span-1 rounded-2xl border bg-card">
           <div className="flex items-center justify-between border-b px-4 py-3">
@@ -215,12 +323,12 @@ function AdminPage() {
           <article className="rounded-2xl border bg-card p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-lg font-black tracking-tight">User Details</h2>
-              <div className="flex gap-2">
+              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
                 <button
                   type="button"
                   onClick={() => handleSetRole('PREMIUM')}
                   disabled={!selectedUserListItem || selectedUserListItem.role === 'PREMIUM' || selectedUserListItem.role === 'ADMIN'}
-                  className="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold bg-background hover:bg-muted disabled:opacity-50"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold bg-background hover:bg-muted disabled:opacity-50 sm:text-sm"
                 >
                   <Gem size={15} />
                   Set Premium
@@ -229,7 +337,7 @@ function AdminPage() {
                   type="button"
                   onClick={() => handleSetRole('BASIC')}
                   disabled={!selectedUserListItem || selectedUserListItem.role === 'BASIC' || selectedUserListItem.role === 'ADMIN'}
-                  className="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold bg-background hover:bg-muted disabled:opacity-50"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold bg-background hover:bg-muted disabled:opacity-50 sm:text-sm"
                 >
                   <Users size={15} />
                   Set Basic
@@ -238,7 +346,7 @@ function AdminPage() {
                   type="button"
                   onClick={handleToggleBan}
                   disabled={!selectedUserListItem}
-                  className="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold bg-background hover:bg-muted disabled:opacity-50"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold bg-background hover:bg-muted disabled:opacity-50 sm:text-sm"
                 >
                   <Ban size={15} />
                   {selectedUserListItem?.isBanned ? 'Unban' : 'Ban'}
@@ -247,7 +355,7 @@ function AdminPage() {
                   type="button"
                   onClick={handleDeleteUser}
                   disabled={!selectedUserListItem}
-                  className="inline-flex items-center gap-2 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-50 sm:text-sm"
                 >
                   <Trash2 size={15} />
                   Delete

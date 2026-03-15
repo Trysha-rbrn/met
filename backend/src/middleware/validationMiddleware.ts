@@ -1,10 +1,11 @@
 import { NextFunction, Request, Response } from 'express'
+import { SUPPORTED_CURRENCIES } from '../lib/currency.ts'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const ICON_KEY_REGEX = /^[A-Za-z][A-Za-z0-9]{0,39}$/
 const TX_TYPES = new Set(['INCOME', 'EXPENSE'])
-const SUPPORTED_CURRENCIES = new Set(['USD', 'EUR', 'CAD', 'RUB', 'RSD', 'TRY'])
+const SUPPORTED_CURRENCIES_SET = new Set(SUPPORTED_CURRENCIES)
 const TRANSFER_ACTIONS = new Set(['IMPORT', 'EXPORT'])
 const TRANSFER_FORMATS = new Set(['EXCEL', 'PDF'])
 const BILLING_INTERVALS = new Set(['MONTHLY', 'YEARLY'])
@@ -93,7 +94,7 @@ export const validateUpdateProfile = (req: Request, res: Response, next: NextFun
   if (typeof name === 'string' && name.trim().length > 80) errors.push('Name can be up to 80 characters.')
   if (typeof preferredCurrency !== 'undefined') {
     const normalizedCurrency = toTrimmedString(preferredCurrency).toUpperCase()
-    if (!SUPPORTED_CURRENCIES.has(normalizedCurrency)) {
+    if (!SUPPORTED_CURRENCIES_SET.has(normalizedCurrency as (typeof SUPPORTED_CURRENCIES)[number])) {
       errors.push('Preferred currency is not supported.')
     } else {
       req.body.preferredCurrency = normalizedCurrency
@@ -219,6 +220,69 @@ export const validateTransactionIdParam = (req: Request, res: Response, next: Ne
   if (!isValidUuid(req.params.id)) {
     return sendValidationError(res, ['Transaction id must be a valid UUID.'])
   }
+  return next()
+}
+
+export const validateBulkAssignTransactionCategory = (req: Request, res: Response, next: NextFunction) => {
+  if (!isPlainObject(req.body)) {
+    return sendValidationError(res, ['Invalid request body.'])
+  }
+
+  const transactionIds = Array.isArray(req.body.transactionIds) ? req.body.transactionIds : []
+  const categoryId = toTrimmedString(req.body.categoryId)
+  const errors: string[] = []
+
+  if (transactionIds.length === 0) errors.push('transactionIds must contain at least one id.')
+  if (transactionIds.length > 200) errors.push('transactionIds can include up to 200 ids.')
+  if (typeof categoryId !== 'undefined' && categoryId !== null && !isValidUuid(categoryId)) {
+    errors.push('categoryId must be a valid UUID.')
+  }
+  if (transactionIds.some((id) => !isValidUuid(id))) errors.push('Each transaction id must be a valid UUID.')
+
+  if (errors.length > 0) return sendValidationError(res, errors)
+
+  req.body.transactionIds = [...new Set(transactionIds)]
+  req.body.categoryId = typeof categoryId === 'undefined' || categoryId === null ? undefined : categoryId
+  return next()
+}
+
+export const validateSplitTransaction = (req: Request, res: Response, next: NextFunction) => {
+  if (!isValidUuid(req.params.id)) {
+    return sendValidationError(res, ['Transaction id must be a valid UUID.'])
+  }
+
+  if (!isPlainObject(req.body)) {
+    return sendValidationError(res, ['Invalid request body.'])
+  }
+
+  const splits = Array.isArray(req.body.splits) ? req.body.splits : []
+  const errors: string[] = []
+
+  if (splits.length < 2) errors.push('At least two splits are required.')
+  if (splits.length > 20) errors.push('Up to 20 splits are allowed per request.')
+
+  const normalizedSplits = splits.map((entry) => {
+    const payload = isPlainObject(entry) ? entry : {}
+    const amount = parseAmount(payload.amount)
+    const categoryId = toTrimmedString(payload.categoryId)
+    const description = typeof payload.description === 'string' ? payload.description.trim() : ''
+    return {
+      amount,
+      categoryId,
+      description: description || undefined
+    }
+  })
+
+  if (normalizedSplits.some((entry) => entry.amount === null || (entry.amount || 0) <= 0)) {
+    errors.push('Each split amount must be a positive number.')
+  }
+  if (normalizedSplits.some((entry) => !isValidUuid(entry.categoryId))) {
+    errors.push('Each split categoryId must be a valid UUID.')
+  }
+
+  if (errors.length > 0) return sendValidationError(res, errors)
+
+  req.body.splits = normalizedSplits
   return next()
 }
 
@@ -592,6 +656,125 @@ export const validateBillingWebhook = (req: Request, res: Response, next: NextFu
   req.body.userId = userId || undefined
   req.body.externalSubscriptionId = externalSubscriptionId || undefined
   req.body.billingInterval = billingInterval || undefined
+  return next()
+}
+
+export const validateCreatePromoCode = (req: Request, res: Response, next: NextFunction) => {
+  if (!isPlainObject(req.body)) {
+    return sendValidationError(res, ['Invalid request body.'])
+  }
+
+  const code = toTrimmedString(req.body.code).toUpperCase()
+  const maxRedemptions = typeof req.body.maxRedemptions === 'undefined' || req.body.maxRedemptions === null
+    ? undefined
+    : Number(req.body.maxRedemptions)
+  const expiresAt = typeof req.body.expiresAt === 'undefined' || req.body.expiresAt === null
+    ? undefined
+    : new Date(String(req.body.expiresAt))
+
+  const errors: string[] = []
+
+  if (!code || code.length < 4 || code.length > 40) errors.push('code must be between 4 and 40 characters.')
+  if (!/^[A-Z0-9_-]+$/.test(code)) errors.push('code may only contain letters, numbers, "_" and "-".')
+  if (typeof maxRedemptions !== 'undefined' && (!Number.isInteger(maxRedemptions) || maxRedemptions <= 0)) {
+    errors.push('maxRedemptions must be a positive integer.')
+  }
+  if (typeof expiresAt !== 'undefined' && Number.isNaN(expiresAt.getTime())) {
+    errors.push('expiresAt must be a valid ISO date.')
+  }
+
+  if (errors.length > 0) return sendValidationError(res, errors)
+
+  req.body.code = code
+  req.body.maxRedemptions = maxRedemptions
+  req.body.expiresAt = expiresAt?.toISOString()
+  return next()
+}
+
+export const validateSetPromoCodeState = (req: Request, res: Response, next: NextFunction) => {
+  if (!isValidUuid(req.params.id)) {
+    return sendValidationError(res, ['Promo code id must be a valid UUID.'])
+  }
+
+  if (!isPlainObject(req.body)) {
+    return sendValidationError(res, ['Invalid request body.'])
+  }
+
+  if (typeof req.body.isActive !== 'boolean') {
+    return sendValidationError(res, ['isActive must be a boolean value.'])
+  }
+
+  return next()
+}
+
+export const validateUpdateBenchmarkPreference = (req: Request, res: Response, next: NextFunction) => {
+  if (!isPlainObject(req.body)) {
+    return sendValidationError(res, ['Invalid request body.'])
+  }
+
+  if (typeof req.body.benchmarkOptOut !== 'boolean') {
+    return sendValidationError(res, ['benchmarkOptOut must be a boolean value.'])
+  }
+
+  return next()
+}
+
+export const validateCreateCategoryRule = (req: Request, res: Response, next: NextFunction) => {
+  if (!isPlainObject(req.body)) {
+    return sendValidationError(res, ['Invalid request body.'])
+  }
+
+  const keyword = toTrimmedString(req.body.keyword).toLowerCase()
+  const categoryId = toTrimmedString(req.body.categoryId)
+  const isActive = typeof req.body.isActive === 'undefined' ? true : req.body.isActive
+  const errors: string[] = []
+
+  if (!keyword || keyword.length < 2 || keyword.length > 80) errors.push('keyword must be between 2 and 80 characters.')
+  if (!isValidUuid(categoryId)) errors.push('categoryId must be a valid UUID.')
+  if (typeof isActive !== 'boolean') errors.push('isActive must be a boolean value.')
+
+  if (errors.length > 0) return sendValidationError(res, errors)
+
+  req.body.keyword = keyword
+  req.body.categoryId = categoryId
+  req.body.isActive = isActive
+  return next()
+}
+
+export const validateUpdateCategoryRule = (req: Request, res: Response, next: NextFunction) => {
+  if (!isValidUuid(req.params.id)) {
+    return sendValidationError(res, ['Rule id must be a valid UUID.'])
+  }
+
+  if (!isPlainObject(req.body)) {
+    return sendValidationError(res, ['Invalid request body.'])
+  }
+
+  const hasAnyField = ['keyword', 'categoryId', 'isActive'].some((field) => typeof req.body[field] !== 'undefined')
+  if (!hasAnyField) {
+    return sendValidationError(res, ['At least one field must be provided for update.'])
+  }
+
+  const errors: string[] = []
+
+  if (typeof req.body.keyword !== 'undefined') {
+    const keyword = toTrimmedString(req.body.keyword).toLowerCase()
+    if (!keyword || keyword.length < 2 || keyword.length > 80) {
+      errors.push('keyword must be between 2 and 80 characters.')
+    } else {
+      req.body.keyword = keyword
+    }
+  }
+
+  if (typeof req.body.categoryId !== 'undefined' && !isValidUuid(req.body.categoryId)) {
+    errors.push('categoryId must be a valid UUID.')
+  }
+
+  if (typeof req.body.isActive !== 'undefined' && typeof req.body.isActive !== 'boolean') {
+    errors.push('isActive must be a boolean value.')
+  }
+
+  if (errors.length > 0) return sendValidationError(res, errors)
   return next()
 }
 

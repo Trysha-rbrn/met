@@ -63,7 +63,7 @@ export interface TransactionPayload {
   description: string
   date: string
   type: TransactionType
-  categoryId: string
+  categoryId?: string
   accountId?: string
   metadata?: Record<string, unknown>
 }
@@ -78,6 +78,34 @@ export interface RecurringTransactionPayload {
   startDate: string
   endDate?: string
   isActive?: boolean
+}
+
+export interface TransactionInsightResponse {
+  rangeDays: number
+  insights: string[]
+  metrics: {
+    incomeTotal: number
+    expenseTotal: number
+    monthlyNet: number
+    projectedSixMonths: number
+    savingsRate: number
+    topCategories: Array<{ name: string; amount: number }>
+  }
+}
+
+export interface TransactionBenchmarkResponse {
+  enabled: boolean
+  available?: boolean
+  reason?: string
+  cohortSize?: number
+  windowDays?: number
+  message?: string
+  comparisons?: Array<{
+    category: string
+    myAmount: number
+    cohortAverage: number
+    diffPercent: number
+  }>
 }
 
 const getAuthHeaders = () => {
@@ -150,5 +178,40 @@ export const runDueRecurringTransactions = async () => {
     {},
     { headers: getAuthHeaders() }
   )
+  return response.data
+}
+
+export const bulkAssignCategory = async (transactionIds: string[], categoryId: string) => {
+  const response = await axios.patch<{ updatedCount: number; skippedCount: number }>(
+    `${API_URL}/bulk/category`,
+    { transactionIds, categoryId },
+    { headers: getAuthHeaders() }
+  )
+  return response.data
+}
+
+export const splitTransaction = async (
+  id: string,
+  splits: Array<{ amount: number; categoryId: string; description?: string }>
+) => {
+  const response = await axios.post<Transaction[]>(`${API_URL}/${id}/split`, { splits }, {
+    headers: getAuthHeaders()
+  })
+  return response.data
+}
+
+export const getInsights = async (accountId?: string) => {
+  const response = await axios.get<TransactionInsightResponse>(`${API_URL}/insights`, {
+    headers: getAuthHeaders(),
+    params: accountId ? { accountId } : undefined
+  })
+  return response.data
+}
+
+export const getBenchmark = async (accountId?: string) => {
+  const response = await axios.get<TransactionBenchmarkResponse>(`${API_URL}/benchmark`, {
+    headers: getAuthHeaders(),
+    params: accountId ? { accountId } : undefined
+  })
   return response.data
 }

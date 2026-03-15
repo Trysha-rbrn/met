@@ -62,6 +62,28 @@ export interface AdminAuditLog {
   targetUser: { id: string; email: string; name: string | null; role: 'BASIC' | 'PREMIUM' | 'ADMIN' } | null
 }
 
+export interface PromoCodeItem {
+  id: string
+  code: string
+  expiresAt: string | null
+  maxRedemptions: number | null
+  redemptionCount: number
+  remainingRedemptions: number | null
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+  createdByAdmin: { id: string; email: string; name: string | null } | null
+  stats: {
+    totalRedemptions: number
+    uniqueUsers: number
+  }
+  recentRedemptions: Array<{
+    id: string
+    createdAt: string
+    user: { id: string; email: string; name: string | null }
+  }>
+}
+
 export const getAdminUsers = async (params: {
   search?: string
   role?: 'BASIC' | 'PREMIUM' | 'ADMIN' | 'ALL'
@@ -117,5 +139,26 @@ export const getAdminAuditLogs = async (params?: { action?: string; userId?: str
       headers: getAuthHeaders()
     }
   )
+  return response.data
+}
+
+export const getPromoCodes = async () => {
+  const response = await axios.get<PromoCodeItem[]>(`${API_URL}/promo-codes`, {
+    headers: getAuthHeaders()
+  })
+  return response.data
+}
+
+export const createPromoCode = async (payload: { code: string; expiresAt?: string; maxRedemptions?: number }) => {
+  const response = await axios.post<PromoCodeItem>(`${API_URL}/promo-codes`, payload, {
+    headers: getAuthHeaders()
+  })
+  return response.data
+}
+
+export const setPromoCodeState = async (id: string, isActive: boolean) => {
+  const response = await axios.patch<PromoCodeItem>(`${API_URL}/promo-codes/${id}/state`, { isActive }, {
+    headers: getAuthHeaders()
+  })
   return response.data
 }

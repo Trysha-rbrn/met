@@ -311,3 +311,117 @@ export const listAuditLogs = async (req: Request, res: Response, next: NextFunct
     next(error)
   }
 }
+
+export const listPromoCodes = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const codes = await prisma.promoCode.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        createdByAdmin: {
+          select: { id: true, email: true, name: true }
+        },
+        _count: {
+          select: { redemptions: true }
+        },
+        redemptions: {
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+          include: {
+            user: {
+              select: { id: true, email: true, name: true }
+            }
+          }
+        }
+      }
+    })
+
+    res.json(codes.map((code) => ({
+      id: code.id,
+      code: code.code,
+      expiresAt: code.expiresAt,
+      maxRedemptions: code.maxRedemptions,
+      redemptionCount: code.redemptionCount,
+      remainingRedemptions: typeof code.maxRedemptions === 'number'
+        ? Math.max(0, code.maxRedemptions - code.redemptionCount)
+        : null,
+      isActive: code.isActive,
+      createdAt: code.createdAt,
+      updatedAt: code.updatedAt,
+      createdByAdmin: code.createdByAdmin,
+      stats: {
+        totalRedemptions: code._count.redemptions,
+        uniqueUsers: code._count.redemptions
+      },
+      recentRedemptions: code.redemptions.map((redemption) => ({
+        id: redemption.id,
+        createdAt: redemption.createdAt,
+        user: redemption.user
+      }))
+    })))
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const createPromoCode = async (req: Request, res: Response, next: NextFunction) => {
+  const adminUserId = (req as any).userId as string
+  const adminRole = (req as any).userRole as UserRole
+  const { code, expiresAt, maxRedemptions } = req.body as {
+    code: string
+    expiresAt?: string
+    maxRedemptions?: number
+  }
+
+  try {
+    const created = await prisma.promoCode.create({
+      data: {
+        code,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        maxRedemptions: typeof maxRedemptions === 'number' ? maxRedemptions : null,
+        createdByAdminId: adminUserId
+      }
+    })
+
+    await writeAuditLog({
+      actorUserId: adminUserId,
+      actorRole: adminRole,
+      action: 'ADMIN_PROMO_CODE_CREATE',
+      details: { promoCodeId: created.id, code: created.code, maxRedemptions: created.maxRedemptions, expiresAt: created.expiresAt }
+    })
+
+    res.status(201).json(created)
+  } catch (error) {
+    if ((error as { code?: string })?.code === 'P2002') {
+      return res.status(400).json({ error: 'Promo code already exists.' })
+    }
+    next(error)
+  }
+}
+
+export const setPromoCodeState = async (req: Request, res: Response, next: NextFunction) => {
+  const adminUserId = (req as any).userId as string
+  const adminRole = (req as any).userRole as UserRole
+  const promoCodeId = String(req.params.id)
+  const isActive = Boolean(req.body?.isActive)
+
+  try {
+    const existing = await prisma.promoCode.findUnique({ where: { id: promoCodeId } })
+    if (!existing) return res.status(404).json({ error: 'Promo code not found.' })
+
+    const updated = await prisma.promoCode.update({
+      where: { id: promoCodeId },
+      data: { isActive }
+    })
+
+    await writeAuditLog({
+      actorUserId: adminUserId,
+      actorRole: adminRole,
+      action: isActive ? 'ADMIN_PROMO_CODE_ACTIVATE' : 'ADMIN_PROMO_CODE_DEACTIVATE',
+      details: { promoCodeId: updated.id, code: updated.code }
+    })
+
+    res.json(updated)
+  } catch (error) {
+    next(error)
+  }
+}

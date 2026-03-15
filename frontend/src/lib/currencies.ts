@@ -1,0 +1,30 @@
+export const CURRENCIES = [
+  { code: 'USD', name: 'US Dollar', symbol: '$' },
+  { code: 'EUR', name: 'Euro', symbol: 'EUR' },
+  { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$' },
+  { code: 'RUB', name: 'Russian Ruble', symbol: 'RUB' },
+  { code: 'RSD', name: 'Serbian Dinar', symbol: 'RSD' },
+  { code: 'TRY', name: 'Turkish Lira', symbol: 'TRY' },
+  { code: 'GBP', name: 'British Pound', symbol: 'GBP' },
+  { code: 'JPY', name: 'Japanese Yen', symbol: 'JPY' },
+  { code: 'CNY', name: 'Chinese Yuan', symbol: 'CNY' },
+  { code: 'INR', name: 'Indian Rupee', symbol: 'INR' },
+  { code: 'AUD', name: 'Australian Dollar', symbol: 'A$' },
+  { code: 'CHF', name: 'Swiss Franc', symbol: 'CHF' },
+  { code: 'BRL', name: 'Brazilian Real', symbol: 'BRL' },
+  { code: 'MXN', name: 'Mexican Peso', symbol: 'MXN' },
+  { code: 'KRW', name: 'South Korean Won', symbol: 'KRW' },
+  { code: 'HKD', name: 'Hong Kong Dollar', symbol: 'HKD' },
+  { code: 'SGD', name: 'Singapore Dollar', symbol: 'SGD' },
+  { code: 'NZD', name: 'New Zealand Dollar', symbol: 'NZD' },
+  { code: 'NOK', name: 'Norwegian Krone', symbol: 'NOK' },
+  { code: 'SEK', name: 'Swedish Krona', symbol: 'SEK' },
+  { code: 'DKK', name: 'Danish Krone', symbol: 'DKK' },
+  { code: 'AED', name: 'UAE Dirham', symbol: 'AED' },
+  { code: 'SAR', name: 'Saudi Riyal', symbol: 'SAR' },
+  { code: 'ZAR', name: 'South African Rand', symbol: 'ZAR' },
+  { code: 'PLN', name: 'Polish Zloty', symbol: 'PLN' },
+  { code: 'IDR', name: 'Indonesian Rupiah', symbol: 'IDR' }
+] as const
+
+export type CurrencyCode = typeof CURRENCIES[number]['code']

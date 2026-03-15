@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, ChevronRight, ChevronDown, Tag, Gem, Lock, Target, CalendarDays } from 'lucide-react'
+import { Plus, Edit2, Trash2, ChevronRight, ChevronDown, Tag, Gem, Target, CalendarDays } from 'lucide-react'
 import * as api from '../api/categoriesApi'
-import type { BudgetGoal, Category } from '../api/categoriesApi'
+import type { BudgetGoal, Category, CategoryRule } from '../api/categoriesApi'
 import CategoryModal from '../components/CategoryModal'
 import { notify } from '../lib/toast'
 import { renderCategoryIcon } from '../lib/categoryIcons'
@@ -19,6 +19,9 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
   const [budgetLoading, setBudgetLoading] = useState(false)
   const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({})
   const [selectedBudgetMonth, setSelectedBudgetMonth] = useState(() => new Date().toISOString().slice(0, 7))
+  const [categoryRules, setCategoryRules] = useState<CategoryRule[]>([])
+  const [newRuleKeyword, setNewRuleKeyword] = useState('')
+  const [newRuleCategoryId, setNewRuleCategoryId] = useState('')
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -34,10 +37,12 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
   useEffect(() => {
     if (!isPremiumUser) {
       setBudgetGoals([])
+      setCategoryRules([])
       return
     }
 
     void fetchBudgetGoals(selectedBudgetMonth)
+    void fetchCategoryRules()
   }, [isPremiumUser, selectedBudgetMonth])
 
   const fetchCategories = async () => {
@@ -100,6 +105,15 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
       notify.error('Failed to load category budgets.')
     } finally {
       setBudgetLoading(false)
+    }
+  }
+
+  const fetchCategoryRules = async () => {
+    try {
+      const rules = await api.getCategoryRules()
+      setCategoryRules(rules)
+    } catch {
+      setCategoryRules([])
     }
   }
 
@@ -166,6 +180,47 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
     } catch (error) {
       console.error('Error deleting budget goal:', error)
       notify.error('Failed to delete budget.')
+    }
+  }
+
+  const handleCreateCategoryRule = async () => {
+    const keyword = newRuleKeyword.trim().toLowerCase()
+    if (!keyword) {
+      notify.warning('Enter a keyword.')
+      return
+    }
+    if (!newRuleCategoryId) {
+      notify.warning('Choose a category.')
+      return
+    }
+
+    try {
+      await api.createCategoryRule({ keyword, categoryId: newRuleCategoryId, isActive: true })
+      notify.success('Rule created.')
+      setNewRuleKeyword('')
+      await fetchCategoryRules()
+    } catch {
+      notify.error('Failed to create rule.')
+    }
+  }
+
+  const handleToggleRule = async (rule: CategoryRule) => {
+    try {
+      await api.updateCategoryRule(rule.id, { isActive: !rule.isActive })
+      await fetchCategoryRules()
+    } catch {
+      notify.error('Failed to update rule.')
+    }
+  }
+
+  const handleDeleteRule = async (ruleId: string) => {
+    if (!window.confirm('Delete this auto-categorization rule?')) return
+    try {
+      await api.deleteCategoryRule(ruleId)
+      notify.success('Rule deleted.')
+      await fetchCategoryRules()
+    } catch {
+      notify.error('Failed to delete rule.')
     }
   }
 
@@ -262,26 +317,71 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
               })}
             </div>
           )}
-        </section>
-      ) : (
-        <section className="rounded-[24px] border border-dashed border-slate-300 bg-[linear-gradient(135deg,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] p-5 md:p-6">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700">
-                <Lock size={13} />
-                LOCKED BUDGET PREVIEW
+
+          <div className="rounded-2xl border border-white/70 bg-white/90 p-4 space-y-4 shadow-sm">
+            <div className="space-y-1">
+              <h3 className="text-base font-black tracking-tight text-slate-900">Auto-categorization rules</h3>
+              <p className="text-xs text-slate-500">If description contains a keyword, transaction gets assigned to selected category.</p>
+            </div>
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-[1fr,1fr,auto]">
+              <input
+                value={newRuleKeyword}
+                onChange={(e) => setNewRuleKeyword(e.target.value)}
+                placeholder='Keyword (e.g. "lidl")'
+                className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm"
+              />
+              <select
+                value={newRuleCategoryId}
+                onChange={(e) => setNewRuleCategoryId(e.target.value)}
+                className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm"
+              >
+                <option value="">Choose category</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.type} - {category.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleCreateCategoryRule}
+                className="min-h-11 rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold hover:bg-slate-50"
+              >
+                Add Rule
+              </button>
+            </div>
+            {categoryRules.length === 0 ? (
+              <p className="text-xs text-slate-500">No rules yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {categoryRules.map((rule) => (
+                  <div key={rule.id} className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-sm">
+                      <span className="font-bold">"{rule.keyword}"</span> {'->'} {rule.category.name}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleRule(rule)}
+                        className="rounded-lg border px-2 py-1 text-xs font-semibold hover:bg-slate-50"
+                      >
+                        {rule.isActive ? 'Disable' : 'Enable'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteRule(rule.id)}
+                        className="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <h2 className="text-xl font-black tracking-tight text-slate-900">Monthly category budgets are premium</h2>
-              <p className="max-w-2xl text-sm text-slate-600">Set spending limits per expense category and surface them inside dashboard analytics.</p>
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:min-w-[36rem]">
-              <BudgetPreviewCard title="Category targets" subtitle="Set a monthly cap for groceries, rent, transport and more." />
-              <BudgetPreviewCard title="Budget tracking" subtitle="Compare actual spend vs planned spend through the month." />
-              <BudgetPreviewCard title="Dashboard signals" subtitle="Use budgets together with premium trends and insights." />
-            </div>
+            )}
           </div>
         </section>
-      )}
+      ) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Income Categories */}
@@ -441,18 +541,6 @@ function CategoryIcon({ icon, small = false }: { icon: string; small?: boolean }
     <span className={`inline-flex items-center justify-center rounded-full bg-muted/60 ${small ? 'h-5 w-5' : 'h-7 w-7'}`}>
       {renderCategoryIcon(icon, small ? 12 : 15, 'text-muted-foreground')}
     </span>
-  )
-}
-
-function BudgetPreviewCard({ title, subtitle }: { title: string; subtitle: string }) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{title}</p>
-        <Lock size={14} className="text-slate-400" />
-      </div>
-      <p className="mt-3 text-sm text-slate-600">{subtitle}</p>
-    </div>
   )
 }
 

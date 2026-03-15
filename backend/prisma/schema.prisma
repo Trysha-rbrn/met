@@ -16,15 +16,19 @@ model User {
   password          String
   name              String?
   preferredCurrency String           @default("USD")
+  benchmarkOptOut   Boolean          @default(false)
   role              UserRole         @default(BASIC)
   isBanned          Boolean          @default(false)
   accounts          Account[]
   categories        Category[]
+  categoryRules     CategoryRule[]
   budgetGoals       BudgetGoal[]
   recurringTransactions RecurringTransaction[]
   transferLogs      DataTransferLog[]
   transactions      Transaction[]
   subscription      Subscription?
+  createdPromoCodes PromoCode[]      @relation("PromoCodeCreator")
+  promoRedemptions  PromoCodeRedemption[]
   auditLogsAsActor AuditLog[] @relation("AuditActor")
   auditLogsAsTarget AuditLog[] @relation("AuditTarget")
   createdAt         DateTime         @default(now())
@@ -55,12 +59,28 @@ model Category {
   parent        Category?       @relation("Subcategories", fields: [parentId], references: [id])
   subcategories Category[]      @relation("Subcategories")
   transactions  Transaction[]
+  categoryRules CategoryRule[]
   budgetGoals   BudgetGoal[]
   recurringTransactions RecurringTransaction[]
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
   @@unique([name, userId, parentId])
+}
+
+model CategoryRule {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  keyword    String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId, isActive])
+  @@unique([userId, keyword])
 }
 
 model Transaction {
@@ -78,6 +98,34 @@ model Transaction {
   metadata    Json? // For future proofing/extra data
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+}
+
+model PromoCode {
+  id                String               @id @default(uuid())
+  code              String               @unique
+  expiresAt         DateTime?
+  maxRedemptions    Int?
+  redemptionCount   Int                  @default(0)
+  isActive          Boolean              @default(true)
+  createdByAdminId  String?
+  createdByAdmin    User?                @relation("PromoCodeCreator", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+  redemptions       PromoCodeRedemption[]
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@index([isActive, expiresAt])
+}
+
+model PromoCodeRedemption {
+  id          String    @id @default(uuid())
+  promoCodeId String
+  promoCode   PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@unique([promoCodeId, userId])
+  @@index([userId, createdAt])
 }
 
 enum TransactionType {

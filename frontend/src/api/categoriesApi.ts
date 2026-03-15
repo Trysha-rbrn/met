@@ -34,6 +34,22 @@ export interface BudgetGoal {
   }
 }
 
+export interface CategoryRule {
+  id: string
+  userId: string
+  categoryId: string
+  keyword: string
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+  category: {
+    id: string
+    name: string
+    icon: string
+    type: 'INCOME' | 'EXPENSE'
+  }
+}
+
 const getAuthHeaders = () => {
   const token = localStorage.getItem('met_token');
   return { Authorization: `Bearer ${token}` };
@@ -83,6 +99,34 @@ export const updateBudgetGoal = async (id: string, amount: number) => {
 
 export const deleteBudgetGoal = async (id: string) => {
   const response = await axios.delete(`${API_URL}/budgets/${id}`, {
+    headers: getAuthHeaders()
+  })
+  return response.data
+}
+
+export const getCategoryRules = async () => {
+  const response = await axios.get<CategoryRule[]>(`${API_URL}/rules`, {
+    headers: getAuthHeaders()
+  })
+  return response.data
+}
+
+export const createCategoryRule = async (payload: { keyword: string; categoryId: string; isActive?: boolean }) => {
+  const response = await axios.post<CategoryRule>(`${API_URL}/rules`, payload, {
+    headers: getAuthHeaders()
+  })
+  return response.data
+}
+
+export const updateCategoryRule = async (id: string, payload: Partial<{ keyword: string; categoryId: string; isActive: boolean }>) => {
+  const response = await axios.patch<CategoryRule>(`${API_URL}/rules/${id}`, payload, {
+    headers: getAuthHeaders()
+  })
+  return response.data
+}
+
+export const deleteCategoryRule = async (id: string) => {
+  const response = await axios.delete(`${API_URL}/rules/${id}`, {
     headers: getAuthHeaders()
   })
   return response.data

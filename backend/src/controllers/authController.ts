@@ -6,6 +6,7 @@ import type { SignOptions } from 'jsonwebtoken'
 import { env } from '../config/env.ts'
 import { writeAuditLog } from '../lib/auditLog.ts'
 import { buildPremiumSubscriptionState, ensureSubscriptionRecord, syncUserRoleFromSubscription } from '../lib/subscription.ts'
+import { resolveDefaultCurrencyForRequest } from '../lib/currency.ts'
 
 const prisma = new PrismaClient()
 
@@ -18,6 +19,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 
     const hashedPassword = await bcrypt.hash(password, env.bcryptRounds)
     const role: UserRole = env.adminEmails.includes(email.toLowerCase()) ? 'ADMIN' : 'BASIC'
+    const preferredCurrency = resolveDefaultCurrencyForRequest(req)
 
     const user = await prisma.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
@@ -25,7 +27,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
           email,
           password: hashedPassword,
           name,
-          preferredCurrency: 'USD',
+          preferredCurrency,
           role
         }
       })
@@ -86,7 +88,15 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       { expiresIn: env.jwtExpiresIn as SignOptions['expiresIn'] }
     )
     res.status(201).json({
-      user: { id: user.id, email: user.email, name: user.name, role: user.role, isBanned: user.isBanned, preferredCurrency: user.preferredCurrency },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        isBanned: user.isBanned,
+        preferredCurrency: user.preferredCurrency,
+        benchmarkOptOut: user.benchmarkOptOut
+      },
       token
     })
   } catch (error) {
@@ -116,7 +126,15 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       action: 'AUTH_LOGIN_SUCCESS'
     })
     res.json({
-      user: { id: user.id, email: user.email, name: user.name, role: user.role, isBanned: user.isBanned, preferredCurrency: user.preferredCurrency },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        isBanned: user.isBanned,
+        preferredCurrency: user.preferredCurrency,
+        benchmarkOptOut: user.benchmarkOptOut
+      },
       token
     })
   } catch (error) {
@@ -128,7 +146,7 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
   try {
     const user = await prisma.user.findUnique({
       where: { id: (req as any).userId },
-      select: { id: true, email: true, name: true, role: true, isBanned: true, preferredCurrency: true }
+      select: { id: true, email: true, name: true, role: true, isBanned: true, preferredCurrency: true, benchmarkOptOut: true }
     })
     res.json(user)
   } catch (error) {
@@ -171,7 +189,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
     const user = await prisma.user.update({
       where: { id: userId },
       data: updateData,
-      select: { id: true, email: true, name: true, role: true, isBanned: true, preferredCurrency: true }
+      select: { id: true, email: true, name: true, role: true, isBanned: true, preferredCurrency: true, benchmarkOptOut: true }
     })
     await writeAuditLog({
       actorUserId: userId,
@@ -305,7 +323,7 @@ export const activatePremium = async (req: Request, res: Response, next: NextFun
       await ensureSubscriptionRecord(prisma, { id: userId, role: userRole })
       const existingUser = await prisma.user.findUnique({
         where: { id: userId },
-        select: { id: true, email: true, name: true, role: true, isBanned: true, preferredCurrency: true }
+        select: { id: true, email: true, name: true, role: true, isBanned: true, preferredCurrency: true, benchmarkOptOut: true }
       })
       return res.json(existingUser)
     }
@@ -328,7 +346,7 @@ export const activatePremium = async (req: Request, res: Response, next: NextFun
 
       return tx.user.findUnique({
         where: { id: userId },
-        select: { id: true, email: true, name: true, role: true, isBanned: true, preferredCurrency: true }
+        select: { id: true, email: true, name: true, role: true, isBanned: true, preferredCurrency: true, benchmarkOptOut: true }
       })
     })
 
@@ -340,6 +358,32 @@ export const activatePremium = async (req: Request, res: Response, next: NextFun
     })
 
     res.json(updatedUser)
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const updateBenchmarkPreference = async (req: Request, res: Response, next: NextFunction) => {
+  const userId = (req as any).userId as string
+  const userRole = (req as any).userRole as UserRole
+  const benchmarkOptOut = Boolean(req.body?.benchmarkOptOut)
+
+  try {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { benchmarkOptOut },
+      select: { id: true, email: true, name: true, role: true, isBanned: true, preferredCurrency: true, benchmarkOptOut: true }
+    })
+
+    await writeAuditLog({
+      actorUserId: userId,
+      actorRole: userRole,
+      targetUserId: userId,
+      action: 'PROFILE_BENCHMARK_PREF_UPDATE',
+      details: { benchmarkOptOut }
+    })
+
+    res.json(user)
   } catch (error) {
     next(error)
   }

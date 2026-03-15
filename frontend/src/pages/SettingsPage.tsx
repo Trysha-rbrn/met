@@ -5,6 +5,8 @@ import * as dataTransferApi from '../api/dataTransferApi'
 import type { AuthUser, SubscriptionSummary } from '../api/authApi'
 import type { TransferLog } from '../api/dataTransferApi'
 import { extractApiError, notify } from '../lib/toast'
+import { CURRENCIES, type CurrencyCode } from '../lib/currencies'
+import PremiumComparisonModal from '../components/PremiumComparisonModal'
 
 type ThemeMode = 'light' | 'dark' | 'system'
 
@@ -14,17 +16,6 @@ interface SettingsPageProps {
   themeMode: ThemeMode
   onThemeModeChange: (mode: ThemeMode) => void
 }
-
-const CURRENCIES = [
-  { code: 'USD', name: 'US Dollar', symbol: '$' },
-  { code: 'EUR', name: 'Euro', symbol: 'EUR' },
-  { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$' },
-  { code: 'RUB', name: 'Russian Ruble', symbol: 'RUB' },
-  { code: 'RSD', name: 'Serbian Dinar', symbol: 'din' },
-  { code: 'TRY', name: 'Turkish Lira', symbol: 'TRY' }
-] as const
-
-type CurrencyCode = typeof CURRENCIES[number]['code']
 
 function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: SettingsPageProps) {
   const [name, setName] = useState(user?.name || '')
@@ -36,11 +27,13 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
   const [premiumCode, setPremiumCode] = useState('')
   const [billingInterval, setBillingInterval] = useState<'MONTHLY' | 'YEARLY'>('MONTHLY')
   const [subscription, setSubscription] = useState<SubscriptionSummary | null>(null)
+  const [benchmarkOptOut, setBenchmarkOptOut] = useState(Boolean(user?.benchmarkOptOut))
   const [transferLogs, setTransferLogs] = useState<TransferLog[]>([])
   const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [isSavingPassword, setIsSavingPassword] = useState(false)
   const [isLoadingSubscription, setIsLoadingSubscription] = useState(false)
   const [isSubmittingSubscription, setIsSubmittingSubscription] = useState(false)
+  const [showPremiumComparisonModal, setShowPremiumComparisonModal] = useState(false)
   const didHydrateRef = useRef(false)
   const lastSavedRef = useRef({
     name: user?.name || '',
@@ -56,6 +49,10 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
     setCurrency(nextCurrency)
     lastSavedRef.current.currency = nextCurrency
   }, [user])
+
+  useEffect(() => {
+    setBenchmarkOptOut(Boolean(user?.benchmarkOptOut))
+  }, [user?.benchmarkOptOut])
 
   useEffect(() => {
     const loadTransferLogs = async () => {
@@ -158,6 +155,18 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
     onThemeModeChange(mode)
   }
 
+  const handleBenchmarkPreferenceChange = async (nextOptOut: boolean) => {
+    setBenchmarkOptOut(nextOptOut)
+    try {
+      const updated = await api.updateBenchmarkPreference(nextOptOut)
+      onUserUpdate(updated)
+      notify.success(nextOptOut ? 'Benchmarking disabled for this account.' : 'Benchmarking enabled for this account.')
+    } catch (error: unknown) {
+      setBenchmarkOptOut(Boolean(user?.benchmarkOptOut))
+      notify.error(extractApiError(error, 'Failed to update benchmark preference.'))
+    }
+  }
+
   const handleResetData = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!resetDataPassword) {
@@ -203,9 +212,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
     }
   }
 
-  const handleActivatePremium = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  const activatePremiumFlow = async () => {
     try {
       setIsSubmittingSubscription(true)
       const response = await api.upgradeSubscription(billingInterval, premiumCode.trim() || undefined)
@@ -218,6 +225,11 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
     } finally {
       setIsSubmittingSubscription(false)
     }
+  }
+
+  const handleActivatePremium = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setShowPremiumComparisonModal(true)
   }
 
   const handleDowngradeSubscription = async (immediate: boolean) => {
@@ -265,30 +277,12 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 space-y-6">
-          <section className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-6 md:p-8">
-            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr),minmax(0,0.85fr)] xl:items-end">
-              <div className="space-y-3">
-                <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-black tracking-[0.24em] text-amber-800">
-                  <Gem size={14} />
-                  {isPremiumUser ? 'PREMIUM MEMBERSHIP' : 'PREMIUM PREVIEW'}
-                </div>
-                <div className="space-y-2">
-                  <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
-                    {isPremiumUser ? 'You are inside the premium lane.' : 'Premium should feel unmistakably better.'}
-                  </h2>
-                  <p className="max-w-2xl text-sm sm:text-base text-slate-600">
-                    {isPremiumUser
-                      ? 'Your workspace now has deeper analysis, longer range visibility and a more flexible transaction review flow.'
-                      : 'Upgrade to unlock stronger visibility into trends, a wider analysis horizon and advanced filtering.'}
-                  </p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <MembershipChip icon={LineChart} label="Insights" value={isPremiumUser ? 'Enabled' : 'Locked'} />
-                <MembershipChip icon={Sparkles} label="90D Range" value={isPremiumUser ? 'Enabled' : 'Locked'} />
-                <MembershipChip icon={WalletCards} label="Accounts" value={isPremiumUser ? (user?.role === 'ADMIN' ? '20' : '10') : '3'} />
-                <MembershipChip icon={ShieldCheck} label="Plan" value={user?.role || 'BASIC'} />
-              </div>
+          <section className="rounded-2xl border bg-card p-6 md:p-8">
+            <div className="grid gap-3 sm:grid-cols-4">
+              <MembershipChip icon={LineChart} label="Insights" value={isPremiumUser ? 'Enabled' : 'Disabled'} />
+              <MembershipChip icon={Sparkles} label="90D Range" value={isPremiumUser ? 'Enabled' : 'Disabled'} />
+              <MembershipChip icon={WalletCards} label="Accounts" value={isPremiumUser ? (user?.role === 'ADMIN' ? '20' : '10') : '3'} />
+              <MembershipChip icon={ShieldCheck} label="Plan" value={user?.role || 'BASIC'} />
             </div>
           </section>
 
@@ -530,35 +524,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                     </div>
                   </div>
                 )}
-                {!isPremiumUser && (
-                  <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50/70 p-5">
-                    <div className="mb-4 space-y-1">
-                      <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700">
-                        <Lock size={13} />
-                        LOCKED PREVIEW
-                      </div>
-                      <h3 className="text-lg font-black tracking-tight text-slate-900">What unlocks with premium</h3>
-                      <p className="text-sm text-slate-600">These features are already wired into the product and become visible once your subscription is active.</p>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-3">
-                      <SubscriptionInfoCard
-                        label="Dashboard"
-                        value="Insights"
-                        description="Average daily net, forward projection and savings quality."
-                      />
-                      <SubscriptionInfoCard
-                        label="Transactions"
-                        value="Advanced filters"
-                        description="Search by content and narrow by type without leaving the ledger."
-                      />
-                      <SubscriptionInfoCard
-                        label="Workspace"
-                        value="Higher limits"
-                        description="More accounts for clearer separation of budgets, cash pools and goals."
-                      />
-                    </div>
-                  </div>
-                )}
+                {null}
               </div>
             )}
           </section>
@@ -582,6 +548,25 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                 <option value="dark">Dark</option>
               </select>
             </div>
+          </section>
+
+          <section className="bg-card border rounded-2xl p-6 md:p-8 space-y-4">
+            <div className="flex items-center gap-2 text-foreground">
+              <ShieldCheck size={18} />
+              <h2 className="text-lg font-bold">Benchmark Privacy</h2>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Anonymous benchmarking compares your spending with similar users only when you opt in.
+            </p>
+            <label className="flex items-center justify-between gap-4 rounded-xl border bg-background px-4 py-3">
+              <span className="text-sm font-semibold">Opt out from anonymized benchmarking</span>
+              <input
+                type="checkbox"
+                checked={benchmarkOptOut}
+                onChange={(e) => void handleBenchmarkPreferenceChange(e.target.checked)}
+                className="h-4 w-4"
+              />
+            </label>
           </section>
 
           <section className="bg-card border rounded-2xl p-6 md:p-8 space-y-4">
@@ -695,6 +680,17 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
           </form>
         </aside>
       </div>
+      <PremiumComparisonModal
+        isOpen={showPremiumComparisonModal}
+        title="Premium poređenje"
+        subtitle="Pre aktivacije, pogledaj jasnu razliku između BASIC i PREMIUM plana."
+        ctaLabel={isSubmittingSubscription ? 'Aktivacija...' : 'Nastavi na aktivaciju'}
+        onClose={() => setShowPremiumComparisonModal(false)}
+        onConfirm={() => {
+          setShowPremiumComparisonModal(false)
+          void activatePremiumFlow()
+        }}
+      />
     </div>
   )
 }

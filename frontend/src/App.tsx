@@ -9,6 +9,7 @@ import NotFoundPage from './pages/NotFoundPage'
 import * as authApi from './api/authApi'
 import type { AuthUser } from './api/authApi'
 import { notify } from './lib/toast'
+import PremiumComparisonModal from './components/PremiumComparisonModal'
 
 const CategoriesPage = lazy(() => import('./pages/CategoriesPage'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
@@ -25,6 +26,34 @@ const baseNavItems = [
 ]
 
 type ThemeMode = 'light' | 'dark' | 'system'
+const PREMIUM_OFFER_STORAGE_KEY = 'met_premium_offer_state'
+const ACTIVE_USAGE_STORAGE_KEY = 'met_active_usage_state'
+
+type PremiumOfferState = {
+  nextPromptAt: number
+  lastPromptAt: number | null
+}
+
+type ActiveUsageState = {
+  totalMinutes: number
+  activeDays: string[]
+}
+
+const randomPromptDelayDays = () => {
+  const minDays = 10
+  const maxDays = 15
+  return Math.floor(Math.random() * (maxDays - minDays + 1)) + minDays
+}
+
+const readJsonStorage = <T,>(key: string, fallback: T): T => {
+  const raw = localStorage.getItem(key)
+  if (!raw) return fallback
+  try {
+    return JSON.parse(raw) as T
+  } catch {
+    return fallback
+  }
+}
 
 function App() {
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
@@ -36,6 +65,7 @@ function App() {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [token, setToken] = useState<string | null>(localStorage.getItem('met_token'))
   const [loading, setLoading] = useState(true)
+  const [showPremiumOfferModal, setShowPremiumOfferModal] = useState(false)
   const hadConnectionDropRef = useRef(false)
 
   useEffect(() => {
@@ -132,6 +162,65 @@ function App() {
     return () => window.clearInterval(interval)
   }, [token, handleLogout])
 
+  useEffect(() => {
+    if (!token || !user || user.role !== 'BASIC') return
+
+    const now = Date.now()
+    const offerState = readJsonStorage<PremiumOfferState>(PREMIUM_OFFER_STORAGE_KEY, {
+      nextPromptAt: now + randomPromptDelayDays() * 24 * 60 * 60 * 1000,
+      lastPromptAt: null
+    })
+    localStorage.setItem(PREMIUM_OFFER_STORAGE_KEY, JSON.stringify(offerState))
+
+    const usage = readJsonStorage<ActiveUsageState>(ACTIVE_USAGE_STORAGE_KEY, { totalMinutes: 0, activeDays: [] })
+    const today = new Date().toISOString().slice(0, 10)
+    if (!usage.activeDays.includes(today)) {
+      usage.activeDays = [...usage.activeDays, today].slice(-45)
+      localStorage.setItem(ACTIVE_USAGE_STORAGE_KEY, JSON.stringify(usage))
+    }
+  }, [token, user])
+
+  useEffect(() => {
+    if (!token || !user || user.role !== 'BASIC') return
+
+    const interval = window.setInterval(() => {
+      if (document.hidden) return
+      const usage = readJsonStorage<ActiveUsageState>(ACTIVE_USAGE_STORAGE_KEY, { totalMinutes: 0, activeDays: [] })
+      usage.totalMinutes += 1
+      localStorage.setItem(ACTIVE_USAGE_STORAGE_KEY, JSON.stringify(usage))
+    }, 60000)
+
+    return () => window.clearInterval(interval)
+  }, [token, user])
+
+  useEffect(() => {
+    if (!token || !user || user.role !== 'BASIC') return
+
+    const usage = readJsonStorage<ActiveUsageState>(ACTIVE_USAGE_STORAGE_KEY, { totalMinutes: 0, activeDays: [] })
+    const offerState = readJsonStorage<PremiumOfferState>(PREMIUM_OFFER_STORAGE_KEY, {
+      nextPromptAt: Date.now() + randomPromptDelayDays() * 24 * 60 * 60 * 1000,
+      lastPromptAt: null
+    })
+
+    const isActiveUser = usage.totalMinutes >= 90 && usage.activeDays.length >= 4
+    const isDue = Date.now() >= offerState.nextPromptAt
+
+    if (isActiveUser && isDue) {
+      setShowPremiumOfferModal(true)
+    }
+  }, [token, user])
+
+  const scheduleNextPremiumOfferPrompt = useCallback(() => {
+    const now = Date.now()
+    const nextPromptAt = now + randomPromptDelayDays() * 24 * 60 * 60 * 1000
+    const nextState: PremiumOfferState = {
+      lastPromptAt: now,
+      nextPromptAt
+    }
+    localStorage.setItem(PREMIUM_OFFER_STORAGE_KEY, JSON.stringify(nextState))
+    setShowPremiumOfferModal(false)
+  }, [])
+
   const handleLogin = (userData: AuthUser, userToken: string) => {
     setUser(userData)
     setToken(userToken)
@@ -148,7 +237,7 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-muted/40 font-sans antialiased">
+      <div className="min-h-screen overflow-x-hidden bg-muted/40 font-sans antialiased">
         {!token ? (
           <div className="min-h-screen flex flex-col">
             <div className="flex-1">
@@ -166,9 +255,9 @@ function App() {
               isCollapsed={isSidebarCollapsed}
               onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             />
-            <div className={`flex min-h-screen flex-col ${isSidebarCollapsed ? 'lg:pl-24' : 'lg:pl-64'}`}>
+            <div className={`flex min-h-screen min-w-0 flex-col ${isSidebarCollapsed ? 'lg:pl-24' : 'lg:pl-64'}`}>
               <Header user={user} onLogout={handleLogout} />
-              <main className="flex-1 p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 lg:pb-8">
+              <main className="flex-1 min-w-0 p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 lg:pb-8">
                 <Suspense fallback={<PageLoader />}>
                   <AnimatePresence mode="wait">
                     <Routes>
@@ -188,6 +277,17 @@ function App() {
           </div>
         )}
       </div>
+      <PremiumComparisonModal
+        isOpen={showPremiumOfferModal}
+        title="Premium opcija"
+        subtitle="Kako aktivno koristiš platformu, ovo je pregled šta dobijaš sa Premium planom."
+        ctaLabel="Idi na Premium opciju"
+        onClose={scheduleNextPremiumOfferPrompt}
+        onConfirm={() => {
+          scheduleNextPremiumOfferPrompt()
+          window.location.assign('/settings')
+        }}
+      />
       <ToastContainer
         newestOnTop
         limit={4}
@@ -294,20 +394,20 @@ function MobileNav({ user }: { user: AuthUser | null }) {
   const navItems = baseNavItems.filter((item) => !item.adminOnly || user?.role === 'ADMIN')
 
   return (
-    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 overflow-hidden border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className={`grid px-2 py-2 ${navItems.length === 5 ? 'grid-cols-5' : 'grid-cols-4'}`}>
         {navItems.map((item) => (
           <Link
             key={item.path}
             to={item.path}
-            className={`flex flex-col items-center justify-center gap-1 rounded-xl min-h-11 py-2 text-xs font-semibold transition-colors ${
+            className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl min-h-11 px-1 py-2 text-[10px] font-semibold transition-colors ${
               location.pathname === item.path
                 ? 'text-primary bg-primary/10'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             }`}
           >
             <item.icon size={18} />
-            <span>{item.label}</span>
+            <span className="block max-w-full truncate">{item.label}</span>
           </Link>
         ))}
       </div>

@@ -258,3 +258,140 @@ export const deleteCategory = async (req: Request, res: Response, next: NextFunc
     next(error)
   }
 }
+
+export const getCategoryRules = async (req: Request, res: Response, next: NextFunction) => {
+  const userId = (req as any).userId as string
+  try {
+    const rules = await prisma.categoryRule.findMany({
+      where: { userId },
+      include: {
+        category: {
+          select: { id: true, name: true, icon: true, type: true }
+        }
+      },
+      orderBy: { createdAt: 'asc' }
+    })
+    res.json(rules)
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const createCategoryRule = async (req: Request, res: Response, next: NextFunction) => {
+  const userId = (req as any).userId as string
+  const userRole = (req as any).userRole as UserRole
+  const { keyword, categoryId, isActive } = req.body as { keyword: string; categoryId: string; isActive: boolean }
+
+  try {
+    const category = await prisma.category.findUnique({ where: { id: categoryId } })
+    if (!category || category.userId !== userId) {
+      return res.status(403).json({ error: 'Unauthorized category.' })
+    }
+
+    const rule = await prisma.categoryRule.create({
+      data: {
+        userId,
+        keyword,
+        categoryId,
+        isActive
+      },
+      include: {
+        category: {
+          select: { id: true, name: true, icon: true, type: true }
+        }
+      }
+    })
+
+    await writeAuditLog({
+      actorUserId: userId,
+      actorRole: userRole,
+      targetUserId: userId,
+      action: 'CATEGORY_RULE_CREATE',
+      details: { ruleId: rule.id, keyword: rule.keyword, categoryId }
+    })
+
+    res.status(201).json(rule)
+  } catch (error) {
+    if ((error as { code?: string })?.code === 'P2002') {
+      return res.status(400).json({ error: 'Rule with this keyword already exists.' })
+    }
+    next(error)
+  }
+}
+
+export const updateCategoryRule = async (req: Request, res: Response, next: NextFunction) => {
+  const userId = (req as any).userId as string
+  const userRole = (req as any).userRole as UserRole
+  const ruleId = String(req.params.id)
+  const { keyword, categoryId, isActive } = req.body as { keyword?: string; categoryId?: string; isActive?: boolean }
+
+  try {
+    const existing = await prisma.categoryRule.findUnique({ where: { id: ruleId } })
+    if (!existing || existing.userId !== userId) {
+      return res.status(404).json({ error: 'Rule not found.' })
+    }
+
+    if (categoryId) {
+      const category = await prisma.category.findUnique({ where: { id: categoryId } })
+      if (!category || category.userId !== userId) {
+        return res.status(403).json({ error: 'Unauthorized category.' })
+      }
+    }
+
+    const updated = await prisma.categoryRule.update({
+      where: { id: ruleId },
+      data: {
+        keyword,
+        categoryId,
+        isActive
+      },
+      include: {
+        category: {
+          select: { id: true, name: true, icon: true, type: true }
+        }
+      }
+    })
+
+    await writeAuditLog({
+      actorUserId: userId,
+      actorRole: userRole,
+      targetUserId: userId,
+      action: 'CATEGORY_RULE_UPDATE',
+      details: { ruleId: updated.id }
+    })
+
+    res.json(updated)
+  } catch (error) {
+    if ((error as { code?: string })?.code === 'P2002') {
+      return res.status(400).json({ error: 'Rule with this keyword already exists.' })
+    }
+    next(error)
+  }
+}
+
+export const deleteCategoryRule = async (req: Request, res: Response, next: NextFunction) => {
+  const userId = (req as any).userId as string
+  const userRole = (req as any).userRole as UserRole
+  const ruleId = String(req.params.id)
+
+  try {
+    const existing = await prisma.categoryRule.findUnique({ where: { id: ruleId } })
+    if (!existing || existing.userId !== userId) {
+      return res.status(404).json({ error: 'Rule not found.' })
+    }
+
+    await prisma.categoryRule.delete({ where: { id: ruleId } })
+
+    await writeAuditLog({
+      actorUserId: userId,
+      actorRole: userRole,
+      targetUserId: userId,
+      action: 'CATEGORY_RULE_DELETE',
+      details: { ruleId }
+    })
+
+    res.json({ message: 'Rule deleted successfully.' })
+  } catch (error) {
+    next(error)
+  }
+}

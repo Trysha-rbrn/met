@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { register, login, getMe, updateUser, deleteUser, resetUserData, activatePremium } from '../controllers/authController.ts'
+import { register, login, getMe, updateUser, deleteUser, resetUserData, activatePremium, updateBenchmarkPreference } from '../controllers/authController.ts'
 import {
   downgradeSubscription,
   getSubscription,
@@ -17,6 +17,7 @@ import {
   validateRegister,
   validateSubscriptionDowngrade,
   validateSubscriptionUpgrade,
+  validateUpdateBenchmarkPreference,
   validateUpdateProfile
 } from '../middleware/validationMiddleware.ts'
 
@@ -33,6 +34,7 @@ router.post('/subscription/upgrade', auth, validateSubscriptionUpgrade, upgradeS
 router.post('/subscription/downgrade', auth, validateSubscriptionDowngrade, downgradeSubscription)
 router.post('/subscription/resume', auth, resumeSubscription)
 router.post('/reset-data', auth, validateDeleteProfile, resetUserData)
+router.patch('/benchmark-preference', auth, validateUpdateBenchmarkPreference, updateBenchmarkPreference)
 router.delete('/profile', auth, validateDeleteProfile, deleteUser)
 
 export default router

@@ -273,3 +273,48 @@ Premium funkcionalnosti:
 ### Novi env parametar
 - `PREMIUM_ACCESS_CODE`
   - activation code za korisnicki upgrade na Premium
+
+## Session Update (2026-03-15)
+
+### Premium UX (nenametljiv pristup)
+- Uklonjeni su agresivni `LOCKED PREVIEW` / promo blokovi kroz aplikaciju za BASIC korisnike.
+- Premium ponuda se sada prikazuje periodicno samo aktivnim BASIC korisnicima.
+- Interval ponude je nasumicno izmedju 10 i 15 dana.
+- Pre bilo koje premium aktivacije prikazuje se jasna BASIC vs PREMIUM uporedna tabela (modal), slicno plan compare iskustvu.
+
+### Novi backend endpointi
+- Auth:
+  - `PATCH /api/auth/benchmark-preference`
+- Transactions (Premium/Admin):
+  - `GET /api/transactions/insights?accountId=...`
+  - `GET /api/transactions/benchmark?accountId=...`
+  - `PATCH /api/transactions/bulk/category`
+  - `POST /api/transactions/:id/split`
+- Categories (Premium/Admin):
+  - `GET /api/categories/rules`
+  - `POST /api/categories/rules`
+  - `PATCH /api/categories/rules/:id`
+  - `DELETE /api/categories/rules/:id`
+- Admin:
+  - `GET /api/admin/promo-codes`
+  - `POST /api/admin/promo-codes`
+  - `PATCH /api/admin/promo-codes/:id/state`
+
+### Implementirano iz issue #23-#29
+- Bulk assign kategorija nad vise transakcija.
+- Pravila auto-kategorizacije (`keyword -> category`).
+- Split transakcija na vise kategorija.
+- Popravljen Excel export bug.
+- Popravljen mobile layout overflow.
+- Promo kodovi u admin panelu (kreiranje, aktivacija/deaktivacija, stats).
+- Podrazumevana valuta pri registraciji prema dostupnom country/IP header-u (fallback: `USD`).
+- Premium insights i preporuke.
+- Anonimizovan benchmarking + user opt-out.
+
+### Migracije
+Posle pull-a obavezno pokreni:
+```bash
+cd backend
+npx prisma migrate dev
+npx prisma generate
+```

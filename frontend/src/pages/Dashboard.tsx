@@ -1,5 +1,5 @@
 import { lazy, memo, Suspense, useState, useEffect, useMemo, type ComponentType } from 'react'
-import { Coins, ArrowUp, ArrowDown, CalendarDays, TrendingUp, WalletCards, Gem, Sparkles, LineChart, ShieldCheck, Lock } from 'lucide-react'
+import { Coins, ArrowUp, ArrowDown, CalendarDays, TrendingUp, WalletCards, Gem, Sparkles, LineChart, ShieldCheck } from 'lucide-react'
 import * as api from '../api/transactionsApi'
 import * as accountsApi from '../api/accountsApi'
 import * as categoriesApi from '../api/categoriesApi'
@@ -29,6 +29,8 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
   const [customStart, setCustomStart] = useState(() => getDateInputValue(daysAgo(29)))
   const [customEnd, setCustomEnd] = useState(() => getDateInputValue(new Date()))
   const [showCharts, setShowCharts] = useState(true)
+  const [premiumInsightsFeed, setPremiumInsightsFeed] = useState<string[]>([])
+  const [benchmarkMessage, setBenchmarkMessage] = useState<string>('')
 
   const currencyCode = localStorage.getItem('met_currency') || 'USD'
   const isPremiumUser = userRole === 'PREMIUM' || userRole === 'ADMIN'
@@ -72,14 +74,39 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
   const fetchData = async (accountId: string) => {
     try {
       setLoading(true)
-      const [summaryData, transactionsData] = await Promise.all([
+      const tasks: Array<Promise<unknown>> = [
         api.getSummary(accountId),
         api.getTransactions(accountId)
-      ])
+      ]
+      if (isPremiumUser) {
+        tasks.push(api.getInsights(accountId), api.getBenchmark(accountId))
+      }
+
+      const [summaryData, transactionsData, insightsData, benchmarkData] = await Promise.all(tasks) as [
+        api.TransactionSummary,
+        Transaction[],
+        api.TransactionInsightResponse | undefined,
+        api.TransactionBenchmarkResponse | undefined
+      ]
+
       setSummary(summaryData)
       setTransactions(transactionsData)
+      if (insightsData) {
+        setPremiumInsightsFeed(insightsData.insights)
+      } else {
+        setPremiumInsightsFeed([])
+      }
+      if (benchmarkData?.available && benchmarkData.message) {
+        setBenchmarkMessage(benchmarkData.message)
+      } else if (benchmarkData?.reason) {
+        setBenchmarkMessage(benchmarkData.reason)
+      } else {
+        setBenchmarkMessage('')
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
+      setPremiumInsightsFeed([])
+      setBenchmarkMessage('')
     } finally {
       setLoading(false)
     }
@@ -314,32 +341,32 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
           <h1 className="text-2xl sm:text-3xl font-black tracking-tighter">Dashboard</h1>
           <p className="text-sm sm:text-base text-muted-foreground font-medium">Current balance and movement across selected periods.</p>
         </div>
+        {isPremiumUser && (
         <section className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-5 sm:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="space-y-3">
               <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-amber-800">
                 <Gem size={13} />
-                {isPremiumUser ? 'PREMIUM ACTIVE' : 'PREMIUM PREVIEW'}
+                PREMIUM ACTIVE
               </div>
               <div className="space-y-1.5">
                 <h2 className="max-w-2xl text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
-                  {isPremiumUser ? 'Premium analytics are woven into your daily dashboard.' : 'See what the premium layer adds before you upgrade.'}
+                  Premium analytics are woven into your daily dashboard.
                 </h2>
                 <p className="max-w-2xl text-sm sm:text-base text-slate-600">
-                  {isPremiumUser
-                    ? 'Longer-range analysis, forecast signals and richer review tools are now part of the core workspace.'
-                    : 'Premium adds forecast-driven insight, longer history views and cleaner transaction exploration.'}
+                  Longer-range analysis, forecast signals and richer review tools are now part of the core workspace.
                 </p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[28rem]">
-              <PremiumPill icon={LineChart} label="90D Range" value={isPremiumUser ? 'Enabled' : 'Preview'} />
-              <PremiumPill icon={Sparkles} label="Insights" value={isPremiumUser ? 'Live' : 'Locked'} />
+              <PremiumPill icon={LineChart} label="90D Range" value="Enabled" />
+              <PremiumPill icon={Sparkles} label="Insights" value="Live" />
               <PremiumPill icon={ShieldCheck} label="Plan" value={userRole} />
-              <PremiumPill icon={Gem} label="Filters" value={isPremiumUser ? 'Advanced' : 'Basic'} />
+              <PremiumPill icon={Gem} label="Filters" value="Advanced" />
             </div>
           </div>
         </section>
+        )}
         <div className="bg-card border rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
             <WalletCards size={16} />
@@ -499,27 +526,7 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
             </div>
           </div>
         </section>
-      ) : (
-        <section className="overflow-hidden rounded-[24px] border border-dashed border-slate-300 bg-[linear-gradient(135deg,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] p-5 md:p-6">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700">
-                <Lock size={13} />
-                LOCKED PREMIUM PREVIEW
-              </div>
-              <h3 className="text-xl font-black tracking-tight text-slate-900">Three premium signals would appear here</h3>
-              <p className="max-w-2xl text-sm text-slate-600">
-                Upgrade to unlock average daily net, 30-day balance projection and savings rate tied to your selected time window.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:min-w-[36rem]">
-              <LockedPreviewCard title="Avg Daily Net" subtitle="Daily momentum across the active range." />
-              <LockedPreviewCard title="30-Day Projection" subtitle="Forward-looking balance estimate from your current pace." />
-              <LockedPreviewCard title="Savings Rate" subtitle="Retention quality based on income vs net movement." />
-            </div>
-          </div>
-        </section>
-      )}
+      ) : null}
 
       {isPremiumUser ? (
         <section className="rounded-[24px] border bg-card p-5 md:p-6 space-y-5">
@@ -567,49 +574,7 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
             </div>
           )}
         </section>
-      ) : (
-        <section className="overflow-hidden rounded-[24px] border border-dashed border-slate-300 bg-[linear-gradient(135deg,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] p-5 md:p-6">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700">
-                <Lock size={13} />
-                LOCKED PREMIUM PREVIEW
-              </div>
-              <h3 className="text-xl font-black tracking-tight text-slate-900">Three premium signals would appear here</h3>
-              <p className="max-w-2xl text-sm text-slate-600">
-                Upgrade to unlock average daily net, 30-day balance projection and savings rate tied to your selected time window.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:min-w-[36rem]">
-              <LockedPreviewCard title="Avg Daily Net" subtitle="Daily momentum across the active range." />
-              <LockedPreviewCard title="30-Day Projection" subtitle="Forward-looking balance estimate from your current pace." />
-              <LockedPreviewCard title="Savings Rate" subtitle="Retention quality based on income vs net movement." />
-            </div>
-          </div>
-        </section>
-      )}
-
-      {!isPremiumUser && (
-        <section className="overflow-hidden rounded-[24px] border border-dashed border-slate-300 bg-[linear-gradient(135deg,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] p-5 md:p-6">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700">
-                <Lock size={13} />
-                LOCKED TREND PREVIEW
-              </div>
-              <h3 className="text-xl font-black tracking-tight text-slate-900">Category spending trends stay hidden on Basic</h3>
-              <p className="max-w-2xl text-sm text-slate-600">
-                Premium reveals your top expense categories for the active range, ranked by spend and volume.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:min-w-[36rem]">
-              <LockedPreviewCard title="Top categories" subtitle="See which buckets absorb the most money." />
-              <LockedPreviewCard title="Spend share" subtitle="Understand each category's portion of tracked spend." />
-              <LockedPreviewCard title="Activity count" subtitle="Spot repeated spending patterns faster." />
-            </div>
-          </div>
-        </section>
-      )}
+      ) : null}
 
       {isPremiumUser ? (
         <section className="rounded-[24px] border bg-card p-5 md:p-6 space-y-5">
@@ -659,23 +624,30 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
             </div>
           )}
         </section>
-      ) : (
-        <section className="overflow-hidden rounded-[24px] border border-dashed border-slate-300 bg-[linear-gradient(135deg,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] p-5 md:p-6">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700">
-                <Lock size={13} />
-                LOCKED BUDGET TRACKING
-              </div>
-              <h3 className="text-xl font-black tracking-tight text-slate-900">Budget tracking lives in premium analytics</h3>
-              <p className="max-w-2xl text-sm text-slate-600">See category budgets, real spending, remaining room and over-budget warnings directly on the dashboard.</p>
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:min-w-[36rem]">
-              <LockedPreviewCard title="Budget vs actual" subtitle="Watch category targets against live spend." />
-              <LockedPreviewCard title="Remaining room" subtitle="See how much budget is still available." />
-              <LockedPreviewCard title="Over-budget alerts" subtitle="Spot categories that already crossed the line." />
-            </div>
+      ) : null}
+
+      {isPremiumUser && (
+        <section className="rounded-[24px] border bg-card p-5 md:p-6 space-y-4">
+          <div className="space-y-1">
+            <h3 className="text-xl font-black tracking-tight text-slate-900">Smart recommendations</h3>
+            <p className="text-sm text-slate-600">Generated from your recent transaction patterns.</p>
           </div>
+          {premiumInsightsFeed.length === 0 ? (
+            <p className="text-sm text-slate-500">No recommendation signals yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {premiumInsightsFeed.map((line, idx) => (
+                <p key={`${idx}-${line}`} className="rounded-xl border bg-background px-3 py-2 text-sm">
+                  {line}
+                </p>
+              ))}
+            </div>
+          )}
+          {benchmarkMessage ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              Benchmark: {benchmarkMessage}
+            </div>
+          ) : null}
         </section>
       )}
 
@@ -782,17 +754,6 @@ const PremiumPill = ({
       <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{label}</span>
     </div>
     <p className="mt-2 text-sm font-black tracking-tight">{value}</p>
-  </div>
-)
-
-const LockedPreviewCard = ({ title, subtitle }: { title: string; subtitle: string }) => (
-  <div className="rounded-2xl border border-slate-200 bg-white p-4">
-    <div className="flex items-center justify-between">
-      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{title}</p>
-      <Lock size={14} className="text-slate-400" />
-    </div>
-    <div className="mt-3 h-7 w-24 rounded-full bg-slate-200/80" />
-    <p className="mt-3 text-sm text-slate-500">{subtitle}</p>
   </div>
 )
 

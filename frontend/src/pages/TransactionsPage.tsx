@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowDown, ArrowUp, Download, Edit2, FileUp, Plus, Search, Tag, Trash2, WalletCards, Gem, Sparkles, ShieldCheck, Lock, BookmarkPlus, X, Repeat2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, CheckSquare, Download, Edit2, FileUp, Plus, Search, Scissors, Tag, Trash2, WalletCards, Gem, Sparkles, ShieldCheck, BookmarkPlus, X, Repeat2 } from 'lucide-react'
 import type { CellValue } from 'exceljs'
 import * as api from '../api/transactionsApi'
 import * as accountsApi from '../api/accountsApi'
@@ -46,6 +46,8 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL')
   const [savedFilters, setSavedFilters] = useState<SavedFilter[]>([])
+  const [selectedTransactionIds, setSelectedTransactionIds] = useState<string[]>([])
+  const [bulkCategoryId, setBulkCategoryId] = useState<string>('')
 
   const currencyCode = localStorage.getItem('met_currency') || 'USD'
   const isPremiumUser = userRole === 'PREMIUM' || userRole === 'ADMIN'
@@ -88,6 +90,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
       setLoading(true)
       const data = await api.getTransactions(accountId)
       setTransactions(data)
+      setSelectedTransactionIds([])
       setVisibleCount(20)
     } catch (error) {
       console.error('Error fetching transactions:', error)
@@ -204,6 +207,63 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
       await api.deleteTransaction(id)
       notify.success('Transaction deleted.')
       await fetchTransactions(selectedAccountId)
+    }
+  }
+
+  const toggleTransactionSelection = (id: string) => {
+    setSelectedTransactionIds((prev) => (
+      prev.includes(id) ? prev.filter((entry) => entry !== id) : [...prev, id]
+    ))
+  }
+
+  const handleBulkAssignCategory = async () => {
+    if (!bulkCategoryId) {
+      notify.warning('Pick a target category first.')
+      return
+    }
+    if (selectedTransactionIds.length === 0) {
+      notify.warning('Select at least one transaction.')
+      return
+    }
+
+    try {
+      const result = await api.bulkAssignCategory(selectedTransactionIds, bulkCategoryId)
+      notify.success(`Updated ${result.updatedCount} transaction(s).`)
+      setSelectedTransactionIds([])
+      await fetchTransactions(selectedAccountId)
+    } catch (error) {
+      notify.error(extractApiError(error, 'Bulk category update failed.'))
+    }
+  }
+
+  const handleSplitTransaction = async (transaction: Transaction) => {
+    const categoryOptions = categories
+      .filter((entry) => entry.type === transaction.type)
+      .map((entry) => `${entry.id}:${entry.name}`)
+      .join(', ')
+    const defaultCategory = transaction.category?.id || categories.find((entry) => entry.type === transaction.type)?.id
+    const firstCategory = window.prompt(`Split #1 categoryId (${categoryOptions})`, defaultCategory || '')
+    if (!firstCategory) return
+    const firstAmountInput = window.prompt('Split #1 amount', (transaction.amount / 2).toFixed(2))
+    if (!firstAmountInput) return
+    const firstAmount = Number(firstAmountInput)
+    if (!Number.isFinite(firstAmount) || firstAmount <= 0 || firstAmount >= transaction.amount) {
+      notify.warning('First split amount is invalid.')
+      return
+    }
+    const secondCategory = window.prompt(`Split #2 categoryId (${categoryOptions})`, defaultCategory || '')
+    if (!secondCategory) return
+
+    const secondAmount = Number((transaction.amount - firstAmount).toFixed(2))
+    try {
+      await api.splitTransaction(transaction.id, [
+        { amount: firstAmount, categoryId: firstCategory.trim(), description: `${transaction.description || 'Split'} (1/2)` },
+        { amount: secondAmount, categoryId: secondCategory.trim(), description: `${transaction.description || 'Split'} (2/2)` }
+      ])
+      notify.success('Transaction split completed.')
+      await fetchTransactions(selectedAccountId)
+    } catch (error) {
+      notify.error(extractApiError(error, 'Split transaction failed.'))
     }
   }
 
@@ -330,50 +390,54 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
       notify.info('No transactions to export.')
       return
     }
-
-    const { default: ExcelJS } = await import('exceljs/dist/exceljs.min.js')
-    const workbook = new ExcelJS.Workbook()
-    const worksheet = workbook.addWorksheet('Transactions')
-    worksheet.columns = [
-      { header: 'Date', key: 'date', width: 14 },
-      { header: 'Type', key: 'type', width: 12 },
-      { header: 'Category', key: 'category', width: 20 },
-      { header: 'Account', key: 'account', width: 20 },
-      { header: 'Description', key: 'description', width: 32 },
-      { header: 'Amount', key: 'amount', width: 14 }
-    ]
-
-    transactions.forEach((tx) => {
-      worksheet.addRow({
-        date: new Date(tx.date).toISOString().slice(0, 10),
-        type: tx.type,
-        category: tx.category?.name || '',
-        account: tx.account?.name || '',
-        description: tx.description || '',
-        amount: tx.amount
-      })
-    })
-
-    const buffer = await workbook.xlsx.writeBuffer()
-    const blob = new Blob([buffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    })
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = `transactions-${new Date().toISOString().slice(0, 10)}.xlsx`
-    document.body.appendChild(anchor)
-    anchor.click()
-    anchor.remove()
-    URL.revokeObjectURL(url)
-
     try {
-      await dataTransferApi.createTransferLog({ action: 'EXPORT', format: 'EXCEL', rows: transactions.length })
-    } catch {
-      // logging should not block export UX
-    }
+      const ExcelJS = await import('exceljs')
+      const workbook = new ExcelJS.Workbook()
+      const worksheet = workbook.addWorksheet('Transactions')
+      worksheet.columns = [
+        { header: 'Date', key: 'date', width: 14 },
+        { header: 'Type', key: 'type', width: 12 },
+        { header: 'Category', key: 'category', width: 20 },
+        { header: 'Account', key: 'account', width: 20 },
+        { header: 'Description', key: 'description', width: 32 },
+        { header: 'Amount', key: 'amount', width: 14 }
+      ]
 
-    notify.success('Excel export completed.')
+      transactions.forEach((tx) => {
+        worksheet.addRow({
+          date: new Date(tx.date).toISOString().slice(0, 10),
+          type: tx.type,
+          category: tx.category?.name || '',
+          account: tx.account?.name || '',
+          description: tx.description || '',
+          amount: tx.amount
+        })
+      })
+
+      const buffer = await workbook.xlsx.writeBuffer()
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      })
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = `transactions-${new Date().toISOString().slice(0, 10)}.xlsx`
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      URL.revokeObjectURL(url)
+
+      try {
+        await dataTransferApi.createTransferLog({ action: 'EXPORT', format: 'EXCEL', rows: transactions.length })
+      } catch {
+        // logging should not block export UX
+      }
+
+      notify.success('Excel export completed.')
+    } catch (error) {
+      console.error('Excel export failed:', error)
+      notify.error('Excel export failed. Please try again.')
+    }
   }
 
   const exportPdf = async () => {
@@ -746,32 +810,32 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
           </div>
         </div>
 
+        {isPremiumUser && (
         <section className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-5 md:p-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-3">
               <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-black tracking-[0.24em] text-amber-800">
                 <Gem size={14} />
-                {isPremiumUser ? 'PREMIUM FLOW' : 'PREMIUM PREVIEW'}
+                PREMIUM FLOW
               </div>
               <div className="space-y-2">
                 <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
-                  {isPremiumUser ? 'Filter faster. Scan less. Find patterns sooner.' : 'Premium turns transactions into a faster review workspace.'}
+                  Filter faster. Scan less. Find patterns sooner.
                 </h2>
                 <p className="max-w-2xl text-sm sm:text-base text-slate-600">
-                  {isPremiumUser
-                    ? 'Advanced search and type filtering are active, with a higher account cap for segmented budgets and cleaner ledgers.'
-                    : 'Unlock premium filters plus a larger account limit for cleaner cash-flow organization.'}
+                  Advanced search and type filtering are active, with a higher account cap for segmented budgets and cleaner ledgers.
                 </p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[30rem]">
-              <PremiumSignal icon={Search} label="Search" value={isPremiumUser ? 'Enabled' : 'Locked'} />
-              <PremiumSignal icon={Sparkles} label="Type Filter" value={isPremiumUser ? 'Advanced' : 'Basic'} />
+              <PremiumSignal icon={Search} label="Search" value="Enabled" />
+              <PremiumSignal icon={Sparkles} label="Type Filter" value="Advanced" />
               <PremiumSignal icon={WalletCards} label="Account Limit" value={String(maxAccounts)} />
               <PremiumSignal icon={ShieldCheck} label="Plan" value={userRole} />
             </div>
           </div>
         </section>
+        )}
 
         <div className="bg-card border rounded-2xl p-4 md:p-5 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
           <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
@@ -803,6 +867,38 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
         <p className="text-xs text-muted-foreground">
           Plan: <span className="font-semibold">{userRole}</span> • Account limit: {maxAccounts}
         </p>
+        {isPremiumUser && (
+          <div className="rounded-2xl border bg-card p-4">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-bold">Bulk assign category</p>
+                <p className="text-xs text-muted-foreground">Select transactions and update category in one action.</p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                <select
+                  value={bulkCategoryId}
+                  onChange={(e) => setBulkCategoryId(e.target.value)}
+                  className="w-full sm:min-w-60 min-h-11 rounded-xl border bg-background px-3"
+                >
+                  <option value="">Choose category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.type} - {category.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={handleBulkAssignCategory}
+                  className="min-h-11 rounded-xl border px-4 font-semibold hover:bg-muted"
+                >
+                  <CheckSquare size={14} className="inline mr-1" />
+                  Apply to {selectedTransactionIds.length}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         {isPremiumUser ? (
           <div className="space-y-3">
             <div className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-4 md:p-5">
@@ -895,24 +991,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
               </div>
             </div>
           </div>
-        ) : (
-          <div className="overflow-hidden rounded-[24px] border border-dashed border-slate-300 bg-[linear-gradient(135deg,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] p-4 md:p-5">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="space-y-1">
-                <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700">
-                  <Lock size={13} />
-                  LOCKED FILTER PREVIEW
-                </div>
-                <p className="text-sm font-semibold text-slate-800">Premium adds instant search and type-based narrowing inside the ledger.</p>
-                <p className="text-xs text-slate-500">Search covers description, category and account names.</p>
-              </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:min-w-[27rem]">
-                <LockedMiniCard title="Text search" subtitle="Jump directly to matching transactions." />
-                <LockedMiniCard title="Type filter" subtitle="Slice income and expense activity in one click." />
-              </div>
-            </div>
-          </div>
-        )}
+        ) : null}
       </header>
 
       <RecurringTransactionsPanel
@@ -943,14 +1022,17 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
                   key={t.id}
                   transaction={t}
                   formatCurrency={formatCurrency}
+                  isSelected={selectedTransactionIds.includes(t.id)}
                   isImported={isImportedTransaction(t)}
                   isRecurring={isRecurringTransaction(t)}
+                  onToggleSelect={() => toggleTransactionSelection(t.id)}
                   onEdit={() => { setSelectedTransaction(t); setIsModalOpen(true) }}
+                  onSplit={isPremiumUser ? () => handleSplitTransaction(t) : undefined}
                   onDelete={() => handleDelete(t.id)}
                 />
               )) : (
                 <tr>
-                  <td colSpan={4} className="p-12 text-center text-muted-foreground italic">
+                  <td colSpan={5} className="p-12 text-center text-muted-foreground italic">
                     No transactions yet for this account. Add your first one.
                   </td>
                 </tr>
@@ -966,9 +1048,12 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
               key={t.id}
               transaction={t}
               formatCurrency={formatCurrency}
+              isSelected={selectedTransactionIds.includes(t.id)}
               isImported={isImportedTransaction(t)}
               isRecurring={isRecurringTransaction(t)}
+              onToggleSelect={() => toggleTransactionSelection(t.id)}
               onEdit={() => { setSelectedTransaction(t); setIsModalOpen(true) }}
+              onSplit={isPremiumUser ? () => handleSplitTransaction(t) : undefined}
               onDelete={() => handleDelete(t.id)}
             />
           )) : (
@@ -1010,19 +1095,30 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
 const TransactionRow = ({
   transaction: t,
   formatCurrency,
+  isSelected,
   isImported,
   isRecurring,
+  onToggleSelect,
   onEdit,
+  onSplit,
   onDelete
 }: {
   transaction: Transaction
   formatCurrency: (value: number) => string
+  isSelected: boolean
   isImported: boolean
   isRecurring: boolean
+  onToggleSelect: () => void
   onEdit: () => void
+  onSplit?: () => void
   onDelete: () => void
 }) => (
   <tr className="hover:bg-muted/50 transition-colors group">
+    <td className="p-4 md:p-6">
+      <div className="flex items-center gap-3">
+        <input type="checkbox" checked={isSelected} onChange={onToggleSelect} className="h-4 w-4" />
+      </div>
+    </td>
     <td className="p-4 md:p-6 flex items-center gap-4">
       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
         t.type === 'INCOME' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
@@ -1060,6 +1156,7 @@ const TransactionRow = ({
     </td>
     <td className="p-4 md:p-6 w-24">
       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        {onSplit ? <button onClick={onSplit} className="p-2 text-muted-foreground hover:text-amber-600"><Scissors size={16} /></button> : null}
         <button onClick={onEdit} className="p-2 text-muted-foreground hover:text-foreground"><Edit2 size={16} /></button>
         <button onClick={onDelete} className="p-2 text-muted-foreground hover:text-destructive"><Trash2 size={16} /></button>
       </div>
@@ -1069,6 +1166,9 @@ const TransactionRow = ({
 
 const TransactionSkeleton = () => (
   <tr className="animate-pulse">
+    <td className="p-4 md:p-6">
+      <div className="h-4 w-4 bg-muted rounded-sm" />
+    </td>
     <td className="p-4 md:p-6 flex items-center gap-4">
       <div className="w-10 h-10 rounded-full bg-muted" />
       <div>
@@ -1087,19 +1187,31 @@ const TransactionSkeleton = () => (
 const MobileTransactionCard = ({
   transaction: t,
   formatCurrency,
+  isSelected,
   isImported,
   isRecurring,
+  onToggleSelect,
   onEdit,
+  onSplit,
   onDelete
 }: {
   transaction: Transaction
   formatCurrency: (value: number) => string
+  isSelected: boolean
   isImported: boolean
   isRecurring: boolean
+  onToggleSelect: () => void
   onEdit: () => void
+  onSplit?: () => void
   onDelete: () => void
 }) => (
   <div className="rounded-xl border bg-background p-4 space-y-3">
+    <div className="flex items-center justify-between gap-3">
+      <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+        <input type="checkbox" checked={isSelected} onChange={onToggleSelect} className="h-4 w-4" />
+        Select
+      </label>
+    </div>
     <div className="flex items-center justify-between gap-3">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
@@ -1130,6 +1242,11 @@ const MobileTransactionCard = ({
     <div className="flex items-center justify-between">
       <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
       <div className="flex items-center gap-2">
+        {onSplit ? (
+          <button onClick={onSplit} className="h-11 w-11 rounded-lg border text-muted-foreground hover:text-amber-600 flex items-center justify-center">
+            <Scissors size={15} />
+          </button>
+        ) : null}
         <button onClick={onEdit} className="h-11 w-11 rounded-lg border text-muted-foreground hover:text-foreground flex items-center justify-center">
           <Edit2 size={15} />
         </button>
@@ -1180,12 +1297,3 @@ const PremiumSignal = ({
   </div>
 )
 
-const LockedMiniCard = ({ title, subtitle }: { title: string; subtitle: string }) => (
-  <div className="rounded-2xl border border-slate-200 bg-white p-4">
-    <div className="flex items-center justify-between">
-      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{title}</p>
-      <Lock size={14} className="text-slate-400" />
-    </div>
-    <p className="mt-3 text-sm text-slate-600">{subtitle}</p>
-  </div>
-)

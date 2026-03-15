@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_BASE_URL } from './baseUrl'
+import type { CurrencyCode } from '../lib/currencies'
 
 const API_URL = `${API_BASE_URL}/auth`;
 
@@ -9,7 +10,8 @@ export interface AuthUser {
   email: string
   role: 'BASIC' | 'PREMIUM' | 'ADMIN'
   isBanned: boolean
-  preferredCurrency: 'USD' | 'EUR' | 'CAD' | 'RUB' | 'RSD' | 'TRY'
+  preferredCurrency: CurrencyCode
+  benchmarkOptOut: boolean
 }
 
 export interface SubscriptionSummary {
@@ -130,6 +132,13 @@ export const downgradeSubscription = async (immediate = false) => {
 
 export const resumeSubscription = async () => {
   const response = await axios.post<SubscriptionResponse>(`${API_URL}/subscription/resume`, {}, {
+    headers: getAuthHeaders()
+  })
+  return response.data
+}
+
+export const updateBenchmarkPreference = async (benchmarkOptOut: boolean) => {
+  const response = await axios.patch<AuthUser>(`${API_URL}/benchmark-preference`, { benchmarkOptOut }, {
     headers: getAuthHeaders()
   })
   return response.data

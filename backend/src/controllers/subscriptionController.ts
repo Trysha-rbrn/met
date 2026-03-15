@@ -19,7 +19,8 @@ const userSelect = {
   name: true,
   role: true,
   isBanned: true,
-  preferredCurrency: true
+  preferredCurrency: true,
+  benchmarkOptOut: true
 } as const
 
 const getSubscriptionPayload = async (userId: string) => {
@@ -45,7 +46,8 @@ const getSubscriptionPayload = async (userId: string) => {
       name: user.name,
       role: user.role,
       isBanned: user.isBanned,
-      preferredCurrency: user.preferredCurrency
+      preferredCurrency: user.preferredCurrency,
+      benchmarkOptOut: user.benchmarkOptOut
     },
     subscription: serializeSubscription(subscription)
   }
@@ -67,13 +69,9 @@ export const upgradeSubscription = async (req: Request, res: Response, next: Nex
   const userId = (req as any).userId as string
   const userRole = (req as any).userRole as UserRole
   const billingInterval = req.body.billingInterval as 'MONTHLY' | 'YEARLY'
-  const code = req.body.code as string | undefined
+  const code = typeof req.body.code === 'string' ? req.body.code.trim().toUpperCase() : undefined
 
   try {
-    if (code && (!env.premiumAccessCode || code !== env.premiumAccessCode)) {
-      return res.status(400).json({ error: 'Invalid premium activation code.' })
-    }
-
     const result = await prisma.$transaction(async (tx) => {
       const user = await tx.user.findUnique({
         where: { id: userId },
@@ -86,18 +84,73 @@ export const upgradeSubscription = async (req: Request, res: Response, next: Nex
 
       const subscription = user.subscription || await ensureSubscriptionRecord(tx, { id: user.id, role: user.role })
 
-      if (code && env.premiumAccessCode && code === env.premiumAccessCode) {
+      if (code) {
+        const isLegacyEnvCode = Boolean(env.premiumAccessCode && code === env.premiumAccessCode)
+        let promoCodeRecord: { id: string; code: string } | null = null
+
+        if (!isLegacyEnvCode) {
+          const now = new Date()
+          const promoCode = await tx.promoCode.findUnique({
+            where: { code },
+            include: {
+              redemptions: {
+                where: { userId },
+                select: { id: true },
+                take: 1
+              }
+            }
+          })
+
+          if (!promoCode || !promoCode.isActive) {
+            return { error: 'Invalid premium activation code.' } as const
+          }
+
+          if (promoCode.expiresAt && promoCode.expiresAt.getTime() < now.getTime()) {
+            return { error: 'Promo code has expired.' } as const
+          }
+
+          if (typeof promoCode.maxRedemptions === 'number' && promoCode.redemptionCount >= promoCode.maxRedemptions) {
+            return { error: 'Promo code usage limit reached.' } as const
+          }
+
+          if (promoCode.redemptions.length > 0) {
+            return { error: 'Promo code already redeemed for this account.' } as const
+          }
+
+          await tx.promoCode.update({
+            where: { id: promoCode.id },
+            data: { redemptionCount: { increment: 1 } }
+          })
+
+          await tx.promoCodeRedemption.create({
+            data: {
+              promoCodeId: promoCode.id,
+              userId
+            }
+          })
+
+          promoCodeRecord = { id: promoCode.id, code: promoCode.code }
+        }
+
         const updatedSubscription = await tx.subscription.upsert({
           where: { userId },
           update: {
             ...buildPremiumSubscriptionState(billingInterval, 'PROMO_CODE'),
             externalSubscriptionId: null,
-            metadata: { activationMethod: 'promo_code' }
+            metadata: {
+              activationMethod: 'promo_code',
+              promoCodeId: promoCodeRecord?.id || null,
+              promoCode: promoCodeRecord?.code || (isLegacyEnvCode ? 'ENV_CODE' : null)
+            }
           },
           create: {
             userId,
             ...buildPremiumSubscriptionState(billingInterval, 'PROMO_CODE'),
-            metadata: { activationMethod: 'promo_code' }
+            metadata: {
+              activationMethod: 'promo_code',
+              promoCodeId: promoCodeRecord?.id || null,
+              promoCode: promoCodeRecord?.code || (isLegacyEnvCode ? 'ENV_CODE' : null)
+            }
           }
         })
 
@@ -108,7 +161,7 @@ export const upgradeSubscription = async (req: Request, res: Response, next: Nex
           actorRole: userRole,
           targetUserId: userId,
           action: 'SUBSCRIPTION_UPGRADE_PROMO',
-          details: { billingInterval }
+          details: { billingInterval, promoCode: promoCodeRecord?.code || (isLegacyEnvCode ? 'ENV_CODE' : null) }
         })
 
         return {
@@ -185,6 +238,10 @@ export const upgradeSubscription = async (req: Request, res: Response, next: Nex
         subscription: updatedSubscription
       }
     })
+
+    if ('error' in result) {
+      return res.status(400).json({ error: result.error })
+    }
 
     const payload = await getSubscriptionPayload(userId)
     if (!payload) return res.status(404).json({ error: 'User not found.' })
