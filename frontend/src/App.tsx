@@ -206,7 +206,10 @@ function App() {
     const isDue = Date.now() >= offerState.nextPromptAt
 
     if (isActiveUser && isDue) {
-      setShowPremiumOfferModal(true)
+      const timer = window.setTimeout(() => {
+        setShowPremiumOfferModal(true)
+      }, 0)
+      return () => window.clearTimeout(timer)
     }
   }, [token, user])
 

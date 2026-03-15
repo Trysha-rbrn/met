@@ -1,4 +1,4 @@
-import { lazy, memo, Suspense, useState, useEffect, useMemo, type ComponentType } from 'react'
+import { lazy, memo, Suspense, useState, useEffect, useMemo, useCallback, type ComponentType } from 'react'
 import { Coins, ArrowUp, ArrowDown, CalendarDays, TrendingUp, WalletCards, Gem, Sparkles, LineChart, ShieldCheck } from 'lucide-react'
 import * as api from '../api/transactionsApi'
 import * as accountsApi from '../api/accountsApi'
@@ -35,43 +35,7 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
   const currencyCode = localStorage.getItem('met_currency') || 'USD'
   const isPremiumUser = userRole === 'PREMIUM' || userRole === 'ADMIN'
 
-  useEffect(() => {
-    const initialize = async () => {
-      try {
-        setLoading(true)
-        const fetchedAccounts = await accountsApi.getAccounts()
-        setAccounts(fetchedAccounts)
-
-        const storedId = localStorage.getItem('met_account_id')
-        const defaultAccountId = fetchedAccounts.find((acc) => acc.id === storedId)?.id || fetchedAccounts[0]?.id || ''
-        setSelectedAccountId(defaultAccountId)
-
-        if (defaultAccountId) {
-          await fetchData(defaultAccountId)
-        }
-      } catch (error) {
-        console.error('Error initializing dashboard:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    void initialize()
-  }, [])
-
-  useEffect(() => {
-    if (!selectedAccountId) return
-    localStorage.setItem('met_account_id', selectedAccountId)
-    void fetchData(selectedAccountId)
-  }, [selectedAccountId])
-
-  useEffect(() => {
-    setShowCharts(false)
-    const timer = window.setTimeout(() => setShowCharts(true), 220)
-    return () => window.clearTimeout(timer)
-  }, [isSidebarCollapsed])
-
-  const fetchData = async (accountId: string) => {
+  const fetchData = useCallback(async (accountId: string) => {
     try {
       setLoading(true)
       const tasks: Array<Promise<unknown>> = [
@@ -110,7 +74,43 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [isPremiumUser])
+
+  useEffect(() => {
+    const initialize = async () => {
+      try {
+        setLoading(true)
+        const fetchedAccounts = await accountsApi.getAccounts()
+        setAccounts(fetchedAccounts)
+
+        const storedId = localStorage.getItem('met_account_id')
+        const defaultAccountId = fetchedAccounts.find((acc) => acc.id === storedId)?.id || fetchedAccounts[0]?.id || ''
+        setSelectedAccountId(defaultAccountId)
+
+        if (defaultAccountId) {
+          await fetchData(defaultAccountId)
+        }
+      } catch (error) {
+        console.error('Error initializing dashboard:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void initialize()
+  }, [fetchData])
+
+  useEffect(() => {
+    if (!selectedAccountId) return
+    localStorage.setItem('met_account_id', selectedAccountId)
+    void fetchData(selectedAccountId)
+  }, [selectedAccountId, fetchData])
+
+  useEffect(() => {
+    setShowCharts(false)
+    const timer = window.setTimeout(() => setShowCharts(true), 220)
+    return () => window.clearTimeout(timer)
+  }, [isSidebarCollapsed])
 
   const selectedAccount = useMemo(
     () => accounts.find((account) => account.id === selectedAccountId),
