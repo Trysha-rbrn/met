@@ -1,4 +1,4 @@
-import { Check, X } from 'lucide-react'
+import { Check, Crown, Sparkles, X } from 'lucide-react'
 
 type PremiumComparisonModalProps = {
   isOpen: boolean
@@ -10,19 +10,19 @@ type PremiumComparisonModalProps = {
 }
 
 const PREMIUM_FEATURES = [
-  'Do 10 naloga (BASIC: 3)',
-  'Napredni filteri transakcija (search + type)',
+  'Up to 10 accounts (BASIC: 3)',
+  'Advanced transaction filters (search + type)',
   'Recurring transactions panel',
-  'Dashboard insights i preporuke',
-  'Benchmarking (anonimizovano, uz opt-out)',
-  'Period analiza: 90D'
+  'Smart dashboard insights',
+  'Anonymous benchmarking with opt-out',
+  'Extended 90D analytics range'
 ]
 
 const BASIC_FEATURES = [
-  'Do 3 naloga',
-  'Osnovni pregled transakcija',
-  'Standard dashboard periodi',
-  'Bez premium benchmark/insights modula'
+  'Up to 3 accounts',
+  'Core transaction tracking',
+  'Standard dashboard ranges',
+  'No premium benchmark/insight modules'
 ]
 
 function PremiumComparisonModal({
@@ -36,32 +36,44 @@ function PremiumComparisonModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/45 p-4">
-      <div className="w-full max-w-3xl rounded-2xl border bg-card shadow-xl">
-        <div className="border-b px-5 py-4">
-          <h3 className="text-xl font-black tracking-tight">{title}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-4xl overflow-hidden rounded-[28px] border border-white/15 bg-slate-950 text-slate-100 shadow-2xl shadow-black/40">
+        <div className="relative border-b border-white/10 px-6 py-6 md:px-8">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.25),transparent_45%),radial-gradient(circle_at_top_left,rgba(56,189,248,0.2),transparent_40%)]" />
+          <div className="relative flex items-start justify-between gap-4">
+            <div>
+              <p className="inline-flex items-center gap-2 rounded-full border border-amber-300/35 bg-amber-300/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-200">
+                <Sparkles size={13} />
+                Premium Plan
+              </p>
+              <h3 className="mt-3 text-2xl font-black tracking-tight md:text-3xl">{title}</h3>
+              <p className="mt-2 max-w-2xl text-sm text-slate-300">{subtitle}</p>
+            </div>
+            <div className="hidden h-12 w-12 items-center justify-center rounded-2xl border border-amber-300/30 bg-amber-300/15 text-amber-200 md:flex">
+              <Crown size={22} />
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 p-5 md:grid-cols-2">
-          <div className="rounded-xl border bg-background p-4">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-muted-foreground">BASIC</p>
-            <ul className="mt-3 space-y-2">
+        <div className="grid grid-cols-1 gap-4 p-6 md:grid-cols-2 md:p-8">
+          <div className="rounded-2xl border border-slate-700 bg-slate-900/70 p-5">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Basic</p>
+            <ul className="mt-4 space-y-2.5">
               {BASIC_FEATURES.map((item) => (
-                <li key={item} className="flex items-start gap-2 text-sm">
-                  <X size={14} className="mt-0.5 text-rose-500" />
+                <li key={item} className="flex items-start gap-2 text-sm text-slate-300">
+                  <X size={14} className="mt-0.5 text-rose-400" />
                   <span>{item}</span>
                 </li>
               ))}
             </ul>
           </div>
 
-          <div className="rounded-xl border border-amber-300 bg-amber-50/60 p-4">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-800">PREMIUM</p>
-            <ul className="mt-3 space-y-2">
+          <div className="rounded-2xl border border-amber-300/40 bg-[linear-gradient(145deg,rgba(251,191,36,0.22),rgba(244,114,182,0.12),rgba(15,23,42,0.85))] p-5">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-200">Premium</p>
+            <ul className="mt-4 space-y-2.5">
               {PREMIUM_FEATURES.map((item) => (
-                <li key={item} className="flex items-start gap-2 text-sm">
-                  <Check size={14} className="mt-0.5 text-emerald-600" />
+                <li key={item} className="flex items-start gap-2 text-sm text-slate-100">
+                  <Check size={14} className="mt-0.5 text-emerald-300" />
                   <span>{item}</span>
                 </li>
               ))}
@@ -69,18 +81,18 @@ function PremiumComparisonModal({
           </div>
         </div>
 
-        <div className="flex flex-col-reverse gap-2 border-t px-5 py-4 sm:flex-row sm:justify-end">
+        <div className="flex flex-col-reverse gap-2 border-t border-white/10 px-6 py-5 sm:flex-row sm:justify-end md:px-8">
           <button
             type="button"
             onClick={onClose}
-            className="min-h-11 rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-muted"
+            className="min-h-11 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
           >
-            Kasnije
+            Maybe Later
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="min-h-11 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:opacity-95"
+            className="min-h-11 rounded-xl bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 px-4 py-2 text-sm font-black text-slate-950 transition hover:opacity-95"
           >
             {ctaLabel}
           </button>

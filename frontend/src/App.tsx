@@ -282,9 +282,9 @@ function App() {
       </div>
       <PremiumComparisonModal
         isOpen={showPremiumOfferModal}
-        title="Premium opcija"
-        subtitle="Kako aktivno koristiš platformu, ovo je pregled šta dobijaš sa Premium planom."
-        ctaLabel="Idi na Premium opciju"
+        title="Upgrade Your Finance Workspace"
+        subtitle="You are an active user, so here is a clear side-by-side overview of what Premium unlocks for your workflow."
+        ctaLabel="Open Premium Settings"
         onClose={scheduleNextPremiumOfferPrompt}
         onConfirm={() => {
           scheduleNextPremiumOfferPrompt()

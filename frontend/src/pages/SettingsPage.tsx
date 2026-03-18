@@ -1,5 +1,6 @@
-﻿import { useEffect, useRef, useState } from 'react'
-import { User, Lock, Trash2, AlertCircle, Coins, Palette, DatabaseZap, Gem, Sparkles, ShieldCheck, LineChart, WalletCards } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
+import { AlertCircle, ArrowRight, Coins, DatabaseZap, Gem, KeyRound, LineChart, Palette, ShieldCheck, Sparkles, Trash2, User, WalletCards } from 'lucide-react'
 import * as api from '../api/authApi'
 import * as dataTransferApi from '../api/dataTransferApi'
 import type { AuthUser, SubscriptionSummary } from '../api/authApi'
@@ -173,11 +174,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
       notify.warning('Please enter your password to clear data.')
       return
     }
-
-    if (!window.confirm('This will delete transactions, categories and extra accounts. Only Primary account will remain. Continue?')) {
-      return
-    }
-
+    if (!window.confirm('This will delete transactions, categories and extra accounts. Only Primary account will remain. Continue?')) return
     try {
       await api.resetUserData(resetDataPassword)
       setResetDataPassword('')
@@ -197,11 +194,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
       notify.warning('Please enter your password to delete account.')
       return
     }
-
-    if (!window.confirm('This will permanently delete your account and all financial data. Continue?')) {
-      return
-    }
-
+    if (!window.confirm('This will permanently delete your account and all financial data. Continue?')) return
     try {
       await api.deleteAccount(deletePassword)
       notify.success('Account deleted successfully.')
@@ -265,426 +258,210 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
     ? new Date(subscription.currentPeriodEnd).toLocaleDateString()
     : null
 
+  const saveStateLabel = isSavingProfile
+    ? 'Saving profile changes...'
+    : isSavingPassword
+      ? 'Updating password...'
+      : 'Auto-save enabled. Profile changes are applied automatically.'
+
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl sm:text-3xl font-black tracking-tighter">Settings</h1>
-        <p className="text-sm sm:text-base text-muted-foreground font-medium">Manage your profile, theme, currency and security.</p>
-        <p className="text-xs text-muted-foreground">
-          {isSavingProfile ? 'Saving profile changes...' : isSavingPassword ? 'Updating password...' : 'Changes are saved automatically.'}
-        </p>
+    <div className="mx-auto max-w-7xl space-y-6">
+      <header className="overflow-hidden rounded-[28px] border border-white/60 bg-[linear-gradient(120deg,rgba(12,74,110,0.9),rgba(30,64,175,0.85),rgba(15,23,42,0.95))] px-6 py-6 text-white shadow-xl sm:px-8">
+        <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-200">Settings Workspace</p>
+        <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h1 className="text-3xl font-black tracking-tight sm:text-4xl">Account and Product Settings</h1>
+            <p className="mt-2 max-w-2xl text-sm text-slate-200 sm:text-base">
+              Everything is grouped by purpose so users can update profile, security, subscription, and data controls without friction.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <MembershipChip icon={LineChart} label="Insights" value={isPremiumUser ? 'Enabled' : 'Basic'} />
+            <MembershipChip icon={Sparkles} label="90D Analytics" value={isPremiumUser ? 'Enabled' : 'Locked'} />
+            <MembershipChip icon={WalletCards} label="Accounts" value={isPremiumUser ? (user?.role === 'ADMIN' ? '20' : '10') : '3'} />
+            <MembershipChip icon={ShieldCheck} label="Plan" value={user?.role || 'BASIC'} />
+          </div>
+        </div>
       </header>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="xl:col-span-2 space-y-6">
-          <section className="rounded-2xl border bg-card p-6 md:p-8">
-            <div className="grid gap-3 sm:grid-cols-4">
-              <MembershipChip icon={LineChart} label="Insights" value={isPremiumUser ? 'Enabled' : 'Disabled'} />
-              <MembershipChip icon={Sparkles} label="90D Range" value={isPremiumUser ? 'Enabled' : 'Disabled'} />
-              <MembershipChip icon={WalletCards} label="Accounts" value={isPremiumUser ? (user?.role === 'ADMIN' ? '20' : '10') : '3'} />
-              <MembershipChip icon={ShieldCheck} label="Plan" value={user?.role || 'BASIC'} />
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[260px,minmax(0,1fr)]">
+        <aside className="space-y-4 xl:sticky xl:top-24 xl:h-fit">
+          <div className="rounded-2xl border bg-card p-4">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-muted-foreground">Quick Navigation</p>
+            <nav className="mt-3 space-y-1.5">
+              <SettingsNavLink href="#profile" label="Profile & Preferences" icon={User} />
+              <SettingsNavLink href="#security" label="Security & Privacy" icon={KeyRound} />
+              <SettingsNavLink href="#subscription" label="Subscription" icon={Gem} />
+              <SettingsNavLink href="#data" label="Data Activity" icon={DatabaseZap} />
+              <SettingsNavLink href="#danger" label="Danger Zone" icon={Trash2} danger />
+            </nav>
+          </div>
+
+          <div className="rounded-2xl border bg-card p-4">
+            <p className="text-sm font-bold text-foreground">Save Status</p>
+            <p className="mt-2 text-xs text-muted-foreground">{saveStateLabel}</p>
+          </div>
+        </aside>
+
+        <main className="space-y-6">
+          <section id="profile" className="rounded-2xl border bg-card p-6 md:p-8">
+            <SectionHeader icon={User} title="Profile & Preferences" subtitle="Core identity, default currency, and appearance settings." />
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              <Field label="Display name" htmlFor="settings-display-name">
+                <input id="settings-display-name" type="text" autoComplete="name" placeholder={user?.name || 'Enter your display name'} value={name} onChange={(e) => setName(e.target.value)} className="h-12 w-full rounded-xl border bg-background px-4 outline-none transition focus:ring-4 focus:ring-primary/15" />
+              </Field>
+              <Field label="Email" htmlFor="settings-email">
+                <input id="settings-email" type="email" value={user?.email || ''} readOnly className="h-12 w-full rounded-xl border bg-muted/50 px-4 text-muted-foreground outline-none" />
+              </Field>
+              <Field label="Preferred currency" htmlFor="settings-currency">
+                <div className="relative">
+                  <Coins size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <select id="settings-currency" value={currency} onChange={(e) => setCurrency(e.target.value as CurrencyCode)} className="h-12 w-full rounded-xl border bg-background pl-9 pr-4 outline-none transition focus:ring-4 focus:ring-primary/15">
+                    {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{`${c.symbol} - ${c.name} (${c.code})`}</option>)}
+                  </select>
+                </div>
+              </Field>
+              <Field label="Theme mode" htmlFor="settings-theme">
+                <div className="relative">
+                  <Palette size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <select id="settings-theme" value={themeMode} onChange={(e) => handleThemeModeChange(e.target.value as ThemeMode)} className="h-12 w-full rounded-xl border bg-background pl-9 pr-4 outline-none transition focus:ring-4 focus:ring-primary/15">
+                    <option value="system">System</option>
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                  </select>
+                </div>
+              </Field>
             </div>
           </section>
 
-          <section className="bg-card border rounded-2xl overflow-hidden">
-            <div className="p-6 md:p-8 space-y-6">
-              <div className="flex items-center gap-2 text-foreground">
-                <User size={18} />
-                <h2 className="text-lg font-bold">Account Profile</h2>
+          <section id="security" className="rounded-2xl border bg-card p-6 md:p-8">
+            <SectionHeader icon={KeyRound} title="Security & Privacy" subtitle="Password rotation and benchmarking privacy controls." />
+            <div className="mt-6 grid gap-4 lg:grid-cols-2">
+              <div className="rounded-2xl border bg-background p-4">
+                <p className="text-sm font-bold text-foreground">Password Update</p>
+                <p className="mt-1 text-xs text-muted-foreground">Enter current + new password. Save runs automatically after brief pause.</p>
+                <form className="mt-4 space-y-3" onSubmit={(e) => e.preventDefault()}>
+                  <input type="text" name="username" autoComplete="username" value={user?.email || ''} readOnly tabIndex={-1} aria-hidden="true" className="sr-only" />
+                  <input id="settings-current-password" name="currentPassword" type="password" autoComplete="current-password" placeholder="Current password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="h-12 w-full rounded-xl border bg-card px-4 outline-none transition focus:ring-4 focus:ring-primary/15" />
+                  <input id="settings-password" name="newPassword" type="password" autoComplete="new-password" placeholder="New password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="h-12 w-full rounded-xl border bg-card px-4 outline-none transition focus:ring-4 focus:ring-primary/15" />
+                </form>
               </div>
-
-              <div className="space-y-2">
-                <label htmlFor="settings-display-name" className="text-sm font-semibold text-muted-foreground">Display name</label>
-                <input
-                  id="settings-display-name"
-                  name="displayName"
-                  type="text"
-                  autoComplete="name"
-                  placeholder={user?.name || 'Enter new name'}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-3 bg-background border rounded-xl outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="settings-email" className="text-sm font-semibold text-muted-foreground">Email</label>
-                <input
-                  id="settings-email"
-                  name="email"
-                  type="email"
-                  value={user?.email || ''}
-                  readOnly
-                  className="w-full px-4 py-3 bg-muted/50 border rounded-xl outline-none text-muted-foreground"
-                />
-              </div>
-
-              <div className="text-xs text-muted-foreground">
-                Current plan: <span className="font-semibold text-foreground">{user?.role || 'BASIC'}</span>
-              </div>
-
-              <form className="space-y-4 pt-2" onSubmit={(e) => e.preventDefault()}>
-                <input
-                  type="text"
-                  name="username"
-                  autoComplete="username"
-                  value={user?.email || ''}
-                  readOnly
-                  tabIndex={-1}
-                  aria-hidden="true"
-                  className="sr-only"
-                />
-                <div className="flex items-center gap-2 text-foreground">
-                  <Lock size={18} />
-                  <h3 className="text-base font-bold">Password</h3>
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="settings-current-password" className="text-sm font-semibold text-muted-foreground">Current password</label>
-                  <input
-                    id="settings-current-password"
-                    name="currentPassword"
-                    type="password"
-                    autoComplete="current-password"
-                    placeholder="Required to change password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="w-full px-4 py-3 bg-background border rounded-xl outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="settings-password" className="text-sm font-semibold text-muted-foreground">New password</label>
-                  <input
-                    id="settings-password"
-                    name="newPassword"
-                    type="password"
-                    autoComplete="new-password"
-                    placeholder="Leave blank to keep current password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full px-4 py-3 bg-background border rounded-xl outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-              </form>
-
-              <div className="space-y-2">
-                <label htmlFor="settings-currency" className="text-sm font-semibold text-muted-foreground inline-flex items-center gap-2">
-                  <Coins size={15} /> Preferred currency
+              <div className="rounded-2xl border bg-background p-4">
+                <p className="text-sm font-bold text-foreground">Benchmark Privacy</p>
+                <p className="mt-1 text-xs text-muted-foreground">Anonymous benchmarking compares your trends against similar users only if enabled.</p>
+                <label className="mt-4 flex items-center justify-between gap-4 rounded-xl border bg-card px-4 py-3">
+                  <span className="text-sm font-semibold">Opt out from anonymized benchmarking</span>
+                  <input type="checkbox" checked={benchmarkOptOut} onChange={(e) => void handleBenchmarkPreferenceChange(e.target.checked)} className="h-4 w-4" />
                 </label>
-                <select
-                  id="settings-currency"
-                  name="currency"
-                  autoComplete="off"
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
-                  className="w-full px-4 py-3 bg-background border rounded-xl outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  {CURRENCIES.map((c) => (
-                    <option key={c.code} value={c.code}>{c.symbol} - {c.name} ({c.code})</option>
-                  ))}
-                </select>
               </div>
             </div>
           </section>
 
-          <section className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-6 md:p-8 space-y-5">
-            <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-amber-800">
-              <Gem size={13} />
-              SUBSCRIPTION CONTROL
-            </div>
+          <section id="subscription" className="overflow-hidden rounded-2xl border border-amber-200/70 bg-[linear-gradient(140deg,rgba(255,251,235,0.94),rgba(255,255,255,0.98))] p-6 md:p-8">
+            <SectionHeader icon={Gem} title="Subscription" subtitle="Modernized premium presentation with clear status and lifecycle controls." />
             {isLoadingSubscription ? (
-              <p className="text-sm text-muted-foreground">Loading subscription...</p>
+              <p className="mt-6 text-sm text-muted-foreground">Loading subscription...</p>
             ) : user?.role === 'ADMIN' ? (
-              <p className="text-sm text-muted-foreground">
-                Admin access already includes premium capabilities. Billing lifecycle controls are disabled for admin accounts.
-              </p>
+              <p className="mt-6 rounded-xl border bg-white/80 px-4 py-3 text-sm text-slate-600">Admin accounts already include premium capabilities. Billing lifecycle controls are intentionally disabled.</p>
             ) : (
-              <div className="space-y-4">
-                <div className="rounded-[24px] border border-white/60 bg-white/90 p-5 space-y-4 shadow-sm">
-                  <div className="flex flex-wrap items-center gap-2 text-sm">
-                    <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 font-semibold text-amber-900">
-                      Plan: {subscription?.plan || user?.role || 'BASIC'}
-                    </span>
-                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-semibold text-slate-700">
-                      Status: {subscription?.status || (isPremiumUser ? 'ACTIVE' : 'ACTIVE')}
-                    </span>
-                    {subscription?.billingInterval && (
-                      <span className="rounded-full border border-slate-200 bg-white px-3 py-1 font-semibold text-slate-700">
-                        {subscription.billingInterval}
-                      </span>
-                    )}
+              <div className="mt-6 space-y-4">
+                <div className="rounded-2xl border border-white/70 bg-white/85 p-5 shadow-sm">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge tone="warm">Plan: {subscription?.plan || user?.role || 'BASIC'}</Badge>
+                    <Badge tone="neutral">Status: {subscription?.status || 'ACTIVE'}</Badge>
+                    {subscription?.billingInterval && <Badge tone="neutral">{subscription.billingInterval}</Badge>}
                   </div>
-                  <div className="grid gap-3 lg:grid-cols-3">
-                    <SubscriptionInfoCard
-                      label="Plan posture"
-                      value={isPremiumUser ? 'Premium unlocked' : 'Basic active'}
-                      description={isPremiumUser ? 'Your premium features are available across the product.' : 'Upgrade whenever you want stronger analysis tools.'}
-                    />
-                    <SubscriptionInfoCard
-                      label="Billing cadence"
-                      value={subscription?.billingInterval || 'N/A'}
-                      description={subscription?.billingInterval ? 'Current billing interval on file.' : 'No recurring premium billing yet.'}
-                    />
-                    <SubscriptionInfoCard
-                      label="Current period"
-                      value={periodEndLabel || 'Not started'}
-                      description={periodEndLabel ? 'Displayed as the active period end date.' : 'Will appear after activation or webhook confirmation.'}
-                    />
+                  <div className="mt-4 grid gap-3 lg:grid-cols-3">
+                    <SubscriptionMetric label="Plan posture" value={isPremiumUser ? 'Premium unlocked' : 'Basic active'} description={isPremiumUser ? 'Premium capabilities are enabled across the product.' : 'Upgrade for richer insights and automation.'} />
+                    <SubscriptionMetric label="Billing cadence" value={subscription?.billingInterval || 'N/A'} description={subscription?.billingInterval ? 'Recurring billing interval currently in use.' : 'No recurring billing configured.'} />
+                    <SubscriptionMetric label="Current period" value={periodEndLabel || 'Not started'} description={periodEndLabel ? 'Active period end date.' : 'Will appear after activation.'} />
                   </div>
-                  <p className="text-sm text-slate-600">
-                    {subscription?.status === 'PENDING'
-                      ? 'Upgrade is waiting for a billing confirmation webhook.'
-                      : isPremiumUser
-                        ? `Premium features are enabled${periodEndLabel ? `. Current period ends on ${periodEndLabel}.` : '.'}`
-                        : 'Unlock Premium features: advanced dashboard insights, smart transaction filters and higher account limits.'}
-                  </p>
-                  {subscription?.externalSubscriptionId && subscription.status === 'PENDING' && (
-                    <p className="text-xs text-slate-500">
-                      Checkout reference: <span className="font-mono">{subscription.externalSubscriptionId}</span>
-                    </p>
-                  )}
                 </div>
-
                 {!isPremiumUser ? (
-                  <form onSubmit={handleActivatePremium} className="space-y-4 rounded-[24px] border border-dashed border-amber-300/80 bg-white/80 p-5">
-                    <div className="space-y-1">
-                      <h3 className="text-lg font-black tracking-tight text-slate-900">Upgrade path</h3>
-                      <p className="text-sm text-slate-600">Choose a billing interval or use a promo code for instant local activation.</p>
+                  <form onSubmit={handleActivatePremium} className="rounded-2xl border border-dashed border-amber-300 bg-white/80 p-5">
+                    <div className="mb-4">
+                      <p className="text-lg font-black tracking-tight text-slate-900">Upgrade Path</p>
+                      <p className="text-sm text-slate-600">Choose cadence and optionally apply a promo code.</p>
                     </div>
-                    <div className="grid gap-4 lg:grid-cols-[minmax(0,0.75fr),minmax(0,1.25fr)]">
-                      <div className="space-y-2">
-                        <label htmlFor="settings-billing-interval" className="text-sm font-semibold text-slate-600">Billing interval</label>
-                        <select
-                          id="settings-billing-interval"
-                          value={billingInterval}
-                          onChange={(e) => setBillingInterval(e.target.value as 'MONTHLY' | 'YEARLY')}
-                          className="w-full rounded-2xl border border-amber-200 bg-white px-4 py-3 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-200/40"
-                        >
-                          <option value="MONTHLY">Monthly</option>
-                          <option value="YEARLY">Yearly</option>
-                        </select>
-                      </div>
-                      <div className="space-y-2">
-                        <label htmlFor="settings-premium-code" className="text-sm font-semibold text-slate-600">Promo code</label>
-                        <input
-                          id="settings-premium-code"
-                          name="premiumCode"
-                          type="text"
-                          autoComplete="off"
-                          value={premiumCode}
-                          onChange={(e) => setPremiumCode(e.target.value)}
-                          placeholder="Optional promo code for instant activation"
-                          className="w-full rounded-2xl border border-amber-200 bg-white px-4 py-3 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-200/40"
-                        />
-                      </div>
+                    <div className="grid gap-3 lg:grid-cols-[0.8fr,1.2fr,auto]">
+                      <select value={billingInterval} onChange={(e) => setBillingInterval(e.target.value as 'MONTHLY' | 'YEARLY')} className="h-12 rounded-xl border border-amber-200 bg-white px-4 outline-none transition focus:ring-4 focus:ring-amber-200/40">
+                        <option value="MONTHLY">Monthly</option>
+                        <option value="YEARLY">Yearly</option>
+                      </select>
+                      <input id="settings-premium-code" name="premiumCode" type="text" autoComplete="off" value={premiumCode} onChange={(e) => setPremiumCode(e.target.value)} placeholder="Optional promo code" className="h-12 rounded-xl border border-amber-200 bg-white px-4 outline-none transition focus:ring-4 focus:ring-amber-200/40" />
+                      <button type="submit" disabled={isSubmittingSubscription} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-5 font-black text-white transition hover:opacity-95 disabled:opacity-60">
+                        {subscription?.status === 'PENDING' ? 'Request Again' : 'Upgrade'}
+                        <ArrowRight size={16} />
+                      </button>
                     </div>
-                    <button
-                      type="submit"
-                      disabled={isSubmittingSubscription}
-                      className="w-full lg:w-auto rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-5 py-3 font-black text-white shadow-lg shadow-amber-500/20 transition hover:opacity-95 disabled:opacity-60"
-                    >
-                      {subscription?.status === 'PENDING' ? 'Request Again' : 'Upgrade to Premium'}
-                    </button>
                   </form>
                 ) : (
-                  <div className="rounded-[24px] border border-white/60 bg-white/80 p-5">
-                    <div className="mb-4 space-y-1">
-                      <h3 className="text-lg font-black tracking-tight text-slate-900">Membership actions</h3>
-                      <p className="text-sm text-slate-600">Control renewal behavior while keeping the premium state clearly visible.</p>
-                    </div>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                    {subscription?.cancelAtPeriodEnd ? (
-                      <button
-                        type="button"
-                        onClick={handleResumeSubscription}
-                        disabled={isSubmittingSubscription}
-                        className="w-full rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-3 font-black text-white shadow-lg shadow-emerald-500/20 transition hover:opacity-95 disabled:opacity-60"
-                      >
-                        Resume Renewal
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleDowngradeSubscription(false)}
-                        disabled={isSubmittingSubscription}
-                        className="w-full rounded-2xl border border-slate-300 bg-white px-5 py-3 font-black text-slate-800 transition hover:bg-slate-50 disabled:opacity-60"
-                      >
-                        Cancel At Period End
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => handleDowngradeSubscription(true)}
-                      disabled={isSubmittingSubscription}
-                      className="w-full rounded-2xl border border-rose-300 bg-rose-50 px-5 py-3 font-black text-rose-700 transition hover:bg-rose-100 disabled:opacity-60"
-                    >
-                      Downgrade Now
-                    </button>
+                  <div className="rounded-2xl border border-white/70 bg-white/80 p-5">
+                    <p className="text-lg font-black tracking-tight text-slate-900">Membership Actions</p>
+                    <p className="mt-1 text-sm text-slate-600">Control renewal and downgrade behavior with explicit actions.</p>
+                    <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                      {subscription?.cancelAtPeriodEnd ? (
+                        <button type="button" onClick={handleResumeSubscription} disabled={isSubmittingSubscription} className="h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-4 font-black text-white transition hover:opacity-95 disabled:opacity-60">Resume Renewal</button>
+                      ) : (
+                        <button type="button" onClick={() => handleDowngradeSubscription(false)} disabled={isSubmittingSubscription} className="h-12 rounded-xl border border-slate-300 bg-white px-4 font-bold text-slate-800 transition hover:bg-slate-50 disabled:opacity-60">Cancel At Period End</button>
+                      )}
+                      <button type="button" onClick={() => handleDowngradeSubscription(true)} disabled={isSubmittingSubscription} className="h-12 rounded-xl border border-rose-300 bg-rose-50 px-4 font-bold text-rose-700 transition hover:bg-rose-100 disabled:opacity-60">Downgrade Now</button>
                     </div>
                   </div>
                 )}
-                {null}
               </div>
             )}
           </section>
 
-          <section className="bg-card border rounded-2xl p-6 md:p-8 space-y-4">
-            <div className="flex items-center gap-2 text-foreground">
-              <Palette size={18} />
-              <h2 className="text-lg font-bold">Appearance</h2>
+          <section id="data" className="rounded-2xl border bg-card p-6 md:p-8">
+            <SectionHeader icon={DatabaseZap} title="Data Activity" subtitle="Import/export audit trail visible to the user for transparency." />
+            <div className="mt-6 rounded-xl border bg-background">
+              {transferLogs.length === 0 ? (
+                <p className="p-4 text-sm text-muted-foreground">No import/export activity yet.</p>
+              ) : (
+                <div className="divide-y">
+                  {transferLogs.slice(0, 10).map((log) => (
+                    <div key={log.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                      <p className="text-sm font-semibold">{log.action} • {log.format}<span className="ml-2 text-xs text-muted-foreground">Rows: {log.rows}</span></p>
+                      <p className="text-xs text-muted-foreground">{new Date(log.createdAt).toLocaleString()}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <div className="space-y-2">
-              <label htmlFor="settings-theme" className="text-sm font-semibold text-muted-foreground">Theme mode</label>
-              <select
-                id="settings-theme"
-                name="theme"
-                value={themeMode}
-                onChange={(e) => handleThemeModeChange(e.target.value as ThemeMode)}
-                className="w-full px-4 py-3 bg-background border rounded-xl outline-none focus:ring-2 focus:ring-primary/20"
-              >
-                <option value="system">System</option>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-              </select>
-            </div>
+            <p className="mt-4 inline-flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-xs font-semibold text-muted-foreground">
+              <AlertCircle size={14} />
+              Settings are auto-saved and confirmation appears via toast notifications.
+            </p>
           </section>
 
-          <section className="bg-card border rounded-2xl p-6 md:p-8 space-y-4">
-            <div className="flex items-center gap-2 text-foreground">
-              <ShieldCheck size={18} />
-              <h2 className="text-lg font-bold">Benchmark Privacy</h2>
+          <section id="danger" className="rounded-2xl border border-rose-200/70 bg-rose-50/35 p-6 md:p-8">
+            <SectionHeader icon={Trash2} title="Danger Zone" subtitle="Sensitive operations protected by password confirmation." />
+            <div className="mt-6 grid gap-4 lg:grid-cols-2">
+              <form onSubmit={handleResetData} className="rounded-2xl border border-amber-300 bg-white p-4">
+                <input type="text" name="username" autoComplete="username" value={user?.email || ''} readOnly tabIndex={-1} aria-hidden="true" className="sr-only" />
+                <p className="flex items-center gap-2 text-sm font-bold text-foreground"><DatabaseZap size={16} />Reset Financial Data</p>
+                <p className="mt-1 text-xs text-muted-foreground">Deletes transactions, categories, and extra accounts while preserving the primary account.</p>
+                <input id="settings-reset-data-password" name="resetDataPassword" type="password" autoComplete="current-password" placeholder="Confirm password" value={resetDataPassword} onChange={(e) => setResetDataPassword(e.target.value)} className="mt-3 h-11 w-full rounded-xl border bg-background px-4 outline-none transition focus:ring-4 focus:ring-amber-500/20" />
+                <button type="submit" className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 font-bold text-white transition hover:bg-amber-700"><DatabaseZap size={16} />Clear User Data</button>
+              </form>
+              <form onSubmit={handleDeleteAccount} className="rounded-2xl border border-rose-300 bg-white p-4">
+                <input type="text" name="username" autoComplete="username" value={user?.email || ''} readOnly tabIndex={-1} aria-hidden="true" className="sr-only" />
+                <p className="text-sm font-bold text-foreground">Delete Account</p>
+                <p className="mt-1 text-xs text-muted-foreground">Permanently removes your account and all related data.</p>
+                <input id="settings-delete-password" name="deletePassword" type="password" autoComplete="current-password" placeholder="Confirm password" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} className="mt-3 h-11 w-full rounded-xl border bg-background px-4 outline-none transition focus:ring-4 focus:ring-rose-500/20" />
+                <button type="submit" className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 font-bold text-white transition hover:bg-rose-700"><Trash2 size={16} />Delete Account</button>
+              </form>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Anonymous benchmarking compares your spending with similar users only when you opt in.
-            </p>
-            <label className="flex items-center justify-between gap-4 rounded-xl border bg-background px-4 py-3">
-              <span className="text-sm font-semibold">Opt out from anonymized benchmarking</span>
-              <input
-                type="checkbox"
-                checked={benchmarkOptOut}
-                onChange={(e) => void handleBenchmarkPreferenceChange(e.target.checked)}
-                className="h-4 w-4"
-              />
-            </label>
           </section>
-
-          <section className="bg-card border rounded-2xl p-6 md:p-8 space-y-4">
-            <div className="flex items-center gap-2 text-foreground">
-              <DatabaseZap size={18} />
-              <h2 className="text-lg font-bold">Import/Export Activity</h2>
-            </div>
-            {transferLogs.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No import/export activity yet.</p>
-            ) : (
-              <div className="divide-y rounded-xl border bg-background">
-                {transferLogs.slice(0, 10).map((log) => (
-                  <div key={log.id} className="px-4 py-3 flex items-center justify-between gap-3">
-                    <p className="text-sm font-semibold">
-                      {log.action} • {log.format}
-                      <span className="text-xs text-muted-foreground ml-2">Rows: {log.rows}</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(log.createdAt).toLocaleString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          <div className="p-3 rounded-xl text-sm font-semibold flex items-center gap-2 bg-muted/40 border border-border text-muted-foreground">
-            <AlertCircle size={16} />
-            Settings are auto-saved and status is shown via toast notifications.
-          </div>
-        </div>
-
-        <aside className="bg-card border rounded-2xl p-6 space-y-5 h-fit">
-          <div className="flex items-center gap-2 text-rose-600">
-            <AlertCircle size={18} />
-            <h2 className="text-lg font-bold">Danger Zone</h2>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Sensitive actions require your password confirmation.
-          </p>
-
-          <form onSubmit={handleResetData} className="space-y-3 border rounded-xl p-4">
-            <input
-              type="text"
-              name="username"
-              autoComplete="username"
-              value={user?.email || ''}
-              readOnly
-              tabIndex={-1}
-              aria-hidden="true"
-              className="sr-only"
-            />
-            <p className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <DatabaseZap size={16} />
-              Reset financial data
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Deletes transactions, categories and extra accounts. Keeps only Primary account.
-            </p>
-            <input
-              id="settings-reset-data-password"
-              name="resetDataPassword"
-              type="password"
-              autoComplete="current-password"
-              placeholder="Confirm password"
-              value={resetDataPassword}
-              onChange={(e) => setResetDataPassword(e.target.value)}
-              className="w-full px-4 py-3 bg-background border rounded-xl outline-none focus:ring-2 focus:ring-amber-500/20"
-            />
-            <button
-              type="submit"
-              className="w-full flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-xl font-bold transition-colors"
-            >
-              <DatabaseZap size={18} />
-              Clear User Data
-            </button>
-          </form>
-
-          <form onSubmit={handleDeleteAccount} className="space-y-3 border rounded-xl p-4">
-            <input
-              type="text"
-              name="username"
-              autoComplete="username"
-              value={user?.email || ''}
-              readOnly
-              tabIndex={-1}
-              aria-hidden="true"
-              className="sr-only"
-            />
-            <p className="text-sm font-semibold text-foreground">Delete account</p>
-            <p className="text-xs text-muted-foreground">
-              Permanently deletes your account and all related data.
-            </p>
-            <input
-              id="settings-delete-password"
-              name="deletePassword"
-              type="password"
-              autoComplete="current-password"
-              placeholder="Confirm password"
-              value={deletePassword}
-              onChange={(e) => setDeletePassword(e.target.value)}
-              className="w-full px-4 py-3 bg-background border rounded-xl outline-none focus:ring-2 focus:ring-rose-500/20"
-            />
-            <button
-              type="submit"
-              className="w-full flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 rounded-xl font-bold transition-colors"
-            >
-              <Trash2 size={18} />
-              Delete Account
-            </button>
-          </form>
-        </aside>
+        </main>
       </div>
+
       <PremiumComparisonModal
         isOpen={showPremiumComparisonModal}
-        title="Premium poređenje"
-        subtitle="Pre aktivacije, pogledaj jasnu razliku između BASIC i PREMIUM plana."
-        ctaLabel={isSubmittingSubscription ? 'Aktivacija...' : 'Nastavi na aktivaciju'}
+        title="Premium Plan Comparison"
+        subtitle="Before activation, review exactly what changes between BASIC and PREMIUM so users can make informed decisions."
+        ctaLabel={isSubmittingSubscription ? 'Activating...' : 'Continue Activation'}
         onClose={() => setShowPremiumComparisonModal(false)}
         onConfirm={() => {
           setShowPremiumComparisonModal(false)
@@ -695,38 +472,50 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
   )
 }
 
-const MembershipChip = ({
-  icon: Icon,
-  label,
-  value
-}: {
-  icon: typeof Gem
-  label: string
-  value: string
-}) => (
-  <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-slate-900">
-    <div className="flex items-center gap-2">
-      <Icon size={15} className="text-amber-600" />
-      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{label}</span>
+const SectionHeader = ({ icon: Icon, title, subtitle }: { icon: typeof User; title: string; subtitle: string }) => (
+  <div>
+    <div className="inline-flex items-center gap-2 text-foreground">
+      <Icon size={18} />
+      <h2 className="text-lg font-black tracking-tight">{title}</h2>
     </div>
-    <p className="mt-2 text-sm font-black tracking-tight">{value}</p>
+    <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
   </div>
 )
 
-const SubscriptionInfoCard = ({
-  label,
-  value,
-  description
-}: {
-  label: string
-  value: string
-  description: string
-}) => (
-  <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+const Field = ({ label, htmlFor, children }: { label: string; htmlFor: string; children: ReactNode }) => (
+  <label htmlFor={htmlFor} className="space-y-2">
+    <span className="text-sm font-semibold text-muted-foreground">{label}</span>
+    {children}
+  </label>
+)
+
+const SettingsNavLink = ({ href, label, icon: Icon, danger }: { href: string; label: string; icon: typeof User; danger?: boolean }) => (
+  <a href={href} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${danger ? 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100' : 'border-border bg-background text-foreground hover:bg-muted'}`}>
+    <Icon size={15} />
+    <span>{label}</span>
+  </a>
+)
+
+const MembershipChip = ({ icon: Icon, label, value }: { icon: typeof Gem; label: string; value: string }) => (
+  <div className="rounded-xl border border-white/25 bg-white/10 px-3 py-2 backdrop-blur">
+    <div className="inline-flex items-center gap-1.5 text-cyan-100">
+      <Icon size={13} />
+      <span className="text-[10px] font-bold uppercase tracking-[0.2em]">{label}</span>
+    </div>
+    <p className="mt-1 text-sm font-black tracking-tight text-white">{value}</p>
+  </div>
+)
+
+const SubscriptionMetric = ({ label, value, description }: { label: string; value: string; description: string }) => (
+  <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
     <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{label}</p>
     <p className="mt-2 text-lg font-black tracking-tight text-slate-900">{value}</p>
     <p className="mt-2 text-xs text-slate-500">{description}</p>
   </div>
+)
+
+const Badge = ({ children, tone }: { children: ReactNode; tone: 'warm' | 'neutral' }) => (
+  <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${tone === 'warm' ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-slate-200 bg-slate-50 text-slate-700'}`}>{children}</span>
 )
 
 export default SettingsPage
