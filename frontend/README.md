@@ -1,62 +1,152 @@
-# Frontend (Web App)
+# Frontend - MET Web App
 
-React + Vite + TypeScript klijentska aplikacija za MET Finance Tracker.
+React + Vite + TypeScript client for MET Finance Tracker.
+
+The frontend provides authenticated finance workflows, dashboard analytics, premium feature UX, and admin-only views.
 
 ## Stack
-- React 19 + TypeScript
-- Vite
-- TailwindCSS v4
-- Framer Motion
-- Recharts
-- React Toastify
-- Axios
 
-## Pokretanje
-1. Instalacija:
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS v4
+- React Router
+- Axios
+- Recharts
+- Framer Motion
+- React Toastify
+
+## Project Structure
+
+```text
+frontend/
+|- public/
+|- src/
+|  |- api/
+|  |- components/
+|  |- pages/
+|  |- lib/
+|  |- assets/
+|  `- main.tsx
+|- Dockerfile
+|- nginx.conf
+|- package.json
+`- README.md
+```
+
+## Getting Started
+
+### 1. Install dependencies
+
 ```bash
 npm install
 ```
-2. Dev server:
+
+### 2. Configure API base URL (optional)
+
+Create `frontend/.env` if needed:
+
+```env
+VITE_API_BASE_URL=http://localhost:3000/api
+```
+
+If omitted, the app falls back to runtime host-based API resolution.
+
+### 3. Start development server
+
 ```bash
 npm run dev
 ```
-3. Otvori:
+
+Open:
+
 - `http://localhost:5173`
 
-Za pristup sa telefona (ista mreza):
-- `npm run dev` vec koristi `vite --host`
-- otvori `http://<LAN_IP_LAPTOPA>:5173`
+The dev server uses `vite --host`, so LAN testing on mobile is supported.
 
-## API povezivanje
-Frontend koristi:
-- `VITE_API_BASE_URL` ako je definisan
-- inace runtime fallback: `http://<browser-host>:3000/api`
+## NPM Scripts
 
-Implementacija:
-- `src/api/baseUrl.ts`
+- `npm run dev` - start Vite dev server
+- `npm run lint` - run ESLint
+- `npm run typecheck` - run TypeScript project checks
+- `npm run test` - lint + typecheck
+- `npm run build` - production build
+- `npm run preview` - preview production build
+- `npm run test:security` - `npm audit --audit-level=high`
 
-## Glavne stranice
-- `/` Dashboard
-- `/transactions` Transactions + account picker + kreiranje transakcija
-- `/categories` Upravljanje kategorijama
-- `/settings` Profil, tema, valuta, bezbednost
+## Application Routes
 
-## UX/Session ponasanje
-- Tema: `system`/`light`/`dark` (menja se u Settings)
-- Sidebar je collapsible (desktop), postoji mobile bottom nav.
-- Footer je responsive i uvek na dnu layout-a.
-- Toast notifikacije su globalne (`react-toastify`).
-- Ako korisnik izgubi konekciju pa se vrati online -> auto logout i potreban novi login.
-- Heartbeat proverava sesiju periodicno; na `401` korisnik se izloguje.
+- `/` - Dashboard
+- `/transactions` - transaction management and account selection
+- `/categories` - categories, rules, and budgets
+- `/settings` - profile, theme, security, subscription controls
+- `/admin` - admin panel (visible only for `ADMIN` users)
 
-## Lokalni storage kljucevi
+## Core Frontend Features
+
+- Auth session bootstrap and protected app shell
+- Theme modes: `system`, `light`, `dark`
+- Account-scoped dashboard metrics and charts
+- Transaction CRUD workflows
+- Premium workflows (insights, advanced operations)
+- Data transfer actions (import/export logging integration)
+- Admin-only navigation and pages
+- Responsive layout (desktop sidebar + mobile bottom navigation)
+- Session handling on connectivity changes and token invalidation
+
+## Local Storage Keys
+
 - `met_token`
+- `met_user_role`
 - `met_theme_mode`
 - `met_currency`
 - `met_account_id`
 
-## Build
+## API Integration
+
+Client API modules are in `src/api/`:
+
+- `authApi.ts`
+- `accountsApi.ts`
+- `transactionsApi.ts`
+- `categoriesApi.ts`
+- `dataTransferApi.ts`
+- `adminApi.ts`
+
+Base URL resolution is handled in `src/api/baseUrl.ts`.
+
+## Build and Deployment
+
+### Static build
+
 ```bash
 npm run build
 npm run preview
 ```
+
+### Docker image
+
+```bash
+docker build -t met-frontend ./frontend
+```
+
+Container serves production assets via Nginx (`frontend/nginx.conf`).
+
+## Public Repo Notes
+
+- Keep `.env` files out of version control.
+- Verify all branding, metadata, and social preview values before release.
+- Ensure production backend URL is configured via environment variables.
+
+## Troubleshooting
+
+### Frontend cannot reach backend
+
+- Confirm backend is running on port `3000`.
+- Set `VITE_API_BASE_URL` explicitly when needed.
+- Check backend CORS configuration.
+
+### Mobile/LAN access issues
+
+- Ensure device and development machine are on the same network.
+- Open ports `5173` (frontend) and `3000` (backend) in firewall if needed.

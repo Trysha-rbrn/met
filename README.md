@@ -1,320 +1,166 @@
-# MET - Micro Economics Tool
+# MET - Finance Tracker
 
-MET je full-stack aplikacija za pracenje licnih finansija (income/expense), sa autentikacijom, kategorijama, vise naloga i dashboard analitikom.
+A full-stack personal finance platform for tracking income, expenses, budgets, subscriptions, and account-level analytics.
 
-## Stack
-- Frontend: React + Vite + TypeScript + TailwindCSS v4 + Framer Motion + Recharts + React Toastify
-- Backend: Node.js + Express + TypeScript
-- Auth: JWT + bcrypt
-- Baza: PostgreSQL + Prisma ORM
-- Lokalno okruzenje: Docker Compose
+MET is built as a production-style monorepo with a React frontend, an Express API, PostgreSQL, Prisma ORM, Docker support, and CI/CD workflows.
 
-## Folderi
-- `frontend/` React aplikacija
-- `backend/` API + Prisma
+## Highlights
 
-## Brzi Start
-1. Pokreni bazu iz root-a projekta:
+- JWT authentication with profile management
+- Multi-account finance tracking (Primary, Savings, etc.)
+- Transaction management with summaries and charts
+- Recurring transactions (Premium/Admin)
+- Category rules, bulk category assignment, and split transactions (Premium/Admin)
+- Budget goals and monthly budget tracking (Premium/Admin)
+- Data transfer logs for import/export actions
+- Role system: `BASIC`, `PREMIUM`, `ADMIN`
+- Admin panel endpoints (user management, audit logs, promo codes)
+- Docker image build pipeline and security workflows
+
+## Monorepo Structure
+
+```text
+.
+|- backend/      # Express + TypeScript + Prisma API
+|- frontend/     # React + Vite + TypeScript app
+|- docs/         # generated/auxiliary documentation artifacts
+|- scripts/      # repo utility scripts
+|- .github/      # CI/CD workflows
+`- docker-compose.yml  # local PostgreSQL service
+```
+
+## Tech Stack
+
+- Frontend: React 19, Vite, TypeScript, Tailwind CSS v4, Recharts, Framer Motion
+- Backend: Node.js, Express 5, TypeScript, Prisma
+- Database: PostgreSQL 15
+- Auth/Security: JWT, bcrypt, CORS policy, rate limiting
+- CI/CD: GitHub Actions (CI, Security, Docker, Docs)
+- Containers: Docker, Docker Compose
+
+## Quick Start
+
+### 1. Prerequisites
+
+- Node.js 22+
+- npm 10+
+- Docker (for local PostgreSQL)
+
+### 2. Start PostgreSQL
+
+From repository root:
+
 ```bash
 docker compose up -d
 ```
-2. Pokreni backend:
+
+This starts PostgreSQL on `localhost:5432` with the credentials from `docker-compose.yml`.
+
+### 3. Configure backend environment
+
+Create `backend/.env` with at least:
+
+```env
+DATABASE_URL=postgresql://met_user:met_password@localhost:5432/met_db?schema=public
+JWT_SECRET=replace_with_a_strong_secret
+```
+
+Optional values are documented in [backend/README.md](./backend/README.md).
+
+### 4. Install dependencies
+
+```bash
+cd backend && npm install
+cd ../frontend && npm install
+```
+
+### 5. Run database migration and Prisma client generation
+
+```bash
+cd backend
+npx prisma migrate dev
+npx prisma generate
+```
+
+### 6. Start apps
+
+In one terminal:
+
 ```bash
 cd backend
 npm run dev
 ```
-3. Pokreni frontend u novom terminalu:
+
+In another terminal:
+
 ```bash
 cd frontend
 npm run dev
 ```
-4. Otvori app:
-- `http://localhost:5173`
 
-## Pristup sa telefona (dok je laptop upaljen)
-1. Laptop i telefon moraju biti na istoj Wi-Fi mrezi.
-2. Frontend je vec podesen da slusa na mrezi (`vite --host`).
-3. Nadji lokalni IP laptopa (npr. `ipconfig` -> `192.168.1.25`).
-4. Na telefonu otvori:
-- `http://<IP_LAPTOPA>:5173`
-- primer: `http://192.168.1.25:5173`
-5. Ako ne radi, proveri firewall pravila za portove `5173` i `3000`.
+Open `http://localhost:5173`.
 
-Napomena:
-- Frontend API URL je dinamicki i koristi host iz browsera (`http://<host>:3000/api`) ako nije zadat `VITE_API_BASE_URL`.
+## Local URLs
 
-## Najvaznije funkcije
-- Auth: register/login/getMe/update profile/delete account
-- Transactions: CRUD + kategorija + account vezivanje
-- Categories: hijerarhija (category/subcategory)
-- Dashboard: trenutno stanje + period filteri + grafikoni (`1D`, `7D`, `30D`, `YTD`, `ALL`, `CUSTOM`)
-- Theme: bira se iskljucivo u `Settings` (`system`, `light`, `dark`)
-- Settings:
-  - promena display name
-  - promena valute
-  - promena lozinke (`current password` + `new password`)
-  - brisanje naloga uz potvrdu lozinkom
-- Notifikacije: globalno preko React Toastify
-- Currencies: USD, EUR, CAD, RUB, RSD, TRY
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:3000`
+- Health check: `GET http://localhost:3000/health`
+- PostgreSQL: `localhost:5432`
 
-## Account sistem (bank style)
-- Svaki novi korisnik automatski dobija default nalog: `Primary`
-- Korisnik moze da ima maksimalno 3 naloga
-- Preporuceni nazivi:
-  - `Primary`
-  - `Savings`
-  - `Reserve`
-- Kreiranje naloga je dostupno na `Transactions` stranici
-- Transakcije i Dashboard se gledaju po aktivnom nalogu
+## Main Product Areas
 
-## Navigacija (frontend)
-- `/` Dashboard (analitika i stanje za aktivni nalog)
-- `/transactions` Pregled transakcija + New Transaction + Account selector
-- `/categories` Upravljanje kategorijama
-- `/settings` Podešavanja profila, teme i bezbednosti
+- Authentication and account/profile lifecycle
+- Account-scoped transactions and summaries
+- Categories, rules, and budget planning
+- Premium-only analytics and automation
+- Admin moderation and audit tooling
 
-## API Endpoints (backend)
-### Auth
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `GET /api/auth/me`
-- `PUT /api/auth/profile`
-  - podrzava: `name`, `currentPassword`, `newPassword`
-- `DELETE /api/auth/profile`
-  - zahteva: `password`
+For endpoint-level documentation, see [backend/README.md](./backend/README.md).
 
-### Accounts
-- `GET /api/accounts`
-- `POST /api/accounts`
+## Available Scripts
 
-### Transactions
-- `GET /api/transactions?accountId=...`
-- `GET /api/transactions/summary?accountId=...`
-- `POST /api/transactions`
-- `PUT /api/transactions/:id`
-- `DELETE /api/transactions/:id`
+### Root
 
-### Categories
-- `GET /api/categories`
-- `POST /api/categories`
-- `PUT /api/categories/:id`
-- `DELETE /api/categories/:id`
+- Database startup is handled via `docker compose up -d`
 
-## Prisma / Migracije
-Schema: `backend/prisma/schema.prisma`
+### Frontend
 
-Nova migracija za account sistem:
-- `backend/prisma/migrations/20260314103000_add_accounts/migration.sql`
+- `npm run dev`
+- `npm run lint`
+- `npm run typecheck`
+- `npm run build`
+- `npm run preview`
 
-Posle pull-a obavezno:
-```bash
-cd backend
-npx prisma migrate dev
-npx prisma generate
-```
+### Backend
 
-Ako `prisma generate` padne sa `EPERM` na Windows-u:
-- ugasi backend proces koji drzi Prisma engine lock (`npm run dev`),
-- pa ponovi `npx prisma generate`.
+- `npm run dev`
+- `npm run start`
+- `npm run typecheck`
+- `npm run prisma:generate`
 
-## Napomene za dalji rad
-- Aktivni account: `localStorage['met_account_id']`
-- Token: `localStorage['met_token']`
-- Theme mode: `localStorage['met_theme_mode']` (`system|light|dark`)
-- Valuta: `localStorage['met_currency']`
+## CI/CD Workflows
 
-## Dizajn
-- Primarna paleta sajta:
-  - `#fce3f7`
-  - `#ff9eff`
-  - `#dc89e1`
-  - `#a569b0`
-  - `#6a4d8b`
-- Income ostaje zelen, expense ostaje crven.
+Defined in `.github/workflows`:
 
-## Author
-- Trysha-rbrn
-- GitHub: https://github.com/Trysha-rbrn
+- `ci.yml` - frontend/backend install, checks, and build
+- `security.yml` - npm audit + CodeQL
+- `docker.yml` - Docker image build (and push to GHCR on `main`)
+- `docs.yml` - auto-generated docs artifact
 
-## Footer i Branding
-- Globalni responsive footer je ukljucen i za auth i za app layout.
-- Footer je uvek na kraju stranice (`mt-auto` u flex layout-u) i ima jasnu gornju separator liniju.
-- Footer obavezno prikazuje:
-  - ime projekta: `MET Finance Tracker`
-  - godinu: `2026`
-  - napomenu o AI asistenciji: `OpenAI, Gemini, Claude`
+## Public Repository Readiness Checklist
 
-## Metadata za Deployment
-- `frontend/index.html` sadrzi pripremljene meta tagove:
-  - SEO: `description`, `keywords`, `author`, `robots`, `theme-color`, `application-name`
-  - Open Graph: `og:type`, `og:title`, `og:description`, `og:site_name`, `og:image`
-  - Twitter: `twitter:card`, `twitter:title`, `twitter:description`, `twitter:image`
-  - AI disclosure: `meta name="ai-assisted"`
-- Pre produkcije dopuni:
-  - `og:url` sa produkcionim domenom
-  - `canonical` link
-  - dedicated social preview sliku umesto `favicon.svg`
+Before publishing broadly, verify:
 
-## Troubleshooting: Login sa Telefona
-Ako na telefonu dobijes "An unexpected error occurred" ili poruku da server nije dostupan:
-- Proveri da su laptop i telefon na istoj Wi-Fi mrezi.
-- Backend mora da radi i da slusa na `HOST=0.0.0.0` i `PORT=3000`.
-- U `.env` backend-a drzi `ALLOW_PRIVATE_NETWORK_ORIGINS=true` za development.
-- `CORS_ORIGINS` treba da sadrzi tvoju LAN adresu frontend-a (npr. `http://192.168.8.25:5173`).
-- Ako i dalje ne radi, otvori Windows Firewall za port `3000` (backend) i `5173` (frontend).
+1. No secrets or private tokens are committed.
+2. `backend/.env` is excluded and never tracked.
+3. A proper `LICENSE` file is added at repo root.
+4. Production values are set for CORS, JWT secret, and database credentials.
+5. GHCR/package permissions match your publication model.
 
-## Session Pravila (Bezbednost)
-- Token sada sadrzi server-instance identifikator (`sid`).
-- Posle restarta backend servera, svi prethodno izdati tokeni postaju nevalidni i korisnici se automatski izloguju pri sledecoj proveri.
-- Frontend radi heartbeat proveru sesije na svakih 15 sekundi (`/api/auth/me`) i pri `401` radi auto-logout.
-- Ako korisnik izgubi konekciju (offline -> online), aplikacija obavezno radi logout i trazi novo logovanje.
+## Security
 
-## GitHub Actions (CI/CD)
-Repo sada ima workflow-e za automatizaciju kvaliteta, sigurnosti, dokumentacije i Docker image-a:
+Security policy and reporting notes are in [SECURITY.md](./SECURITY.md).
 
-- `.github/workflows/ci.yml`
-  - Frontend: `npm ci`, `lint`, `typecheck`, `build`
-  - Backend: `npm ci`, `prisma generate`, `typecheck`
+## Maintainer
 
-- `.github/workflows/security.yml`
-  - `npm audit` (high+) za frontend i backend
-  - CodeQL analiza za JavaScript/TypeScript
-
-- `.github/workflows/docs.yml`
-  - Automatski generise docs artefakte (`docs/auto`) putem `scripts/generate-docs.mjs`
-  - Uploaduje artefakt na svaki PR/push/main/manual run
-
-- `.github/workflows/docker.yml`
-  - Gradi Docker image-e za frontend i backend
-  - Na `main` push-u publikuje na GHCR:
-    - `ghcr.io/<owner>/met-backend`
-    - `ghcr.io/<owner>/met-frontend`
-
-## Docker fajlovi
-- `backend/Dockerfile`
-- `frontend/Dockerfile`
-- `frontend/nginx.conf` (SPA fallback)
-- `.dockerignore` fajlovi za oba servisa
-
-## Settings update (#1)
-- Settings su podeljene u jasne pod-sekcije:
-  - `Account Profile`: name, email (read-only), password, currency
-  - `Appearance`: theme mode
-  - `Danger Zone`: 
-    - `Clear User Data` (uz lozinku) -> brise transakcije, kategorije i dodatne naloge, ostavlja samo `Primary`
-    - `Delete Account` (uz lozinku)
-
-## Novi Auth endpoint
-- `POST /api/auth/reset-data`
-  - body: `{ password }`
-  - efekat: ciscenje korisnickih finansijskih podataka i zadrzavanje samo `Primary` naloga
-
-## Data Transfer (Issue #3)
-- Transactions stranica podrzava:
-  - Export u Excel (`.xlsx`)
-  - Export u PDF (`.pdf`)
-  - Import iz Excel (`.xlsx/.xls`)
-- Svaki import/export upisuje aktivnost u Data Transfer log.
-- Settings prikazuje poslednje import/export aktivnosti u posebnoj pod-sekciji.
-
-### Data Transfer API
-- `GET /api/data-transfer`
-- `POST /api/data-transfer`
-  - body: `{ action: 'IMPORT'|'EXPORT', format: 'EXCEL'|'PDF', rows: number }`
-
-## Administrator (#4)
-- Uveden role sistem: `BASIC` i `ADMIN`.
-- `BASIC` je default za sve korisnike.
-- `ADMIN` se dodeljuje pri registraciji ako je email u `ADMIN_EMAILS` listi.
-- Frontend ruta `/admin` je dostupna samo admin korisnicima.
-
-### Admin API (ADMIN only)
-- `GET /api/admin/users` (pretraga, filter, sortiranje)
-- `GET /api/admin/users/:id` (detalji korisnika i podaci)
-- `PATCH /api/admin/users/:id/ban` (ban/unban)
-- `DELETE /api/admin/users/:id` (brisanje korisnika i podataka)
-- `GET /api/admin/audit-logs` (audit zapisi)
-
-### Audit Log
-- Uveden `AuditLog` model za bitne user/admin akcije.
-- Loguju se auth, profile, account/category/transaction i import/export akcije.
-
-### Novi backend env parametar
-- `ADMIN_EMAILS`
-  - comma-separated email lista za admin registraciju
-  - primer: `ADMIN_EMAILS=admin@example.com,owner@example.com`
-
-### Napomena
-- Premium/subscription tier je ostavljen kao sledeci korak (trenutno implementirano `BASIC` + `ADMIN`).
-
-## Premium Plan
-Implementiran je `PREMIUM` tier iznad `BASIC` (uz `ADMIN`).
-
-Premium funkcionalnosti:
-- veci limit naloga (`PREMIUM`: 10, `BASIC`: 3, `ADMIN`: 20)
-- Premium Insights na Dashboard-u:
-  - avg daily net
-  - 30-day projection
-  - savings rate
-- dodatni period tab: `90D` (Premium/Admin)
-- napredni filteri transakcija (search + type) za Premium/Admin
-- aktivacija premium naloga kroz `Settings` sa activation code-om
-
-### Novi endpoint
-- `POST /api/auth/activate-premium`
-  - body: `{ code }`
-  - validacija prema `PREMIUM_ACCESS_CODE` iz backend `.env`
-
-### Admin upravljanje rolama
-- `PATCH /api/admin/users/:id/role`
-  - podrzani target role: `BASIC`, `PREMIUM`
-  - `ADMIN` rola ostaje zasticena
-
-### Novi env parametar
-- `PREMIUM_ACCESS_CODE`
-  - activation code za korisnicki upgrade na Premium
-
-## Session Update (2026-03-15)
-
-### Premium UX (nenametljiv pristup)
-- Uklonjeni su agresivni `LOCKED PREVIEW` / promo blokovi kroz aplikaciju za BASIC korisnike.
-- Premium ponuda se sada prikazuje periodicno samo aktivnim BASIC korisnicima.
-- Interval ponude je nasumicno izmedju 10 i 15 dana.
-- Pre bilo koje premium aktivacije prikazuje se jasna BASIC vs PREMIUM uporedna tabela (modal), slicno plan compare iskustvu.
-
-### Novi backend endpointi
-- Auth:
-  - `PATCH /api/auth/benchmark-preference`
-- Transactions (Premium/Admin):
-  - `GET /api/transactions/insights?accountId=...`
-  - `GET /api/transactions/benchmark?accountId=...`
-  - `PATCH /api/transactions/bulk/category`
-  - `POST /api/transactions/:id/split`
-- Categories (Premium/Admin):
-  - `GET /api/categories/rules`
-  - `POST /api/categories/rules`
-  - `PATCH /api/categories/rules/:id`
-  - `DELETE /api/categories/rules/:id`
-- Admin:
-  - `GET /api/admin/promo-codes`
-  - `POST /api/admin/promo-codes`
-  - `PATCH /api/admin/promo-codes/:id/state`
-
-### Implementirano iz issue #23-#29
-- Bulk assign kategorija nad vise transakcija.
-- Pravila auto-kategorizacije (`keyword -> category`).
-- Split transakcija na vise kategorija.
-- Popravljen Excel export bug.
-- Popravljen mobile layout overflow.
-- Promo kodovi u admin panelu (kreiranje, aktivacija/deaktivacija, stats).
-- Podrazumevana valuta pri registraciji prema dostupnom country/IP header-u (fallback: `USD`).
-- Premium insights i preporuke.
-- Anonimizovan benchmarking + user opt-out.
-
-### Migracije
-Posle pull-a obavezno pokreni:
-```bash
-cd backend
-npx prisma migrate dev
-npx prisma generate
-```
+- GitHub: [@Trysha-rbrn](https://github.com/Trysha-rbrn)

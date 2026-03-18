@@ -1,181 +1,224 @@
-# Backend (API)
+# Backend - MET API
 
-Express + TypeScript + Prisma API za MET Finance Tracker.
+Express + TypeScript API for MET Finance Tracker.
+
+This service provides authentication, role-based authorization, finance domain logic, and PostgreSQL persistence through Prisma.
 
 ## Stack
-- Node.js + Express
-- TypeScript (ESM)
-- Prisma ORM + PostgreSQL
-- JWT autentikacija + bcrypt
 
-## Pokretanje
-1. Instalacija:
+- Node.js 22+
+- Express 5
+- TypeScript (ESM)
+- Prisma ORM
+- PostgreSQL
+- JWT + bcrypt
+
+## Project Structure
+
+```text
+backend/
+|- prisma/
+|  |- schema.prisma
+|  `- migrations/
+|- src/
+|  |- config/
+|  |- controllers/
+|  |- middleware/
+|  |- routes/
+|  `- lib/
+|- Dockerfile
+|- package.json
+`- README.md
+```
+
+## Getting Started
+
+### 1. Install dependencies
+
 ```bash
 npm install
 ```
-2. Pokretanje development servera:
-```bash
-npm run dev
+
+### 2. Configure environment
+
+Create `backend/.env`.
+
+Required:
+
+```env
+DATABASE_URL=postgresql://met_user:met_password@localhost:5432/met_db?schema=public
+JWT_SECRET=replace_with_a_strong_secret
 ```
 
-API je podrazumevano na:
-- `http://localhost:3000`
+### 3. Apply migrations and generate Prisma client
 
-Health check:
-- `GET /health`
-
-## Env promenljive
-Minimalno:
-- `DATABASE_URL`
-- `JWT_SECRET`
-
-Koriscene promenljive:
-- `NODE_ENV` (`development`/`production`)
-- `HOST` (npr. `0.0.0.0`)
-- `PORT` (npr. `3000`)
-- `DATABASE_URL`
-- `JWT_SECRET`
-- `JWT_EXPIRES_IN` (npr. `7d`)
-- `BCRYPT_ROUNDS` (npr. `12`)
-- `CORS_ORIGINS` (comma-separated lista origin-a)
-- `ALLOW_PRIVATE_NETWORK_ORIGINS` (`true` samo za dev LAN testiranje)
-- `AUTH_RATE_LIMIT_WINDOW_MS` (npr. `900000`)
-- `AUTH_RATE_LIMIT_MAX` (npr. `20`)
-
-## Bezbednosna pravila
-- Login/Register imaju rate limit.
-- CORS radi preko whitelist-e.
-- Validacija inputa je dodata za auth i transaction rute.
-- Globalni error handler vraca genericke 500 greske.
-- JWT token sadrzi server `sid`; nakon restarta servera svi prethodni tokeni postaju nevalidni.
-
-## Glavne rute
-Auth:
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `GET /api/auth/me`
-- `PUT /api/auth/profile`
-- `DELETE /api/auth/profile`
-
-Accounts:
-- `GET /api/accounts`
-- `POST /api/accounts`
-
-Transactions:
-- `GET /api/transactions`
-- `GET /api/transactions/summary`
-- `POST /api/transactions`
-- `PUT /api/transactions/:id`
-- `DELETE /api/transactions/:id`
-
-Categories:
-- `GET /api/categories`
-- `POST /api/categories`
-- `PUT /api/categories/:id`
-- `DELETE /api/categories/:id`
-
-## Prisma
-Schema:
-- `prisma/schema.prisma`
-
-Komande:
 ```bash
 npx prisma migrate dev
 npx prisma generate
 ```
 
-## Admin role i panel
-- Role sistem: `BASIC` i `ADMIN`.
-- `ADMIN` se dodeljuje pri registraciji ako je email u `ADMIN_EMAILS`.
-- Novi middleware: `auth` puni `userId` + `userRole` i blokira banovane korisnike.
-- Novi admin routes (`/api/admin`):
-  - `GET /users`
-  - `GET /users/:id`
-  - `PATCH /users/:id/ban`
-  - `DELETE /users/:id`
-  - `GET /audit-logs`
+### 4. Start development server
 
-## Audit
-- Dodata `AuditLog` tabela za kljucne user/admin akcije.
-
-## Dodatni env
-- `ADMIN_EMAILS` (comma-separated lista admin email adresa)
-
-## Premium
-- Novi env parametar: `PREMIUM_ACCESS_CODE`
-- Novi env parametar: `BILLING_WEBHOOK_SECRET`
-- Endpoint: `POST /api/auth/activate-premium` (`{ code }`)
-- Endpoint: `GET /api/auth/subscription`
-- Endpoint: `POST /api/auth/subscription/upgrade` (`{ billingInterval, code? }`)
-- Endpoint: `POST /api/auth/subscription/downgrade` (`{ immediate? }`)
-- Endpoint: `POST /api/auth/subscription/resume`
-- Endpoint: `POST /api/auth/billing-hook` (`x-billing-hook-secret`)
-- Account limit po roli:
-  - BASIC: 3
-  - PREMIUM: 10
-  - ADMIN: 20
-- Billing hook event-ovi:
-  - `subscription.activated`
-  - `subscription.renewed`
-  - `subscription.canceled`
-  - `subscription.expired`
-  - `subscription.payment_failed`
-
-## Billing webhook primeri
-
-Header:
-- `x-billing-hook-secret: <BILLING_WEBHOOK_SECRET>`
-
-### `subscription.activated`
-```json
-{
-  "eventId": "evt_sub_activated_001",
-  "type": "subscription.activated",
-  "userId": "11111111-1111-1111-1111-111111111111",
-  "externalSubscriptionId": "sub_demo_001",
-  "billingInterval": "MONTHLY",
-  "currentPeriodStart": "2026-03-14T10:00:00.000Z",
-  "currentPeriodEnd": "2026-04-14T10:00:00.000Z",
-  "occurredAt": "2026-03-14T10:00:01.000Z"
-}
+```bash
+npm run dev
 ```
 
-### `subscription.payment_failed`
-```json
-{
-  "eventId": "evt_sub_failed_001",
-  "type": "subscription.payment_failed",
-  "externalSubscriptionId": "sub_demo_001",
-  "billingInterval": "MONTHLY",
-  "occurredAt": "2026-03-20T08:30:00.000Z"
-}
+Server defaults to `http://0.0.0.0:3000`.
+
+Health check:
+
+```http
+GET /health
 ```
 
-### `subscription.expired`
-```json
-{
-  "eventId": "evt_sub_expired_001",
-  "type": "subscription.expired",
-  "externalSubscriptionId": "sub_demo_001",
-  "occurredAt": "2026-04-14T10:05:00.000Z"
-}
+## Environment Variables
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `DATABASE_URL` | Yes | - | PostgreSQL connection string for Prisma |
+| `JWT_SECRET` | Yes | - | Secret used to sign JWT tokens |
+| `NODE_ENV` | No | `development` | Runtime mode |
+| `HOST` | No | `0.0.0.0` | Bind host |
+| `PORT` | No | `3000` | API port |
+| `JWT_EXPIRES_IN` | No | `7d` | JWT TTL |
+| `BCRYPT_ROUNDS` | No | `10` | Password hashing rounds |
+| `CORS_ORIGINS` | No | `http://localhost:5173,http://127.0.0.1:5173` | Comma-separated allowed origins |
+| `ALLOW_PRIVATE_NETWORK_ORIGINS` | No | `false` | Allows private/LAN origins in dev mode |
+| `AUTH_RATE_LIMIT_WINDOW_MS` | No | `900000` | Auth rate-limit window in ms |
+| `AUTH_RATE_LIMIT_MAX` | No | `20` | Max auth requests per window |
+| `ADMIN_EMAILS` | No | empty | Comma-separated emails auto-assigned `ADMIN` on registration |
+| `PREMIUM_ACCESS_CODE` | No | empty | Manual premium activation code |
+| `BILLING_WEBHOOK_SECRET` | No | empty | Secret header validation for billing webhook |
+
+## NPM Scripts
+
+- `npm run dev` - start API in watch mode
+- `npm run start` - start API once via `tsx`
+- `npm run typecheck` - TypeScript type check
+- `npm run prisma:generate` - generate Prisma client
+- `npm run test` - alias for type check
+- `npm run test:security` - `npm audit --audit-level=high`
+
+## API Overview
+
+Base path: `/api`
+
+### Auth
+
+- `POST /auth/register`
+- `POST /auth/login`
+- `GET /auth/me`
+- `PUT /auth/profile`
+- `DELETE /auth/profile`
+- `POST /auth/reset-data`
+- `PATCH /auth/benchmark-preference`
+
+### Subscription and Billing
+
+- `GET /auth/subscription`
+- `POST /auth/activate-premium`
+- `POST /auth/subscription/upgrade`
+- `POST /auth/subscription/downgrade`
+- `POST /auth/subscription/resume`
+- `POST /auth/billing-hook`
+
+### Accounts
+
+- `GET /accounts`
+- `POST /accounts`
+
+### Transactions
+
+- `GET /transactions`
+- `GET /transactions/summary`
+- `POST /transactions`
+- `PUT /transactions/:id`
+- `DELETE /transactions/:id`
+- `GET /transactions/insights` (Premium/Admin)
+- `GET /transactions/benchmark` (Premium/Admin)
+- `PATCH /transactions/bulk/category` (Premium/Admin)
+- `POST /transactions/:id/split` (Premium/Admin)
+- `GET /transactions/recurring` (Premium/Admin)
+- `POST /transactions/recurring` (Premium/Admin)
+- `PUT /transactions/recurring/:id` (Premium/Admin)
+- `DELETE /transactions/recurring/:id` (Premium/Admin)
+- `POST /transactions/recurring/run-due` (Premium/Admin)
+
+### Categories and Budgets
+
+- `GET /categories`
+- `POST /categories`
+- `PUT /categories/:id`
+- `DELETE /categories/:id`
+- `GET /categories/rules` (Premium/Admin)
+- `POST /categories/rules` (Premium/Admin)
+- `PATCH /categories/rules/:id` (Premium/Admin)
+- `DELETE /categories/rules/:id` (Premium/Admin)
+- `GET /categories/budgets` (Premium/Admin)
+- `POST /categories/budgets` (Premium/Admin)
+- `PATCH /categories/budgets/:id` (Premium/Admin)
+- `DELETE /categories/budgets/:id` (Premium/Admin)
+
+### Data Transfer Logs
+
+- `GET /data-transfer`
+- `POST /data-transfer`
+
+### Admin
+
+All `/admin` endpoints require `ADMIN` role.
+
+- `GET /admin/users`
+- `GET /admin/users/:id`
+- `PATCH /admin/users/:id/ban`
+- `PATCH /admin/users/:id/role`
+- `DELETE /admin/users/:id`
+- `GET /admin/audit-logs`
+- `GET /admin/promo-codes`
+- `POST /admin/promo-codes`
+- `PATCH /admin/promo-codes/:id/state`
+
+## Role and Access Model
+
+- `BASIC`: default user role
+- `PREMIUM`: advanced finance features
+- `ADMIN`: administration and moderation capabilities
+
+Premium/Admin-only routes are enforced through middleware.
+
+## Docker
+
+Build image:
+
+```bash
+docker build -t met-backend ./backend
 ```
 
-### PowerShell test poziv
-```powershell
-Invoke-RestMethod `
-  -Method Post `
-  -Uri "http://localhost:3000/api/auth/billing-hook" `
-  -Headers @{ "x-billing-hook-secret" = "<BILLING_WEBHOOK_SECRET>" } `
-  -ContentType "application/json" `
-  -Body (@{
-    eventId = "evt_sub_activated_001"
-    type = "subscription.activated"
-    userId = "11111111-1111-1111-1111-111111111111"
-    externalSubscriptionId = "sub_demo_001"
-    billingInterval = "MONTHLY"
-    currentPeriodStart = "2026-03-14T10:00:00.000Z"
-    currentPeriodEnd = "2026-04-14T10:00:00.000Z"
-    occurredAt = "2026-03-14T10:00:01.000Z"
-  } | ConvertTo-Json)
+Run container:
+
+```bash
+docker run --rm -p 3000:3000 --env-file backend/.env met-backend
 ```
+
+## Public Repo Notes
+
+- Do not commit `.env` files.
+- Rotate all secrets before public release.
+- Restrict production CORS origins.
+- Keep webhook secrets private.
+
+## Troubleshooting
+
+### Prisma generate fails on Windows with `EPERM`
+
+1. Stop running backend processes that may lock Prisma engine files.
+2. Run:
+
+```bash
+npx prisma generate
+```
+
+### CORS errors in local network testing
+
+- Include frontend origin in `CORS_ORIGINS`.
+- For dev-only LAN testing, set `ALLOW_PRIVATE_NETWORK_ORIGINS=true`.
