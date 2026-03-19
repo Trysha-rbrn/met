@@ -1,6 +1,6 @@
-import { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react'
+﻿import { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom'
-import { Wallet, Settings, LayoutDashboard, LogOut, User, BarChart, PanelLeftClose, PanelLeftOpen, Sparkles, ShieldCheck, Smartphone, Shield } from 'lucide-react'
+import { Wallet, Settings, LayoutDashboard, LogOut, User, BarChart, PanelLeftClose, PanelLeftOpen, Shield, Twitter, Instagram, Linkedin, Github } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ToastContainer } from 'react-toastify'
 
@@ -420,36 +420,40 @@ function MobileNav({ user }: { user: AuthUser | null }) {
 
 function AppFooter() {
   return (
-    <footer className="mt-auto border-t-2 border-[#dc89e1]/35 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">
-      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
-        <div className="rounded-2xl border border-border/70 bg-gradient-to-r from-[#fce3f7]/70 via-background to-[#ff9eff]/20 p-4 sm:p-5">
-          <div className="flex flex-col gap-4 sm:gap-5 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-tr from-[#a569b0] to-[#6a4d8b] text-white shadow-sm">
-                  <Wallet size={17} />
-                </div>
-                <p className="text-sm font-black tracking-tight text-foreground">MET Finance Tracker</p>
+    <footer className="mt-auto border-t border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-950/70">
+      <div className="mx-auto max-w-7xl px-6 py-10 lg:px-10">
+        <div className="grid gap-10 lg:grid-cols-[1.35fr,2fr]">
+          <div className="space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900">
+                <Wallet size={18} />
               </div>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Copyright © 2026 MET. Crafted with AI assistance (OpenAI, Gemini, Claude).
-              </p>
+              <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Graphy</p>
             </div>
+            <p className="max-w-md text-sm leading-6 text-slate-600 dark:text-slate-400">
+              Graphy empowers teams to transform raw data into clear, compelling visuals - making insights easier to share, understand, and act on.
+            </p>
+            <div className="flex items-center gap-4 text-slate-900 dark:text-slate-200">
+              <a href="#" aria-label="X" className="transition hover:opacity-70"><Twitter size={18} /></a>
+              <a href="#" aria-label="Instagram" className="transition hover:opacity-70"><Instagram size={18} /></a>
+              <a href="#" aria-label="LinkedIn" className="transition hover:opacity-70"><Linkedin size={18} /></a>
+              <a href="#" aria-label="GitHub" className="transition hover:opacity-70"><Github size={18} /></a>
+            </div>
+          </div>
 
-            <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-3 sm:gap-3 sm:text-sm">
-              <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/70 px-3 py-2 text-muted-foreground">
-                <ShieldCheck size={15} className="text-primary" />
-                <span>Secure by design</span>
-              </div>
-              <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/70 px-3 py-2 text-muted-foreground">
-                <Smartphone size={15} className="text-primary" />
-                <span>Mobile optimized</span>
-              </div>
-              <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/70 px-3 py-2 text-muted-foreground">
-                <Sparkles size={15} className="text-primary" />
-                <span>Modern UI experience</span>
-              </div>
-            </div>
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
+            <FooterColumn title="Product" links={['Features', 'Pricing', 'Integrations', 'Changelog']} />
+            <FooterColumn title="Resources" links={['Documentation', 'Tutorials', 'Blog', 'Support']} />
+            <FooterColumn title="Company" links={['About', 'Careers', 'Contact', 'Partners']} />
+          </div>
+        </div>
+
+        <div className="mt-10 flex flex-col gap-4 border-t border-slate-200 pt-6 text-sm text-slate-500 dark:border-slate-800 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+          <p>© 2025 Graphy. All rights reserved.</p>
+          <div className="flex items-center gap-6">
+            <a href="#" className="transition hover:text-slate-700 dark:hover:text-slate-200">Privacy Policy</a>
+            <a href="#" className="transition hover:text-slate-700 dark:hover:text-slate-200">Terms of Service</a>
+            <a href="#" className="transition hover:text-slate-700 dark:hover:text-slate-200">Cookies Settings</a>
           </div>
         </div>
       </div>
@@ -457,4 +461,25 @@ function AppFooter() {
   )
 }
 
+function FooterColumn({ title, links }: { title: string; links: string[] }) {
+  return (
+    <div className="space-y-3">
+      <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
+      <div className="space-y-2 text-sm">
+        {links.map((label) => (
+          <a
+            key={label}
+            href="#"
+            className="block text-slate-600 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+          >
+            {label}
+          </a>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default App
+
+
