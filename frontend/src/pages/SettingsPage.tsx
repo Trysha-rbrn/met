@@ -357,15 +357,15 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
             </div>
           </section>
 
-          <section id="subscription" className="overflow-hidden rounded-2xl border border-amber-200/70 bg-[linear-gradient(140deg,rgba(255,251,235,0.94),rgba(255,255,255,0.98))] p-6 md:p-8">
+          <section id="subscription" className="overflow-hidden rounded-2xl border border-amber-200/70 bg-[linear-gradient(140deg,rgba(255,251,235,0.94),rgba(255,255,255,0.98))] p-6 md:p-8 dark:border-amber-500/35 dark:bg-[linear-gradient(140deg,rgba(41,37,36,0.95),rgba(17,24,39,0.96))]">
             <SectionHeader icon={Gem} title="Subscription" subtitle="Modernized premium presentation with clear status and lifecycle controls." />
             {isLoadingSubscription ? (
               <p className="mt-6 text-sm text-muted-foreground">Loading subscription...</p>
             ) : user?.role === 'ADMIN' ? (
-              <p className="mt-6 rounded-xl border bg-white/80 px-4 py-3 text-sm text-slate-600">Admin accounts already include premium capabilities. Billing lifecycle controls are intentionally disabled.</p>
+              <p className="mt-6 rounded-xl border bg-white/80 px-4 py-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-300">Admin accounts already include premium capabilities. Billing lifecycle controls are intentionally disabled.</p>
             ) : (
               <div className="mt-6 space-y-4">
-                <div className="rounded-2xl border border-white/70 bg-white/85 p-5 shadow-sm">
+                <div className="rounded-2xl border border-white/70 bg-white/85 p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge tone="warm">Plan: {subscription?.plan || user?.role || 'BASIC'}</Badge>
                     <Badge tone="neutral">Status: {subscription?.status || 'ACTIVE'}</Badge>
@@ -378,17 +378,17 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                   </div>
                 </div>
                 {!isPremiumUser ? (
-                  <form onSubmit={handleActivatePremium} className="rounded-2xl border border-dashed border-amber-300 bg-white/80 p-5">
+                  <form onSubmit={handleActivatePremium} className="rounded-2xl border border-dashed border-amber-300 bg-white/80 p-5 dark:border-amber-500/35 dark:bg-slate-900/70">
                     <div className="mb-4">
-                      <p className="text-lg font-black tracking-tight text-slate-900">Upgrade Path</p>
-                      <p className="text-sm text-slate-600">Choose cadence and optionally apply a promo code.</p>
+                      <p className="text-lg font-black tracking-tight text-slate-900 dark:text-slate-100">Upgrade Path</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300">Choose cadence and optionally apply a promo code.</p>
                     </div>
                     <div className="grid gap-3 lg:grid-cols-[0.8fr,1.2fr,auto]">
-                      <select value={billingInterval} onChange={(e) => setBillingInterval(e.target.value as 'MONTHLY' | 'YEARLY')} className="h-12 rounded-xl border border-amber-200 bg-white px-4 outline-none transition focus:ring-4 focus:ring-amber-200/40">
+                      <select value={billingInterval} onChange={(e) => setBillingInterval(e.target.value as 'MONTHLY' | 'YEARLY')} className="h-12 rounded-xl border border-amber-200 bg-white px-4 outline-none transition focus:ring-4 focus:ring-amber-200/40 dark:border-amber-500/35 dark:bg-slate-900 dark:text-slate-100 dark:focus:ring-amber-500/20">
                         <option value="MONTHLY">Monthly</option>
                         <option value="YEARLY">Yearly</option>
                       </select>
-                      <input id="settings-premium-code" name="premiumCode" type="text" autoComplete="off" value={premiumCode} onChange={(e) => setPremiumCode(e.target.value)} placeholder="Optional promo code" className="h-12 rounded-xl border border-amber-200 bg-white px-4 outline-none transition focus:ring-4 focus:ring-amber-200/40" />
+                      <input id="settings-premium-code" name="premiumCode" type="text" autoComplete="off" value={premiumCode} onChange={(e) => setPremiumCode(e.target.value)} placeholder="Optional promo code" className="h-12 rounded-xl border border-amber-200 bg-white px-4 outline-none transition focus:ring-4 focus:ring-amber-200/40 dark:border-amber-500/35 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:ring-amber-500/20" />
                       <button type="submit" disabled={isSubmittingSubscription} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-5 font-black text-white transition hover:opacity-95 disabled:opacity-60">
                         {subscription?.status === 'PENDING' ? 'Request Again' : 'Upgrade'}
                         <ArrowRight size={16} />
@@ -396,14 +396,14 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                     </div>
                   </form>
                 ) : (
-                  <div className="rounded-2xl border border-white/70 bg-white/80 p-5">
-                    <p className="text-lg font-black tracking-tight text-slate-900">Membership Actions</p>
-                    <p className="mt-1 text-sm text-slate-600">Control renewal and downgrade behavior with explicit actions.</p>
+                  <div className="rounded-2xl border border-white/70 bg-white/80 p-5 dark:border-slate-700 dark:bg-slate-900/70">
+                    <p className="text-lg font-black tracking-tight text-slate-900 dark:text-slate-100">Membership Actions</p>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Control renewal and downgrade behavior with explicit actions.</p>
                     <div className="mt-4 grid gap-2 sm:grid-cols-2">
                       {subscription?.cancelAtPeriodEnd ? (
                         <button type="button" onClick={handleResumeSubscription} disabled={isSubmittingSubscription} className="h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-4 font-black text-white transition hover:opacity-95 disabled:opacity-60">Resume Renewal</button>
                       ) : (
-                        <button type="button" onClick={() => handleDowngradeSubscription(false)} disabled={isSubmittingSubscription} className="h-12 rounded-xl border border-slate-300 bg-white px-4 font-bold text-slate-800 transition hover:bg-slate-50 disabled:opacity-60">Cancel At Period End</button>
+                        <button type="button" onClick={() => handleDowngradeSubscription(false)} disabled={isSubmittingSubscription} className="h-12 rounded-xl border border-slate-300 bg-white px-4 font-bold text-slate-800 transition hover:bg-slate-50 disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800">Cancel At Period End</button>
                       )}
                       <button type="button" onClick={() => handleDowngradeSubscription(true)} disabled={isSubmittingSubscription} className="h-12 rounded-xl border border-rose-300 bg-rose-50 px-4 font-bold text-rose-700 transition hover:bg-rose-100 disabled:opacity-60">Downgrade Now</button>
                     </div>
@@ -435,17 +435,17 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
             </p>
           </section>
 
-          <section id="danger" className="rounded-2xl border border-rose-200/70 bg-rose-50/35 p-6 md:p-8">
+          <section id="danger" className="rounded-2xl border border-rose-200/70 bg-rose-50/35 p-6 md:p-8 dark:border-rose-500/35 dark:bg-rose-950/20">
             <SectionHeader icon={Trash2} title="Danger Zone" subtitle="Sensitive operations protected by password confirmation." />
             <div className="mt-6 grid gap-4 lg:grid-cols-2">
-              <form onSubmit={handleResetData} className="rounded-2xl border border-amber-300 bg-white p-4">
+              <form onSubmit={handleResetData} className="rounded-2xl border border-amber-300 bg-white p-4 dark:border-amber-500/35 dark:bg-slate-900/80">
                 <input type="text" name="username" autoComplete="username" value={user?.email || ''} readOnly tabIndex={-1} aria-hidden="true" className="sr-only" />
                 <p className="flex items-center gap-2 text-sm font-bold text-foreground"><DatabaseZap size={16} />Reset Financial Data</p>
                 <p className="mt-1 text-xs text-muted-foreground">Deletes transactions, categories, and extra accounts while preserving the primary account.</p>
                 <input id="settings-reset-data-password" name="resetDataPassword" type="password" autoComplete="current-password" placeholder="Confirm password" value={resetDataPassword} onChange={(e) => setResetDataPassword(e.target.value)} className="mt-3 h-11 w-full rounded-xl border bg-background px-4 outline-none transition focus:ring-4 focus:ring-amber-500/20" />
                 <button type="submit" className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 font-bold text-white transition hover:bg-amber-700"><DatabaseZap size={16} />Clear User Data</button>
               </form>
-              <form onSubmit={handleDeleteAccount} className="rounded-2xl border border-rose-300 bg-white p-4">
+              <form onSubmit={handleDeleteAccount} className="rounded-2xl border border-rose-300 bg-white p-4 dark:border-rose-500/35 dark:bg-slate-900/80">
                 <input type="text" name="username" autoComplete="username" value={user?.email || ''} readOnly tabIndex={-1} aria-hidden="true" className="sr-only" />
                 <p className="text-sm font-bold text-foreground">Delete Account</p>
                 <p className="mt-1 text-xs text-muted-foreground">Permanently removes your account and all related data.</p>
@@ -507,15 +507,15 @@ const MembershipChip = ({ icon: Icon, label, value }: { icon: typeof Gem; label:
 )
 
 const SubscriptionMetric = ({ label, value, description }: { label: string; value: string; description: string }) => (
-  <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
-    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{label}</p>
-    <p className="mt-2 text-lg font-black tracking-tight text-slate-900">{value}</p>
-    <p className="mt-2 text-xs text-slate-500">{description}</p>
+  <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-800/70">
+    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{label}</p>
+    <p className="mt-2 text-lg font-black tracking-tight text-slate-900 dark:text-slate-100">{value}</p>
+    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{description}</p>
   </div>
 )
 
 const Badge = ({ children, tone }: { children: ReactNode; tone: 'warm' | 'neutral' }) => (
-  <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${tone === 'warm' ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-slate-200 bg-slate-50 text-slate-700'}`}>{children}</span>
+  <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${tone === 'warm' ? 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200' : 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200'}`}>{children}</span>
 )
 
 export default SettingsPage

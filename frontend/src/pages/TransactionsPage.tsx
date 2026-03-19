@@ -811,18 +811,18 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
         </div>
 
         {isPremiumUser && (
-        <section className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-5 md:p-6">
+        <section className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-5 md:p-6 dark:border-amber-500/30 dark:bg-[linear-gradient(135deg,rgba(41,37,36,0.94),rgba(17,24,39,0.96))]">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-black tracking-[0.24em] text-amber-800">
+              <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-black tracking-[0.24em] text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
                 <Gem size={14} />
                 PREMIUM FLOW
               </div>
               <div className="space-y-2">
-                <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">
                   Filter faster. Scan less. Find patterns sooner.
                 </h2>
-                <p className="max-w-2xl text-sm sm:text-base text-slate-600">
+                <p className="max-w-2xl text-sm sm:text-base text-slate-600 dark:text-slate-300">
                   Advanced search and type filtering are active, with a higher account cap for segmented budgets and cleaner ledgers.
                 </p>
               </div>
@@ -901,31 +901,31 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
         )}
         {isPremiumUser ? (
           <div className="space-y-3">
-            <div className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-4 md:p-5">
+            <div className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-4 md:p-5 dark:border-amber-500/30 dark:bg-[linear-gradient(135deg,rgba(41,37,36,0.94),rgba(17,24,39,0.96))]">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="space-y-1">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-amber-800">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
                     <Gem size={13} />
                     PREMIUM FILTERS
                   </div>
-                  <p className="text-sm font-semibold text-slate-800">Refine by text, category context and transaction type without leaving the ledger.</p>
-                  <p className="text-xs text-slate-500">Search hits check description, category and account labels.</p>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Refine by text, category context and transaction type without leaving the ledger.</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Search hits check description, category and account labels.</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                   <label className="relative block w-full sm:min-w-80">
-                    <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-amber-700" />
+                    <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-amber-700 dark:text-amber-300" />
                     <input
                       type="text"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       placeholder="Search description, category, account..."
-                      className="w-full min-h-12 rounded-2xl border border-amber-200 bg-white/90 pl-11 pr-4 text-sm shadow-sm outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-200/40"
+                      className="w-full min-h-12 rounded-2xl border border-amber-200 bg-white/90 dark:border-amber-500/35 dark:bg-slate-900 pl-11 pr-4 text-sm shadow-sm outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-200/40 dark:focus:ring-amber-500/20"
                     />
                   </label>
                   <select
                     value={typeFilter}
                     onChange={(e) => setTypeFilter(e.target.value as 'ALL' | 'INCOME' | 'EXPENSE')}
-                    className="w-full sm:w-44 min-h-12 rounded-2xl border border-amber-200 bg-white/90 px-4 text-sm font-semibold shadow-sm outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-200/40"
+                    className="w-full sm:w-44 min-h-12 rounded-2xl border border-amber-200 bg-white/90 dark:border-amber-500/35 dark:bg-slate-900 px-4 text-sm font-semibold shadow-sm outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-200/40 dark:focus:ring-amber-500/20"
                   >
                     <option value="ALL">All types</option>
                     <option value="INCOME">Income</option>
@@ -934,20 +934,20 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
                 </div>
               </div>
             </div>
-            <div className="rounded-[24px] border bg-card p-4">
+            <div className="rounded-[24px] border bg-card p-4 dark:border-slate-700 dark:bg-slate-900/80">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="space-y-1">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
                     <BookmarkPlus size={13} />
                     SMART VIEWS
                   </div>
-                  <p className="text-sm font-semibold text-slate-800">Save your current premium filter setup and reuse it instantly.</p>
-                  <p className="text-xs text-slate-500">Best for recurring reviews like payroll, groceries or expense-only scans.</p>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Save your current premium filter setup and reuse it instantly.</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Best for recurring reviews like payroll, groceries or expense-only scans.</p>
                 </div>
                 <button
                   type="button"
                   onClick={handleSaveCurrentFilter}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-800 transition hover:bg-slate-50"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-800 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
                 >
                   <BookmarkPlus size={15} />
                   Save Current View
@@ -955,15 +955,15 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 {savedFilters.length === 0 ? (
-                  <p className="text-sm text-slate-500">No saved views yet. Build one with search or type filter, then save it.</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">No saved views yet. Build one with search or type filter, then save it.</p>
                 ) : (
                   savedFilters.map((filter) => (
                     <div
                       key={filter.id}
                       className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm ${
                         activeSavedFilterId === filter.id
-                          ? 'border-amber-300 bg-amber-50 text-amber-900'
-                          : 'border-slate-200 bg-white text-slate-700'
+                          ? 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200'
+                          : 'border-slate-200 bg-white text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200'
                       }`}
                     >
                       <button
@@ -974,13 +974,13 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
                         {filter.name}
                       </button>
                       <span className="text-xs text-slate-400">•</span>
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
                         {filter.typeFilter}{filter.searchTerm ? ` / ${filter.searchTerm}` : ''}
                       </span>
                       <button
                         type="button"
                         onClick={() => handleDeleteSavedFilter(filter.id)}
-                        className="rounded-full p-0.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                        className="rounded-full p-0.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-200"
                         aria-label={`Delete ${filter.name}`}
                       >
                         <X size={13} />
@@ -1135,7 +1135,7 @@ const TransactionRow = ({
             </span>
           )}
           {isRecurring && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
               <Repeat2 size={11} />
               Recurring
             </span>
@@ -1156,7 +1156,7 @@ const TransactionRow = ({
     </td>
     <td className="p-4 md:p-6 w-24">
       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        {onSplit ? <button onClick={onSplit} className="p-2 text-muted-foreground hover:text-amber-600"><Scissors size={16} /></button> : null}
+        {onSplit ? <button onClick={onSplit} className="p-2 text-muted-foreground hover:text-amber-600 dark:hover:text-amber-300"><Scissors size={16} /></button> : null}
         <button onClick={onEdit} className="p-2 text-muted-foreground hover:text-foreground"><Edit2 size={16} /></button>
         <button onClick={onDelete} className="p-2 text-muted-foreground hover:text-destructive"><Trash2 size={16} /></button>
       </div>
@@ -1223,7 +1223,7 @@ const MobileTransactionCard = ({
             </span>
           )}
           {isRecurring && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
               <Repeat2 size={10} />
               Recurring
             </span>
@@ -1243,7 +1243,7 @@ const MobileTransactionCard = ({
       <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
       <div className="flex items-center gap-2">
         {onSplit ? (
-          <button onClick={onSplit} className="h-11 w-11 rounded-lg border text-muted-foreground hover:text-amber-600 flex items-center justify-center">
+          <button onClick={onSplit} className="h-11 w-11 rounded-lg border text-muted-foreground hover:text-amber-600 dark:hover:text-amber-300 flex items-center justify-center">
             <Scissors size={15} />
           </button>
         ) : null}
@@ -1288,12 +1288,13 @@ const PremiumSignal = ({
   label: string
   value: string
 }) => (
-  <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-slate-900">
+  <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
     <div className="flex items-center gap-2">
-      <Icon size={15} className="text-amber-600" />
-      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{label}</span>
+      <Icon size={15} className="text-amber-600 dark:text-amber-300" />
+      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{label}</span>
     </div>
     <p className="mt-2 text-sm font-black tracking-tight">{value}</p>
   </div>
 )
+
 

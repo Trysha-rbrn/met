@@ -1,0 +1,55 @@
+name: Bug report
+description: Report a reproducible bug to help us improve the project.
+title: "[Bug]: "
+labels: ["bug"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please provide as much detail as possible.
+  - type: input
+    id: summary
+    attributes:
+      label: Short summary
+      description: Briefly describe the issue.
+      placeholder: App crashes when saving a recurring transaction
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List exact steps to reproduce the issue.
+      placeholder: |
+        1. Go to Transactions
+        2. Open recurring templates
+        3. Click Save
+        4. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should happen?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened?
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser/OS/app version.
+      placeholder: Chrome 135, Windows 11, frontend commit abc123
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs/screenshots
+      description: Paste relevant logs or attach screenshots if available.

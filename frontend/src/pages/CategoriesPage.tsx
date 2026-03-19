@@ -246,41 +246,41 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
       </header>
 
       {isPremiumUser ? (
-        <section className="rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-5 md:p-6 space-y-4">
+        <section className="rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-5 md:p-6 space-y-4 dark:border-amber-500/30 dark:bg-[linear-gradient(135deg,rgba(41,37,36,0.94),rgba(17,24,39,0.96))]">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-amber-800">
+              <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
                 <Gem size={13} />
                 MONTHLY BUDGET GOALS
               </div>
-              <h2 className="text-xl font-black tracking-tight text-slate-900">Set category targets before the month runs away</h2>
-              <p className="text-sm text-slate-600">Budget goals are available for expense categories and feed premium dashboard analysis.</p>
+              <h2 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-100">Set category targets before the month runs away</h2>
+              <p className="text-sm text-slate-600 dark:text-slate-300">Budget goals are available for expense categories and feed premium dashboard analysis.</p>
             </div>
-            <label className="space-y-1 text-sm font-semibold text-slate-600">
+            <label className="space-y-1 text-sm font-semibold text-slate-600 dark:text-slate-300">
               <span className="inline-flex items-center gap-2"><CalendarDays size={15} /> Budget month</span>
               <input
                 type="month"
                 value={selectedBudgetMonth}
                 onChange={(e) => setSelectedBudgetMonth(e.target.value)}
-                className="min-h-11 rounded-2xl border border-amber-200 bg-white px-4 py-2.5 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-200/40"
+                className="min-h-11 rounded-2xl border border-amber-200 bg-white px-4 py-2.5 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-200/40 dark:border-amber-500/35 dark:bg-slate-900 dark:text-slate-100 dark:focus:ring-amber-500/20"
               />
             </label>
           </div>
 
           {budgetLoading ? (
-            <p className="text-sm text-slate-500">Loading budget goals...</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Loading budget goals...</p>
           ) : expenseCategoryOptions.length === 0 ? (
-            <p className="text-sm text-slate-500">Create at least one expense category to start budgeting.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Create at least one expense category to start budgeting.</p>
           ) : (
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {expenseCategoryOptions.map((category) => {
                 const goal = budgetMap.get(category.id)
                 return (
-                  <div key={category.id} className="rounded-2xl border border-white/70 bg-white/90 p-4 shadow-sm">
+                  <div key={category.id} className="rounded-2xl border border-white/70 bg-white/90 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/85">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-black tracking-tight text-slate-900">{category.name}</p>
-                        <p className="mt-1 text-xs text-slate-500 inline-flex items-center gap-2">
+                        <p className="truncate text-sm font-black tracking-tight text-slate-900 dark:text-slate-100">{category.name}</p>
+                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 inline-flex items-center gap-2">
                           <CategoryIcon icon={category.icon} small />
                           Expense category
                         </p>
@@ -288,7 +288,7 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
                       <button
                         type="button"
                         onClick={() => handleSetBudgetGoal(category)}
-                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-800 transition hover:bg-slate-50"
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-800 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
                       >
                         <Target size={15} />
                         {goal ? 'Edit' : 'Set'}
@@ -296,8 +296,8 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
                     </div>
                     <div className="mt-4 flex items-end justify-between gap-3">
                       <div>
-                        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Monthly target</p>
-                        <p className="mt-1 text-xl font-black tracking-tight text-slate-900">
+                        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Monthly target</p>
+                        <p className="mt-1 text-xl font-black tracking-tight text-slate-900 dark:text-slate-100">
                           {goal ? formatBudgetCurrency(goal.amount) : 'Not set'}
                         </p>
                       </div>
@@ -305,7 +305,7 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
                         <button
                           type="button"
                           onClick={() => handleDeleteBudgetGoal(goal)}
-                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700 transition hover:bg-rose-100"
+                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700 transition hover:bg-rose-100 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/20"
                         >
                           <Trash2 size={14} />
                           Remove
@@ -318,22 +318,22 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
             </div>
           )}
 
-          <div className="rounded-2xl border border-white/70 bg-white/90 p-4 space-y-4 shadow-sm">
+          <div className="rounded-2xl border border-white/70 bg-white/90 p-4 space-y-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/85">
             <div className="space-y-1">
-              <h3 className="text-base font-black tracking-tight text-slate-900">Auto-categorization rules</h3>
-              <p className="text-xs text-slate-500">If description contains a keyword, transaction gets assigned to selected category.</p>
+              <h3 className="text-base font-black tracking-tight text-slate-900 dark:text-slate-100">Auto-categorization rules</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">If description contains a keyword, transaction gets assigned to selected category.</p>
             </div>
             <div className="grid grid-cols-1 gap-2 md:grid-cols-[1fr,1fr,auto]">
               <input
                 value={newRuleKeyword}
                 onChange={(e) => setNewRuleKeyword(e.target.value)}
                 placeholder='Keyword (e.g. "lidl")'
-                className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-amber-200/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:ring-amber-500/20"
               />
               <select
                 value={newRuleCategoryId}
                 onChange={(e) => setNewRuleCategoryId(e.target.value)}
-                className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-amber-200/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:ring-amber-500/20"
               >
                 <option value="">Choose category</option>
                 {categories.map((category) => (
@@ -345,32 +345,32 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
               <button
                 type="button"
                 onClick={handleCreateCategoryRule}
-                className="min-h-11 rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold hover:bg-slate-50"
+                className="min-h-11 rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
               >
                 Add Rule
               </button>
             </div>
             {categoryRules.length === 0 ? (
-              <p className="text-xs text-slate-500">No rules yet.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">No rules yet.</p>
             ) : (
               <div className="space-y-2">
                 {categoryRules.map((rule) => (
-                  <div key={rule.id} className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-sm">
+                  <div key={rule.id} className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-900">
+                    <p className="text-sm text-slate-700 dark:text-slate-200">
                       <span className="font-bold">"{rule.keyword}"</span> {'->'} {rule.category.name}
                     </p>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => handleToggleRule(rule)}
-                        className="rounded-lg border px-2 py-1 text-xs font-semibold hover:bg-slate-50"
+                        className="rounded-lg border px-2 py-1 text-xs font-semibold hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
                       >
                         {rule.isActive ? 'Disable' : 'Enable'}
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDeleteRule(rule.id)}
-                        className="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+                        className="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/20"
                       >
                         Delete
                       </button>

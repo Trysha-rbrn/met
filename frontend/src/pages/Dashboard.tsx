@@ -342,18 +342,18 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
           <p className="text-sm sm:text-base text-muted-foreground font-medium">Current balance and movement across selected periods.</p>
         </div>
         {isPremiumUser && (
-        <section className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-5 sm:p-6">
+        <section className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-5 sm:p-6 dark:border-amber-500/30 dark:bg-[linear-gradient(135deg,rgba(41,37,36,0.94),rgba(17,24,39,0.96))]">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-amber-800">
+              <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
                 <Gem size={13} />
                 PREMIUM ACTIVE
               </div>
               <div className="space-y-1.5">
-                <h2 className="max-w-2xl text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
+                <h2 className="max-w-2xl text-xl font-black tracking-tight text-slate-900 dark:text-slate-100 sm:text-2xl">
                   Premium analytics are woven into your daily dashboard.
                 </h2>
-                <p className="max-w-2xl text-sm sm:text-base text-slate-600">
+                <p className="max-w-2xl text-sm sm:text-base text-slate-600 dark:text-slate-300">
                   Longer-range analysis, forecast signals and richer review tools are now part of the core workspace.
                 </p>
               </div>
@@ -487,42 +487,42 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
       </Suspense>
 
       {isPremiumUser ? (
-        <section className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.98),rgba(255,255,255,0.98))] p-5 md:p-6 space-y-5">
+        <section className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.98),rgba(255,255,255,0.98))] p-5 md:p-6 space-y-5 dark:border-amber-500/30 dark:bg-[linear-gradient(135deg,rgba(41,37,36,0.95),rgba(17,24,39,0.96))]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
-              <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-amber-800">
+              <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
                 <Gem size={13} />
                 PREMIUM INSIGHTS
               </div>
-              <h3 className="text-xl font-black tracking-tight text-slate-900">Decision-ready signals for the next move</h3>
-              <p className="text-sm text-slate-600">These metrics react to the selected analysis window and help you see momentum, drift and savings quality.</p>
+              <h3 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-100">Decision-ready signals for the next move</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-300">These metrics react to the selected analysis window and help you see momentum, drift and savings quality.</p>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-right">
-              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-amber-700">Premium Mode</p>
-              <p className="text-sm font-semibold text-slate-700">Insights follow your active account and date window.</p>
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-right dark:border-slate-700 dark:bg-slate-900">
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-amber-700 dark:text-amber-200">Premium Mode</p>
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Insights follow your active account and date window.</p>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm">
-              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">Avg Daily Net</p>
+            <div className="rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Avg Daily Net</p>
               <p className={`mt-2 text-2xl font-black tracking-tight ${premiumInsights.averageDailyNet >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                 {formatCurrency(premiumInsights.averageDailyNet)}
               </p>
-              <p className="mt-2 text-sm text-slate-500">Average net movement per day in the active range.</p>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Average net movement per day in the active range.</p>
             </div>
-            <div className="rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm">
-              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">30-Day Projection</p>
+            <div className="rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">30-Day Projection</p>
               <p className={`mt-2 text-2xl font-black tracking-tight ${premiumInsights.projected30d >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                 {formatCurrency(premiumInsights.projected30d)}
               </p>
-              <p className="mt-2 text-sm text-slate-500">Projected balance if the current pace continues.</p>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Projected balance if the current pace continues.</p>
             </div>
-            <div className="rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm">
-              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">Savings Rate</p>
+            <div className="rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Savings Rate</p>
               <p className={`mt-2 text-2xl font-black tracking-tight ${premiumInsights.savingsRate >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                 {premiumInsights.savingsRate.toFixed(1)}%
               </p>
-              <p className="mt-2 text-sm text-slate-500">Net retained from income inside the chosen period.</p>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Net retained from income inside the chosen period.</p>
             </div>
           </div>
         </section>
@@ -532,38 +532,38 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
         <section className="rounded-[24px] border bg-card p-5 md:p-6 space-y-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700">
+              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
                 <LineChart size={13} />
                 CATEGORY SPENDING TRENDS
               </div>
-              <h3 className="text-xl font-black tracking-tight text-slate-900">Where your expense pressure is concentrated</h3>
-              <p className="text-sm text-slate-600">Top categories in the active period ranked by total spend.</p>
+              <h3 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-100">Where your expense pressure is concentrated</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-300">Top categories in the active period ranked by total spend.</p>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-right">
-              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-500">Expense focus</p>
-              <p className="text-sm font-semibold text-slate-700">{periodTitle}</p>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-right dark:border-slate-700 dark:bg-slate-800">
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Expense focus</p>
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{periodTitle}</p>
             </div>
           </div>
 
           {categorySpendingTrends.length === 0 ? (
-            <p className="text-sm text-slate-500">No expense categories in the selected period yet.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">No expense categories in the selected period yet.</p>
           ) : (
             <div className="space-y-4">
               {categorySpendingTrends.map((row, index) => (
                 <div key={row.category} className="space-y-2">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-slate-900">
+                      <p className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">
                         {index + 1}. {row.category}
                       </p>
-                      <p className="text-xs text-slate-500">{row.count} transaction(s) in this range</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{row.count} transaction(s) in this range</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-black text-slate-900">{formatCurrency(row.amount)}</p>
-                      <p className="text-xs text-slate-500">{row.share.toFixed(1)}% of top tracked spend</p>
+                      <p className="text-sm font-black text-slate-900 dark:text-slate-100">{formatCurrency(row.amount)}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{row.share.toFixed(1)}% of top tracked spend</p>
                     </div>
                   </div>
-                  <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
                     <div
                       className="h-full rounded-full bg-[linear-gradient(90deg,#f59e0b,#f97316)]"
                       style={{ width: `${Math.max(10, row.relativeWidth)}%` }}
@@ -580,29 +580,29 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
         <section className="rounded-[24px] border bg-card p-5 md:p-6 space-y-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700">
+              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
                 <Gem size={13} />
                 BUDGET VS ACTUAL
               </div>
-              <h3 className="text-xl font-black tracking-tight text-slate-900">Are your category budgets still intact?</h3>
-              <p className="text-sm text-slate-600">Budget goals are loaded for the month tied to the active analysis window.</p>
+              <h3 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-100">Are your category budgets still intact?</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-300">Budget goals are loaded for the month tied to the active analysis window.</p>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-right">
-              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-500">Budget month</p>
-              <p className="text-sm font-semibold text-slate-700">{getMonthValue(rangeBoundaries.end)}</p>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-right dark:border-slate-700 dark:bg-slate-800">
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Budget month</p>
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{getMonthValue(rangeBoundaries.end)}</p>
             </div>
           </div>
 
           {budgetPerformance.length === 0 ? (
-            <p className="text-sm text-slate-500">No monthly category budgets are set for this period yet. Add them from Categories.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">No monthly category budgets are set for this period yet. Add them from Categories.</p>
           ) : (
             <div className="space-y-4">
               {budgetPerformance.map((goal) => (
                 <div key={goal.id} className="space-y-2">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-slate-900">{goal.category.name}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{goal.category.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
                         Budget {formatCurrency(goal.amount)} • Spent {formatCurrency(goal.spent)}
                       </p>
                     </div>
@@ -610,10 +610,10 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
                       <p className={`text-sm font-black ${goal.remaining >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                         {goal.remaining >= 0 ? `${formatCurrency(goal.remaining)} left` : `${formatCurrency(Math.abs(goal.remaining))} over`}
                       </p>
-                      <p className="text-xs text-slate-500">{goal.progress.toFixed(1)}% used</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{goal.progress.toFixed(1)}% used</p>
                     </div>
                   </div>
-                  <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
                     <div
                       className={`h-full rounded-full ${goal.progress > 100 ? 'bg-rose-500' : goal.progress > 85 ? 'bg-amber-500' : 'bg-emerald-500'}`}
                       style={{ width: `${Math.min(100, Math.max(8, goal.progress))}%` }}
@@ -629,11 +629,11 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
       {isPremiumUser && (
         <section className="rounded-[24px] border bg-card p-5 md:p-6 space-y-4">
           <div className="space-y-1">
-            <h3 className="text-xl font-black tracking-tight text-slate-900">Smart recommendations</h3>
-            <p className="text-sm text-slate-600">Generated from your recent transaction patterns.</p>
+            <h3 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-100">Smart recommendations</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-300">Generated from your recent transaction patterns.</p>
           </div>
           {premiumInsightsFeed.length === 0 ? (
-            <p className="text-sm text-slate-500">No recommendation signals yet.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">No recommendation signals yet.</p>
           ) : (
             <div className="space-y-2">
               {premiumInsightsFeed.map((line, idx) => (
@@ -644,7 +644,7 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
             </div>
           )}
           {benchmarkMessage ? (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
               Benchmark: {benchmarkMessage}
             </div>
           ) : null}
@@ -748,13 +748,14 @@ const PremiumPill = ({
   label: string
   value: string
 }) => (
-  <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-slate-900">
+  <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
     <div className="flex items-center gap-2">
-      <Icon size={15} className="text-amber-600" />
-      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{label}</span>
+      <Icon size={15} className="text-amber-600 dark:text-amber-300" />
+      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{label}</span>
     </div>
     <p className="mt-2 text-sm font-black tracking-tight">{value}</p>
   </div>
 )
 
 export default memo(Dashboard)
+
