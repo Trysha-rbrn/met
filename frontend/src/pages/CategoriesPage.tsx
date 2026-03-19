@@ -276,7 +276,7 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
               {expenseCategoryOptions.map((category) => {
                 const goal = budgetMap.get(category.id)
                 return (
-                  <div key={category.id} className="rounded-2xl border border-white/70 bg-white/90 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/85">
+                  <div key={category.id} className="rounded-2xl border border-amber-100 bg-white p-4 shadow-sm shadow-amber-100/60 dark:border-slate-700 dark:bg-slate-900/85 dark:shadow-none">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-black tracking-tight text-slate-900 dark:text-slate-100">{category.name}</p>
@@ -318,7 +318,7 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
             </div>
           )}
 
-          <div className="rounded-2xl border border-white/70 bg-white/90 p-4 space-y-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/85">
+          <div className="rounded-2xl border border-amber-100 bg-white p-4 space-y-4 shadow-sm shadow-amber-100/60 dark:border-slate-700 dark:bg-slate-900/85 dark:shadow-none">
             <div className="space-y-1">
               <h3 className="text-base font-black tracking-tight text-slate-900 dark:text-slate-100">Auto-categorization rules</h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">If description contains a keyword, transaction gets assigned to selected category.</p>

@@ -827,7 +827,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[30rem]">
+            <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-4 lg:w-auto xl:min-w-[30rem]">
               <PremiumSignal icon={Search} label="Search" value="Enabled" />
               <PremiumSignal icon={Sparkles} label="Type Filter" value="Advanced" />
               <PremiumSignal icon={WalletCards} label="Account Limit" value={String(maxAccounts)} />

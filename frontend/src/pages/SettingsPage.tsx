@@ -357,15 +357,15 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
             </div>
           </section>
 
-          <section id="subscription" className="overflow-hidden rounded-2xl border border-amber-200/70 bg-[linear-gradient(140deg,rgba(255,251,235,0.94),rgba(255,255,255,0.98))] p-6 md:p-8 dark:border-amber-500/35 dark:bg-[linear-gradient(140deg,rgba(41,37,36,0.95),rgba(17,24,39,0.96))]">
+          <section id="subscription" className="rounded-2xl border bg-card p-6 md:p-8">
             <SectionHeader icon={Gem} title="Subscription" subtitle="Modernized premium presentation with clear status and lifecycle controls." />
             {isLoadingSubscription ? (
               <p className="mt-6 text-sm text-muted-foreground">Loading subscription...</p>
             ) : user?.role === 'ADMIN' ? (
-              <p className="mt-6 rounded-xl border bg-white/80 px-4 py-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-300">Admin accounts already include premium capabilities. Billing lifecycle controls are intentionally disabled.</p>
+              <p className="mt-6 rounded-xl border border-slate-200/80 bg-slate-50/70 px-4 py-3 text-sm font-medium text-slate-900 dark:border-slate-700/80 dark:bg-slate-800/35 dark:text-slate-100">Admin accounts already include premium capabilities. Billing lifecycle controls are intentionally disabled.</p>
             ) : (
               <div className="mt-6 space-y-4">
-                <div className="rounded-2xl border border-white/70 bg-white/85 p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
+                <div className="rounded-2xl border border-border bg-background p-5">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge tone="warm">Plan: {subscription?.plan || user?.role || 'BASIC'}</Badge>
                     <Badge tone="neutral">Status: {subscription?.status || 'ACTIVE'}</Badge>
@@ -378,17 +378,17 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                   </div>
                 </div>
                 {!isPremiumUser ? (
-                  <form onSubmit={handleActivatePremium} className="rounded-2xl border border-dashed border-amber-300 bg-white/80 p-5 dark:border-amber-500/35 dark:bg-slate-900/70">
+                  <form onSubmit={handleActivatePremium} className="rounded-2xl border border-border bg-background p-5">
                     <div className="mb-4">
                       <p className="text-lg font-black tracking-tight text-slate-900 dark:text-slate-100">Upgrade Path</p>
                       <p className="text-sm text-slate-600 dark:text-slate-300">Choose cadence and optionally apply a promo code.</p>
                     </div>
-                    <div className="grid gap-3 lg:grid-cols-[0.8fr,1.2fr,auto]">
-                      <select value={billingInterval} onChange={(e) => setBillingInterval(e.target.value as 'MONTHLY' | 'YEARLY')} className="h-12 rounded-xl border border-amber-200 bg-white px-4 outline-none transition focus:ring-4 focus:ring-amber-200/40 dark:border-amber-500/35 dark:bg-slate-900 dark:text-slate-100 dark:focus:ring-amber-500/20">
+                    <div className="grid gap-3 lg:grid-cols-[minmax(0,0.8fr),minmax(0,1.2fr),auto]">
+                      <select value={billingInterval} onChange={(e) => setBillingInterval(e.target.value as 'MONTHLY' | 'YEARLY')} className="h-12 rounded-xl border border-border bg-background px-4 outline-none transition focus:ring-4 focus:ring-primary/15">
                         <option value="MONTHLY">Monthly</option>
                         <option value="YEARLY">Yearly</option>
                       </select>
-                      <input id="settings-premium-code" name="premiumCode" type="text" autoComplete="off" value={premiumCode} onChange={(e) => setPremiumCode(e.target.value)} placeholder="Optional promo code" className="h-12 rounded-xl border border-amber-200 bg-white px-4 outline-none transition focus:ring-4 focus:ring-amber-200/40 dark:border-amber-500/35 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:ring-amber-500/20" />
+                      <input id="settings-premium-code" name="premiumCode" type="text" autoComplete="off" value={premiumCode} onChange={(e) => setPremiumCode(e.target.value)} placeholder="Optional promo code" className="h-12 rounded-xl border border-border bg-background px-4 outline-none transition focus:ring-4 focus:ring-primary/15" />
                       <button type="submit" disabled={isSubmittingSubscription} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-5 font-black text-white transition hover:opacity-95 disabled:opacity-60">
                         {subscription?.status === 'PENDING' ? 'Request Again' : 'Upgrade'}
                         <ArrowRight size={16} />
@@ -396,7 +396,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                     </div>
                   </form>
                 ) : (
-                  <div className="rounded-2xl border border-white/70 bg-white/80 p-5 dark:border-slate-700 dark:bg-slate-900/70">
+                  <div className="rounded-2xl border border-border bg-background p-5">
                     <p className="text-lg font-black tracking-tight text-slate-900 dark:text-slate-100">Membership Actions</p>
                     <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Control renewal and downgrade behavior with explicit actions.</p>
                     <div className="mt-4 grid gap-2 sm:grid-cols-2">
@@ -519,3 +519,4 @@ const Badge = ({ children, tone }: { children: ReactNode; tone: 'warm' | 'neutra
 )
 
 export default SettingsPage
+

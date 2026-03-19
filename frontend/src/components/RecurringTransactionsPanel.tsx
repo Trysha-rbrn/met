@@ -143,7 +143,7 @@ function RecurringTransactionsPanel({
               Premium lets you define salary, rent, subscriptions and other repeating entries once, then generate due transactions on demand.
             </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[34rem]">
+          <div className="grid w-full gap-3 sm:grid-cols-3 lg:w-auto xl:min-w-[34rem]">
             <PreviewCard title="Monthly salary" subtitle="Auto-ready on the first day of the month." />
             <PreviewCard title="Bills cadence" subtitle="Track weekly or monthly obligations before they slip." />
             <PreviewCard title="Due batch run" subtitle="Generate every overdue recurring entry in one click." />
@@ -166,7 +166,7 @@ function RecurringTransactionsPanel({
             Set repeating templates for income or expenses, then push due entries into the ledger when you are ready to review them.
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[32rem]">
+        <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-4 lg:w-auto xl:min-w-[32rem]">
           <SignalCard icon={Repeat2} label="Templates" value={String(recurringTransactions.length)} />
           <SignalCard icon={PlayCircle} label="Due Now" value={String(dueCount)} />
           <SignalCard icon={Sparkles} label="Active" value={String(activeCount)} />
@@ -175,7 +175,7 @@ function RecurringTransactionsPanel({
       </div>
 
       <div className="mt-5 grid gap-4 xl:grid-cols-[1.2fr,0.8fr]">
-        <form onSubmit={handleSubmit} className="rounded-[24px] border border-white/70 bg-white/85 p-4 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/85">
+        <form onSubmit={handleSubmit} className="rounded-[24px] border border-amber-100 bg-white p-4 shadow-md shadow-amber-100/60 backdrop-blur dark:border-slate-700 dark:bg-slate-900/85 dark:shadow-none">
           <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 md:flex-row md:items-center md:justify-between dark:border-slate-700">
             <div>
               <p className="text-sm font-black tracking-[0.18em] text-slate-500 dark:text-slate-400">
@@ -333,7 +333,7 @@ function RecurringTransactionsPanel({
           </div>
         </form>
 
-        <div className="rounded-[24px] border border-white/70 bg-white/85 p-4 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/85">
+        <div className="rounded-[24px] border border-amber-100 bg-white p-4 shadow-md shadow-amber-100/60 backdrop-blur dark:border-slate-700 dark:bg-slate-900/85 dark:shadow-none">
           <div className="flex items-center justify-between border-b border-slate-200 pb-4 dark:border-slate-700">
             <div>
               <p className="text-sm font-black tracking-[0.18em] text-slate-500 dark:text-slate-400">LIVE TEMPLATES</p>
@@ -423,7 +423,7 @@ const SignalCard = ({
   label: string
   value: string
 }) => (
-  <div className="rounded-2xl border border-white/70 bg-white/90 px-3 py-3 dark:border-slate-700 dark:bg-slate-900/85">
+  <div className="rounded-2xl border border-amber-100 bg-white px-3 py-3 shadow-sm shadow-amber-100/50 dark:border-slate-700 dark:bg-slate-900/85 dark:shadow-none">
     <div className="flex items-center gap-2">
       <Icon size={15} className="text-amber-700 dark:text-amber-300" />
       <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{label}</span>

@@ -334,6 +334,16 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
       .slice(0, 5)
   }, [budgetGoals, periodTransactions])
 
+  const englishInsightsFeed = useMemo(
+    () => premiumInsightsFeed.map((line) => normalizeInsightToEnglish(line)),
+    [premiumInsightsFeed]
+  )
+
+  const englishBenchmarkMessage = useMemo(
+    () => normalizeInsightToEnglish(benchmarkMessage),
+    [benchmarkMessage]
+  )
+
   return (
     <div className="space-y-6 sm:space-y-8">
       <header className="space-y-3">
@@ -358,7 +368,7 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[28rem]">
+            <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-4 lg:w-auto xl:min-w-[28rem]">
               <PremiumPill icon={LineChart} label="90D Range" value="Enabled" />
               <PremiumPill icon={Sparkles} label="Insights" value="Live" />
               <PremiumPill icon={ShieldCheck} label="Plan" value={userRole} />
@@ -503,21 +513,21 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
+            <div className="rounded-2xl border border-amber-100 bg-white p-4 shadow-sm shadow-amber-100/60 dark:border-slate-700 dark:bg-slate-900/80 dark:shadow-none">
               <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Avg Daily Net</p>
               <p className={`mt-2 text-2xl font-black tracking-tight ${premiumInsights.averageDailyNet >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                 {formatCurrency(premiumInsights.averageDailyNet)}
               </p>
               <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Average net movement per day in the active range.</p>
             </div>
-            <div className="rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
+            <div className="rounded-2xl border border-amber-100 bg-white p-4 shadow-sm shadow-amber-100/60 dark:border-slate-700 dark:bg-slate-900/80 dark:shadow-none">
               <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">30-Day Projection</p>
               <p className={`mt-2 text-2xl font-black tracking-tight ${premiumInsights.projected30d >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                 {formatCurrency(premiumInsights.projected30d)}
               </p>
               <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Projected balance if the current pace continues.</p>
             </div>
-            <div className="rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
+            <div className="rounded-2xl border border-amber-100 bg-white p-4 shadow-sm shadow-amber-100/60 dark:border-slate-700 dark:bg-slate-900/80 dark:shadow-none">
               <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Savings Rate</p>
               <p className={`mt-2 text-2xl font-black tracking-tight ${premiumInsights.savingsRate >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                 {premiumInsights.savingsRate.toFixed(1)}%
@@ -539,9 +549,9 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
               <h3 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-100">Where your expense pressure is concentrated</h3>
               <p className="text-sm text-slate-600 dark:text-slate-300">Top categories in the active period ranked by total spend.</p>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-right dark:border-slate-700 dark:bg-slate-800">
-              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Expense focus</p>
-              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{periodTitle}</p>
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 px-4 py-3 text-right dark:border-slate-700/80 dark:bg-slate-800/35">
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">Expense focus</p>
+              <p className="text-sm font-semibold text-foreground">{periodTitle}</p>
             </div>
           </div>
 
@@ -550,17 +560,17 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
           ) : (
             <div className="space-y-4">
               {categorySpendingTrends.map((row, index) => (
-                <div key={row.category} className="space-y-2">
+                <div key={row.category} className="space-y-2 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 dark:border-slate-700/80 dark:bg-slate-800/35">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">
                         {index + 1}. {row.category}
                       </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{row.count} transaction(s) in this range</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">{row.count} transaction(s) in this range</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-black text-slate-900 dark:text-slate-100">{formatCurrency(row.amount)}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{row.share.toFixed(1)}% of top tracked spend</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">{row.share.toFixed(1)}% of top tracked spend</p>
                     </div>
                   </div>
                   <div className="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
@@ -587,9 +597,9 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
               <h3 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-100">Are your category budgets still intact?</h3>
               <p className="text-sm text-slate-600 dark:text-slate-300">Budget goals are loaded for the month tied to the active analysis window.</p>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-right dark:border-slate-700 dark:bg-slate-800">
-              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Budget month</p>
-              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{getMonthValue(rangeBoundaries.end)}</p>
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 px-4 py-3 text-right dark:border-slate-700/80 dark:bg-slate-800/35">
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">Budget month</p>
+              <p className="text-sm font-semibold text-foreground">{getMonthValue(rangeBoundaries.end)}</p>
             </div>
           </div>
 
@@ -598,11 +608,11 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
           ) : (
             <div className="space-y-4">
               {budgetPerformance.map((goal) => (
-                <div key={goal.id} className="space-y-2">
+                <div key={goal.id} className="space-y-2 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 dark:border-slate-700/80 dark:bg-slate-800/35">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{goal.category.name}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                      <p className="text-xs text-slate-600 dark:text-slate-400">
                         Budget {formatCurrency(goal.amount)} • Spent {formatCurrency(goal.spent)}
                       </p>
                     </div>
@@ -610,7 +620,7 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
                       <p className={`text-sm font-black ${goal.remaining >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                         {goal.remaining >= 0 ? `${formatCurrency(goal.remaining)} left` : `${formatCurrency(Math.abs(goal.remaining))} over`}
                       </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{goal.progress.toFixed(1)}% used</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">{goal.progress.toFixed(1)}% used</p>
                     </div>
                   </div>
                   <div className="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
@@ -629,23 +639,27 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
       {isPremiumUser && (
         <section className="rounded-[24px] border bg-card p-5 md:p-6 space-y-4">
           <div className="space-y-1">
-            <h3 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-100">Smart recommendations</h3>
-            <p className="text-sm text-slate-600 dark:text-slate-300">Generated from your recent transaction patterns.</p>
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+              <Sparkles size={13} />
+              SMART RECOMMENDATIONS
+            </div>
+            <h3 className="text-xl font-black tracking-tight text-foreground">Smart recommendations</h3>
+            <p className="text-sm text-foreground/80">Generated from your recent transaction patterns.</p>
           </div>
-          {premiumInsightsFeed.length === 0 ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400">No recommendation signals yet.</p>
+          {englishInsightsFeed.length === 0 ? (
+            <p className="text-sm text-foreground/80">No recommendation signals yet.</p>
           ) : (
             <div className="space-y-2">
-              {premiumInsightsFeed.map((line, idx) => (
-                <p key={`${idx}-${line}`} className="rounded-xl border bg-background px-3 py-2 text-sm">
+              {englishInsightsFeed.map((line, idx) => (
+                <p key={`${idx}-${line}`} className="rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-sm font-medium text-foreground dark:border-slate-700/80 dark:bg-slate-800/35">
                   {line}
                 </p>
               ))}
             </div>
           )}
-          {benchmarkMessage ? (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
-              Benchmark: {benchmarkMessage}
+          {englishBenchmarkMessage ? (
+            <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-2 text-sm font-medium text-foreground dark:border-slate-700/80 dark:bg-slate-800/35">
+              Benchmark: {englishBenchmarkMessage}
             </div>
           ) : null}
         </section>
@@ -711,6 +725,68 @@ function formatDayLabel(date: Date) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
+function normalizeInsightToEnglish(input: string) {
+  if (!input) return input
+
+  let text = input.trim()
+  const replacements: Array<[RegExp, string]> = [
+    [/\bpreporuka\b/gi, 'recommendation'],
+    [/\bpotrosnja\b/gi, 'spending'],
+    [/\bpotrošnja\b/gi, 'spending'],
+    [/\btroskovi\b/gi, 'costs'],
+    [/\btroškovi\b/gi, 'costs'],
+    [/\busted(a|e|i|u)?\b/gi, 'savings'],
+    [/\bušted(a|e|i|u)?\b/gi, 'savings'],
+    [/\bkategorija\b/gi, 'category'],
+    [/\bkategorije\b/gi, 'categories'],
+    [/\bbudzet\b/gi, 'budget'],
+    [/\bbudžet\b/gi, 'budget'],
+    [/\btransakcija\b/gi, 'transaction'],
+    [/\btransakcije\b/gi, 'transactions'],
+    [/\bracun\b/gi, 'account'],
+    [/\bračun\b/gi, 'account'],
+    [/\bdana\b/gi, 'days'],
+    [/\bmesec\b/gi, 'month'],
+    [/\bmesečno\b/gi, 'monthly'],
+    [/\bsledecih\b/gi, 'next'],
+    [/\bsledećih\b/gi, 'next'],
+    [/\bukupno\b/gi, 'total'],
+    [/\bprosecno\b/gi, 'average'],
+    [/\bprosečno\b/gi, 'average'],
+    [/\bprihod\b/gi, 'income'],
+    [/\brashod\b/gi, 'expense'],
+    [/\brashodi\b/gi, 'expenses'],
+    [/\biznad\b/gi, 'above'],
+    [/\bispod\b/gi, 'below'],
+    [/\bpovec(a|an|ati|anje)\b/gi, 'increase'],
+    [/\bpoveć(a|an|ati|anje)\b/gi, 'increase'],
+    [/\bsmanj(i|en|iti|enje)\b/gi, 'decrease'],
+    [/\bsmanj(i|en|iti|enje)\b/gi, 'decrease']
+  ]
+
+  for (const [pattern, value] of replacements) {
+    text = text.replace(pattern, value)
+  }
+
+  const hasSerbianArtifacts = /[čćžšđČĆŽŠĐ]|Å|Ä|preporuk|potro|trošk|troÅ|uÅ|kategorij|budž|budÅ|račun|raÄ|slede|prose|iznos|datum|opis|vrednost|rashod|prihod/i.test(text)
+  if (!hasSerbianArtifacts) {
+    return text
+  }
+
+  const lower = input.toLowerCase()
+  if (/budz|budž|budget|limit|preko|over|remaining|left/.test(lower)) {
+    return 'Budget alert: spending is approaching or exceeding plan limits.'
+  }
+  if (/kategor|category|potros|potroš|spend/.test(lower)) {
+    return 'Category insight: review top spending categories and rebalance your budget.'
+  }
+  if (/prihod|income|rashod|expense|cash|flow/.test(lower)) {
+    return 'Cash flow insight: monitor income versus expenses to keep a healthy net balance.'
+  }
+
+  return 'Recommendation: review recent trends and adjust your plan for better results.'
+}
+
 const StatCard = ({ title, amount, icon: Icon, color, glow = false }: { title: string; amount: string; icon: ComponentType<{ size?: number; className?: string }>; color: string; glow?: boolean }) => (
   <div className="bg-card border rounded-2xl p-4 sm:p-6 flex flex-col justify-between gap-3 sm:gap-4 transition-all hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5">
     <div className="flex items-center justify-between text-muted-foreground">
@@ -758,4 +834,6 @@ const PremiumPill = ({
 )
 
 export default memo(Dashboard)
+
+
 
