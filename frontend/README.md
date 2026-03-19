@@ -69,10 +69,12 @@ The dev server uses `vite --host`, so LAN testing on mobile is supported.
 - `npm run dev` - start Vite dev server
 - `npm run lint` - run ESLint
 - `npm run typecheck` - run TypeScript project checks
-- `npm run test` - lint + typecheck
+- `npm run check` - lint + typecheck (quality gate, not unit tests)
 - `npm run build` - production build
 - `npm run preview` - preview production build
 - `npm run test:security` - `npm audit --audit-level=high`
+
+Note: there is currently no automated frontend unit/integration test suite in this repository.
 
 ## Application Routes
 
@@ -101,6 +103,8 @@ The dev server uses `vite --host`, so LAN testing on mobile is supported.
 - `met_theme_mode`
 - `met_currency`
 - `met_account_id`
+
+`met_theme_mode` and `met_currency` are user preferences set from the Settings page (`/settings`) and persisted automatically after the user updates those options.
 
 ## API Integration
 

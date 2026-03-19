@@ -95,9 +95,11 @@ GET /health
 - `npm run dev` - start API in watch mode
 - `npm run start` - start API once via `tsx`
 - `npm run typecheck` - TypeScript type check
+- `npm run check` - typecheck quality gate (not a unit test suite)
 - `npm run prisma:generate` - generate Prisma client
-- `npm run test` - alias for type check
 - `npm run test:security` - `npm audit --audit-level=high`
+
+Note: there is currently no automated backend unit/integration test suite in this repository.
 
 ## API Overview
 

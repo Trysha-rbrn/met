@@ -128,6 +128,7 @@ For endpoint-level documentation, see [backend/README.md](./backend/README.md).
 - `npm run dev`
 - `npm run lint`
 - `npm run typecheck`
+- `npm run check`
 - `npm run build`
 - `npm run preview`
 
@@ -136,7 +137,10 @@ For endpoint-level documentation, see [backend/README.md](./backend/README.md).
 - `npm run dev`
 - `npm run start`
 - `npm run typecheck`
+- `npm run check`
 - `npm run prisma:generate`
+
+Note: `npm run check` is the current quality gate in both projects (lint/typecheck). Automated unit/integration test suites are not set up yet.
 
 ## CI/CD Workflows
 

@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "typecheck": "tsc -b",
-    "test": "npm run lint && npm run typecheck",
+    "check": "npm run lint && npm run typecheck",
     "test:security": "npm audit --audit-level=high",
     "preview": "vite preview"
   },
