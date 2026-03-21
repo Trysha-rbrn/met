@@ -37,6 +37,11 @@ function AuthPage({ onLogin, initialMode = 'login' }: AuthPageProps) {
   const [stats, setStats] = useState<PublicStats | null>(null)
 
   useEffect(() => {
+    setIsLogin(initialMode === 'login')
+    setError('')
+  }, [initialMode])
+
+  useEffect(() => {
     const load = async () => {
       try {
         const nextStats = await getPublicStats()

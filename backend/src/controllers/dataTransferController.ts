@@ -1,8 +1,7 @@
 import { NextFunction, Request, Response } from 'express'
-import { PrismaClient, UserRole } from '@prisma/client'
+import { UserRole } from '@prisma/client'
 import { writeAuditLog } from '../lib/auditLog.ts'
-
-const prisma = new PrismaClient()
+import { prisma } from '../lib/prisma.ts'
 
 export const getTransferLogs = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).userId

@@ -1,8 +1,7 @@
 import { NextFunction, Request, Response } from 'express'
-import { PrismaClient, RecurringFrequency, UserRole } from '@prisma/client'
+import { RecurringFrequency, UserRole } from '@prisma/client'
 import { writeAuditLog } from '../lib/auditLog.ts'
-
-const prisma = new PrismaClient()
+import { prisma } from '../lib/prisma.ts'
 const BENCHMARK_MIN_COHORT_SIZE = 5
 
 const toQueryString = (value: unknown) => {

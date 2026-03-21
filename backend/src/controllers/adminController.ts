@@ -1,9 +1,8 @@
 import { NextFunction, Request, Response } from 'express'
-import { PrismaClient, Prisma, UserRole } from '@prisma/client'
+import { Prisma, UserRole } from '@prisma/client'
 import { writeAuditLog } from '../lib/auditLog.ts'
 import { buildBasicSubscriptionState, buildPremiumSubscriptionState, ensureSubscriptionRecord, syncUserRoleFromSubscription } from '../lib/subscription.ts'
-
-const prisma = new PrismaClient()
+import { prisma } from '../lib/prisma.ts'
 
 const clamp = (value: unknown, fallback: number, min: number, max: number) => {
   const parsed = Number.parseInt(String(value ?? ''), 10)

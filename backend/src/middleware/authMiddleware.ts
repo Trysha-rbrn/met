@@ -1,19 +1,14 @@
 import { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
 import { env } from '../config/env.ts'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '../lib/prisma.ts'
 
 export const auth = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '')
     if (!token) throw new Error()
 
-    const decoded = jwt.verify(token, env.jwtSecret) as { userId: string; sid?: string }
-    if (decoded.sid !== env.serverInstanceId) {
-      throw new globalThis.Error('Session invalidated after server restart')
-    }
+    const decoded = jwt.verify(token, env.jwtSecret) as { userId: string }
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },

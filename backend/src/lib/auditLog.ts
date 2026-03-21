@@ -1,6 +1,5 @@
-import { PrismaClient, UserRole } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { UserRole } from '@prisma/client'
+import { prisma } from './prisma.ts'
 
 type AuditPayload = {
   actorUserId?: string

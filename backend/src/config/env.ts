@@ -1,5 +1,3 @@
-import { randomUUID } from 'crypto'
-
 const requireEnv = (key: string) => {
   const value = process.env[key]?.trim()
   if (!value) {
@@ -34,6 +32,5 @@ export const env = {
     .filter(Boolean),
   premiumAccessCode: process.env.PREMIUM_ACCESS_CODE?.trim() || '',
   billingWebhookSecret: process.env.BILLING_WEBHOOK_SECRET?.trim() || '',
-  allowPrivateNetworkOrigins: process.env.ALLOW_PRIVATE_NETWORK_ORIGINS === 'true',
-  serverInstanceId: randomUUID(),
+  allowPrivateNetworkOrigins: process.env.ALLOW_PRIVATE_NETWORK_ORIGINS === 'true'
 }

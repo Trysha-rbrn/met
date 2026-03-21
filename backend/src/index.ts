@@ -1,7 +1,6 @@
 import express from 'express'
 import cors from 'cors'
 import 'dotenv/config'
-import { PrismaClient } from '@prisma/client'
 import categoryRoutes from './routes/categoryRoutes.ts'
 import transactionRoutes from './routes/transactionRoutes.ts'
 import authRoutes from './routes/authRoutes.ts'
@@ -10,9 +9,9 @@ import dataTransferRoutes from './routes/dataTransferRoutes.ts'
 import adminRoutes from './routes/adminRoutes.ts'
 import { errorHandler, notFoundHandler } from './middleware/errorMiddleware.ts'
 import { env } from './config/env.ts'
+import { prisma } from './lib/prisma.ts'
 
 const app = express()
-const prisma = new PrismaClient()
 const PORT = env.port
 const HOST = env.host
 const allowedOrigins = env.corsOrigins
