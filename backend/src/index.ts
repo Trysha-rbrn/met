@@ -14,11 +14,28 @@ import { prisma } from './lib/prisma.ts'
 const app = express()
 const PORT = env.port
 const HOST = env.host
-const allowedOrigins = env.corsOrigins
+const normalizeOrigin = (value: string) => {
+  try {
+    const parsed = new URL(value.trim())
+    const protocol = parsed.protocol.toLowerCase()
+    const hostname = parsed.hostname.toLowerCase()
+    const port = parsed.port
+    return `${protocol}//${hostname}${port ? `:${port}` : ''}`
+  } catch {
+    return null
+  }
+}
+
+const allowedOrigins = new Set(
+  env.corsOrigins
+    .map((origin) => normalizeOrigin(origin))
+    .filter((origin): origin is string => Boolean(origin))
+)
 const privateNetworkOriginRegex = /^https?:\/\/((localhost|127\.0\.0\.1)|((10|192\.168)\.\d{1,3}\.\d{1,3})|(172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}))(:\d+)?$/i
 
 const isOriginAllowed = (origin: string) => {
-  if (allowedOrigins.includes(origin)) return true
+  const normalized = normalizeOrigin(origin)
+  if (normalized && allowedOrigins.has(normalized)) return true
   if (env.nodeEnv === 'development' && env.allowPrivateNetworkOrigins) {
     return privateNetworkOriginRegex.test(origin)
   }

@@ -55,9 +55,9 @@ function AuthPage({ onLogin, initialMode = 'login' }: AuthPageProps) {
 
   const safeStats = stats || fallbackStats
   const trustedUsers = useMemo(() => new Intl.NumberFormat('en-US').format(safeStats.totalUsers), [safeStats.totalUsers])
-  const avgBalanceLabel = useMemo(() => `${formatUsdCompact(safeStats.avgBalanceUsd || fallbackStats.avgBalanceUsd!)} avg balance`, [safeStats.avgBalanceUsd])
-  const savingsRateLabel = useMemo(() => `${Math.round(safeStats.savingsRate || fallbackStats.savingsRate!)}% savings rate`, [safeStats.savingsRate])
-  const txRateLabel = useMemo(() => `${Math.round(safeStats.avgMonthlyTransactions || fallbackStats.avgMonthlyTransactions!)} tx per month`, [safeStats.avgMonthlyTransactions])
+  const avgBalanceLabel = useMemo(() => `${formatUsdCompact(safeStats.avgBalanceUsd ?? fallbackStats.avgBalanceUsd!)} avg balance`, [safeStats.avgBalanceUsd])
+  const savingsRateLabel = useMemo(() => `${Math.round(safeStats.savingsRate ?? fallbackStats.savingsRate!)}% savings rate`, [safeStats.savingsRate])
+  const txRateLabel = useMemo(() => `${Math.round(safeStats.avgMonthlyTransactions ?? fallbackStats.avgMonthlyTransactions!)} tx per month`, [safeStats.avgMonthlyTransactions])
   const currentHost = typeof window !== 'undefined' ? window.location.host : 'met.app'
 
   const passwordStrength = useMemo(() => {

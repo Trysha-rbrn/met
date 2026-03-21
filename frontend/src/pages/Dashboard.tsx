@@ -13,6 +13,7 @@ import {
   Wallet,
   Zap
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import * as transactionsApi from '../api/transactionsApi'
 import * as accountsApi from '../api/accountsApi'
 import * as categoriesApi from '../api/categoriesApi'
@@ -301,9 +302,9 @@ function Dashboard({ userRole }: DashboardProps) {
           <section className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-6">
             <div className="mb-5 flex items-center justify-between">
               <h3 className="text-sm font-bold">Recent Transactions</h3>
-              <a href="/transactions" className="text-[10px] text-[#ff9eff] hover:underline">
+              <Link to="/transactions" className="text-[10px] text-[#ff9eff] hover:underline">
                 View all -&gt;
-              </a>
+              </Link>
             </div>
             <div className="space-y-1">
               {recentTransactions.length === 0 && <p className="rounded-xl p-3 text-sm text-[#64748b]">No transactions yet.</p>}
