@@ -233,6 +233,7 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-500">
       <header className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
         <div className="space-y-2">
+          <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Budget / Plan</p>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Categories</h1>
           <p className="text-sm sm:text-base text-slate-400">Manage your income and expense categories.</p>
         </div>
@@ -244,6 +245,21 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
           Add Category
         </button>
       </header>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="met-card met-card-hover p-4 text-center rounded-2xl">
+          <p className="text-[10px] text-slate-400 mb-1">Total Categories</p>
+          <p className="text-lg font-extrabold text-slate-100">{categories.length}</p>
+        </div>
+        <div className="met-card met-card-hover p-4 text-center rounded-2xl">
+          <p className="text-[10px] text-slate-400 mb-1">Income Categories</p>
+          <p className="text-lg font-extrabold text-emerald-400">{incomeCats.length}</p>
+        </div>
+        <div className="met-card met-card-hover p-4 text-center rounded-2xl">
+          <p className="text-[10px] text-slate-400 mb-1">Expense Categories</p>
+          <p className="text-lg font-extrabold text-[#ff9eff]">{expenseCats.length}</p>
+        </div>
+      </div>
 
       {isPremiumUser ? (
         <section className="met-card met-card-hover rounded-[24px] p-5 md:p-6 space-y-4">
@@ -386,7 +402,7 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Income Categories */}
         <section className="space-y-4">
-          <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-lg px-2">
+          <div className="flex items-center gap-2 text-emerald-400 font-bold text-lg px-2">
             <Tag size={20} />
             <h2>Income</h2>
           </div>
@@ -411,7 +427,7 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
 
         {/* Expense Categories */}
         <section className="space-y-4">
-          <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-bold text-lg px-2">
+          <div className="flex items-center gap-2 text-rose-400 font-bold text-lg px-2">
             <Tag size={20} />
             <h2>Expenses</h2>
           </div>
@@ -538,8 +554,8 @@ function formatBudgetCurrency(amount: number) {
 
 function CategoryIcon({ icon, small = false }: { icon: string; small?: boolean }) {
   return (
-    <span className={`inline-flex items-center justify-center rounded-full bg-muted/60 ${small ? 'h-5 w-5' : 'h-7 w-7'}`}>
-      {renderCategoryIcon(icon, small ? 12 : 15, 'text-muted-foreground')}
+    <span className={`inline-flex items-center justify-center rounded-full bg-white/10 ${small ? 'h-5 w-5' : 'h-7 w-7'}`}>
+      {renderCategoryIcon(icon, small ? 12 : 15, 'text-slate-400')}
     </span>
   )
 }

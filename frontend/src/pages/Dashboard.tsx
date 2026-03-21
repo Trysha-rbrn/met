@@ -348,6 +348,7 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
     <div className="space-y-6 sm:space-y-8">
       <header className="space-y-3">
         <div className="space-y-1">
+          <p className="text-xs text-slate-500 mb-1">Good morning</p>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tighter">Dashboard</h1>
           <p className="text-sm sm:text-base text-slate-400 font-medium">Current balance and movement across selected periods.</p>
         </div>
@@ -613,7 +614,7 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
                     <div className="min-w-0">
                       <p className="truncate text-sm font-bold text-slate-100">{goal.category.name}</p>
                       <p className="text-xs text-slate-400">
-                        Budget {formatCurrency(goal.amount)} • Spent {formatCurrency(goal.spent)}
+                        Budget {formatCurrency(goal.amount)} - Spent {formatCurrency(goal.spent)}
                       </p>
                     </div>
                     <div className="text-right">
@@ -679,7 +680,7 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
                 <div className="min-w-0">
                   <p className="font-semibold truncate">{tx.description || tx.category?.name || 'Transaction'}</p>
                   <p className="text-xs text-slate-400 truncate">
-                    {tx.category?.name || 'Uncategorized'} • {new Date(tx.date).toLocaleDateString()}
+                    {tx.category?.name || 'Uncategorized'} - {new Date(tx.date).toLocaleDateString()}
                   </p>
                 </div>
                 <p className={`font-bold ${tx.type === 'INCOME' ? 'text-emerald-500' : 'text-rose-500'}`}>

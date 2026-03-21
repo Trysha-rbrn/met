@@ -762,6 +762,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
       <header className="flex flex-col gap-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
+            <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold mb-1">Finance</p>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tighter">Transactions</h1>
             <p className="text-sm sm:text-base text-slate-400 font-medium">All your income and expense records for selected account.</p>
           </div>
@@ -865,7 +866,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
           </div>
         </div>
         <p className="text-xs text-slate-400">
-          Plan: <span className="font-semibold">{userRole}</span> • Account limit: {maxAccounts}
+          Plan: <span className="font-semibold">{userRole}</span> - Account limit: {maxAccounts}
         </p>
         {isPremiumUser && (
           <div className="met-card met-card-hover rounded-2xl p-4">
@@ -973,7 +974,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
                       >
                         {filter.name}
                       </button>
-                      <span className="text-xs text-slate-400">•</span>
+                      <span className="text-xs text-slate-400">-</span>
                       <span className="text-xs text-slate-400">
                         {filter.typeFilter}{filter.searchTerm ? ` / ${filter.searchTerm}` : ''}
                       </span>

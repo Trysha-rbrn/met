@@ -196,19 +196,19 @@ function AdminPage() {
 
   return (
     <div className="space-y-6">
-      <header className="overflow-hidden rounded-[28px] border border-white/55 bg-[linear-gradient(120deg,rgba(15,23,42,0.97),rgba(30,41,59,0.95),rgba(30,64,175,0.82))] px-6 py-6 text-white shadow-xl sm:px-8">
-        <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-400">Admin Console</p>
-        <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <header className="px-1 pt-2">
+        <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold mb-2">Administration</p>
+        <div className="mt-1 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="inline-flex items-center gap-2 text-3xl font-black tracking-tight sm:text-4xl">
-              <Shield size={28} className="text-cyan-300" />
-              Control Center
+              <Shield size={28} className="text-[#ff9eff]" />
+              System Overview
             </h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-200 sm:text-base">
-              Structured operations for user moderation, role management, promo administration, and audit visibility.
+            <p className="mt-2 max-w-2xl text-sm text-slate-400 sm:text-base">
+              Real-time platform metrics and user management.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:max-w-sm">
             <StatPill label="Users" value={String(summary.users)} />
             <StatPill label="Premium" value={String(summary.premium)} />
             <StatPill label="Banned" value={String(summary.banned)} />
