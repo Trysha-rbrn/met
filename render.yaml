@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: ekonomija-backend
+    env: node
+    rootDir: backend
+    plan: free
+    region: frankfurt
+    autoDeploy: true
+    healthCheckPath: /health
+    buildCommand: npm ci && npx prisma generate
+    startCommand: npx prisma migrate deploy && npm run start
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: BCRYPT_ROUNDS
+        value: "12"
+      - key: CORS_ORIGINS
+        sync: false
+      - key: AUTH_RATE_LIMIT_WINDOW_MS
+        value: "900000"
+      - key: AUTH_RATE_LIMIT_MAX
+        value: "20"
+      - key: ADMIN_EMAILS
+        value: ""
+      - key: PREMIUM_ACCESS_CODE
+        sync: false
+      - key: BILLING_WEBHOOK_SECRET
+        sync: false

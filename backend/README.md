@@ -209,6 +209,19 @@ docker run --rm -p 3000:3000 --env-file backend/.env met-backend
 - Restrict production CORS origins.
 - Keep webhook secrets private.
 
+## Deployment (Render + Supabase)
+
+Repository root includes `render.yaml` configured for this backend service.
+
+Use `backend/.env.example` as a source of required variables and set real values in Render dashboard.
+
+Recommended minimum production values:
+
+- `DATABASE_URL`: Supabase transaction pooler or direct Postgres URL
+- `JWT_SECRET`: long random secret (32+ chars)
+- `CORS_ORIGINS`: your frontend URL (for example `https://your-app.vercel.app`)
+- `NODE_ENV=production`
+
 ## Troubleshooting
 
 ### Prisma generate fails on Windows with `EPERM`
