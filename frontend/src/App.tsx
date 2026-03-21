@@ -18,6 +18,10 @@ const Dashboard = lazy(() => import('./pages/Dashboard'))
 const TransactionsPage = lazy(() => import('./pages/TransactionsPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage'))
+const TermsPage = lazy(() => import('./pages/TermsPage'))
+const SecurityPage = lazy(() => import('./pages/SecurityPage'))
+const StatusPage = lazy(() => import('./pages/StatusPage'))
 
 const baseNavItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -223,6 +227,10 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/auth" element={<AuthPage onLogin={handleLogin} initialMode="login" />} />
             <Route path="/register" element={<AuthPage onLogin={handleLogin} initialMode="register" />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/security" element={<SecurityPage />} />
+            <Route path="/status" element={<StatusPage />} />
             <Route path="*" element={<NotFoundPage isAuthenticated={false} />} />
           </Routes>
         ) : (
@@ -243,6 +251,10 @@ function App() {
                       <Route path="/categories" element={<CategoriesPage userRole={user?.role || 'BASIC'} />} />
                       <Route path="/settings" element={<SettingsPage user={user} onUserUpdate={setUser} />} />
                       <Route path="/admin" element={user?.role === 'ADMIN' ? <AdminPage /> : <NotFoundPage isAuthenticated />} />
+                      <Route path="/privacy" element={<PrivacyPage />} />
+                      <Route path="/terms" element={<TermsPage />} />
+                      <Route path="/security" element={<SecurityPage />} />
+                      <Route path="/status" element={<StatusPage />} />
                       <Route path="/auth" element={<Navigate to="/" replace />} />
                       <Route path="/register" element={<Navigate to="/" replace />} />
                       <Route path="*" element={<NotFoundPage isAuthenticated />} />

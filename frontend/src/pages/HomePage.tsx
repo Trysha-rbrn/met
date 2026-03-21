@@ -310,17 +310,17 @@ function HomePage() {
             links={[
               { label: 'Sign In', href: '/auth' },
               { label: 'Create Account', href: '/register' },
-              { label: 'Dashboard', href: '/auth' },
+              { label: 'Dashboard', href: '/' },
               { label: 'Support', href: 'mailto:support@met.app' }
             ]}
           />
           <FooterColumn
             title="Legal"
             links={[
-              { label: 'Privacy', href: '/auth' },
-              { label: 'Terms', href: '/auth' },
-              { label: 'Security', href: '/auth' },
-              { label: 'Status', href: '/auth' }
+              { label: 'Privacy', href: '/privacy' },
+              { label: 'Terms', href: '/terms' },
+              { label: 'Security', href: '/security' },
+              { label: 'Status', href: '/status' }
             ]}
           />
         </div>
@@ -435,9 +435,23 @@ function FooterColumn({ title, links }: { title: string; links: Array<{ label: s
     <div className="space-y-4">
       <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-[#f1f5f9]">{title}</h4>
       <div className="flex flex-col gap-2.5 text-[13px] text-[#64748b]">
-        {links.map((link) => (
-          <a key={link.label} href={link.href} className="transition-colors hover:text-[#ff9eff]">{link.label}</a>
-        ))}
+        {links.map((link) => {
+          const isExternal = link.href.startsWith('http') || link.href.startsWith('mailto:')
+          const isHash = link.href.startsWith('#')
+          if (isExternal || isHash) {
+            return (
+              <a key={link.label} href={link.href} className="transition-colors hover:text-[#ff9eff]">
+                {link.label}
+              </a>
+            )
+          }
+
+          return (
+            <Link key={link.label} to={link.href} className="transition-colors hover:text-[#ff9eff]">
+              {link.label}
+            </Link>
+          )
+        })}
       </div>
     </div>
   )
