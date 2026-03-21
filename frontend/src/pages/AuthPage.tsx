@@ -1,14 +1,27 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import axios from 'axios'
 import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import * as api from '../api/authApi'
 import type { AuthUser } from '../api/authApi'
 import MetLogo from '../components/MetLogo'
+import { getPublicStats, type PublicStats } from '../api/publicApi'
 
 interface AuthPageProps {
   onLogin: (user: AuthUser, token: string) => void
   initialMode?: 'login' | 'register'
+}
+
+const fallbackStats: PublicStats = {
+  totalUsers: 1284,
+  premiumUsers: 847,
+  premiumRate: 65.9,
+  avgBalanceUsd: 142000,
+  savingsRate: 64,
+  avgMonthlyTransactions: 34,
+  monthlyIncome: 12450,
+  monthlyExpense: 4120
 }
 
 function AuthPage({ onLogin, initialMode = 'login' }: AuthPageProps) {
@@ -21,6 +34,26 @@ function AuthPage({ onLogin, initialMode = 'login' }: AuthPageProps) {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [stats, setStats] = useState<PublicStats | null>(null)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const nextStats = await getPublicStats()
+        setStats(nextStats)
+      } catch {
+        setStats(null)
+      }
+    }
+    void load()
+  }, [])
+
+  const safeStats = stats || fallbackStats
+  const trustedUsers = useMemo(() => new Intl.NumberFormat('en-US').format(safeStats.totalUsers), [safeStats.totalUsers])
+  const avgBalanceLabel = useMemo(() => `${formatUsdCompact(safeStats.avgBalanceUsd || fallbackStats.avgBalanceUsd!)} avg balance`, [safeStats.avgBalanceUsd])
+  const savingsRateLabel = useMemo(() => `${Math.round(safeStats.savingsRate || fallbackStats.savingsRate!)}% savings rate`, [safeStats.savingsRate])
+  const txRateLabel = useMemo(() => `${Math.round(safeStats.avgMonthlyTransactions || fallbackStats.avgMonthlyTransactions!)} tx per month`, [safeStats.avgMonthlyTransactions])
+  const currentHost = typeof window !== 'undefined' ? window.location.host : 'met.app'
 
   const passwordStrength = useMemo(() => {
     if (password.length < 6) return 1
@@ -73,15 +106,15 @@ function AuthPage({ onLogin, initialMode = 'login' }: AuthPageProps) {
 
         <div className="relative z-10 max-w-sm">
           <h1 className="mb-4 text-[36px] font-[800] leading-[1.2] tracking-[-0.03em]">Your finances, clearly tracked.</h1>
-          <p className="mb-8 text-[14px] text-slate-400">Join 1,284 people who manage their wealth smarter.</p>
+          <p className="mb-8 text-[14px] text-slate-400">Join {trustedUsers} people who manage their wealth smarter.</p>
           <div className="flex flex-wrap gap-2">
-            <span className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-200">$142k avg balance</span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-200">64% savings rate</span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-200">256-bit encryption</span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-200">{avgBalanceLabel}</span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-200">{savingsRateLabel}</span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-200">{txRateLabel}</span>
           </div>
         </div>
 
-        <p className="relative z-10 text-[11px] font-mono text-slate-500">met.app</p>
+        <p className="relative z-10 text-[11px] font-mono text-slate-500">{currentHost}</p>
       </aside>
 
       <main className="flex w-full flex-col items-center justify-center bg-[#0a0a0a] px-6 py-10 md:w-[55%]">
@@ -111,7 +144,7 @@ function AuthPage({ onLogin, initialMode = 'login' }: AuthPageProps) {
                 name="password"
                 type={showPassword ? 'text' : 'password'}
                 autoComplete={isLogin ? 'current-password' : 'new-password'}
-                placeholder="••••••••"
+                placeholder="********"
                 value={password}
                 onChange={setPassword}
                 icon={Lock}
@@ -137,7 +170,7 @@ function AuthPage({ onLogin, initialMode = 'login' }: AuthPageProps) {
                     name="confirmPassword"
                     type={showConfirmPassword ? 'text' : 'password'}
                     autoComplete="new-password"
-                    placeholder="••••••••"
+                    placeholder="********"
                     value={confirmPassword}
                     onChange={setConfirmPassword}
                     icon={Lock}
@@ -159,7 +192,7 @@ function AuthPage({ onLogin, initialMode = 'login' }: AuthPageProps) {
               disabled={loading}
               className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#dc89e1] to-[#ff9eff] text-sm font-extrabold text-black transition hover:opacity-95 disabled:opacity-70"
             >
-              {loading ? 'Processing...' : isLogin ? 'Sign in →' : 'Create account →'}
+              {loading ? 'Processing...' : isLogin ? 'Sign in ->' : 'Create account ->'}
             </button>
           </form>
 
@@ -179,7 +212,7 @@ function AuthPage({ onLogin, initialMode = 'login' }: AuthPageProps) {
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block">
       <span className="mb-1.5 ml-0.5 block text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">{label}</span>
@@ -208,7 +241,7 @@ function IconInput({
   value: string
   onChange: (value: string) => void
   icon: React.ComponentType<{ size?: number; className?: string }>
-  trailingButton?: React.ReactNode
+  trailingButton?: ReactNode
   required?: boolean
 }) {
   return (
@@ -228,6 +261,16 @@ function IconInput({
       {trailingButton ? <div className="absolute right-4 top-1/2 -translate-y-1/2">{trailingButton}</div> : null}
     </div>
   )
+}
+
+function formatUsdCompact(value: number) {
+  const compact = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    notation: 'compact',
+    maximumFractionDigits: 1
+  }).format(value)
+  return compact.replace('K', 'k')
 }
 
 export default AuthPage

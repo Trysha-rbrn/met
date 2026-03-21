@@ -1,5 +1,5 @@
 ﻿import { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react'
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
 import { Wallet, Settings, LayoutDashboard, LogOut, User, BarChart, PanelLeftClose, PanelLeftOpen, Shield } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ToastContainer } from 'react-toastify'
@@ -268,6 +268,8 @@ function App() {
                       <Route path="/categories" element={<CategoriesPage userRole={user?.role || 'BASIC'} />} />
                       <Route path="/settings" element={<SettingsPage user={user} onUserUpdate={setUser} themeMode={themeMode} onThemeModeChange={setThemeMode} />} />
                       <Route path="/admin" element={user?.role === 'ADMIN' ? <AdminPage /> : <NotFoundPage isAuthenticated />} />
+                      <Route path="/auth" element={<Navigate to="/" replace />} />
+                      <Route path="/register" element={<Navigate to="/" replace />} />
                       <Route path="*" element={<NotFoundPage isAuthenticated />} />
                     </Routes>
                   </AnimatePresence>

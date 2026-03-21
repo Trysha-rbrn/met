@@ -1,32 +1,57 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Check, Sparkles, X } from 'lucide-react'
+import type { ReactNode } from 'react'
+import {
+  Activity,
+  Check,
+  PieChart,
+  Shield,
+  SlidersHorizontal,
+  Sparkles,
+  TrendingUp,
+  X
+} from 'lucide-react'
 import { Link } from 'react-router-dom'
 import MetLogo from '../components/MetLogo'
-import { getPublicStats } from '../api/publicApi'
+import { getPublicStats, type PublicStats } from '../api/publicApi'
+
+const fallbackStats: PublicStats = {
+  totalUsers: 1284,
+  premiumUsers: 847,
+  premiumRate: 65.9,
+  avgBalanceUsd: 142000,
+  savingsRate: 64,
+  avgMonthlyTransactions: 34,
+  monthlyIncome: 12450,
+  monthlyExpense: 4120
+}
 
 function HomePage() {
   const [isYearly, setIsYearly] = useState(false)
-  const [totalUsers, setTotalUsers] = useState<number | null>(null)
+  const [stats, setStats] = useState<PublicStats | null>(null)
 
   useEffect(() => {
     const load = async () => {
       try {
-        const stats = await getPublicStats()
-        setTotalUsers(stats.totalUsers)
+        const nextStats = await getPublicStats()
+        setStats(nextStats)
       } catch {
-        setTotalUsers(null)
+        setStats(null)
       }
     }
     void load()
   }, [])
 
+  const safeStats = stats || fallbackStats
+  const trustedUsers = useMemo(
+    () => new Intl.NumberFormat('en-US').format(safeStats.totalUsers),
+    [safeStats.totalUsers]
+  )
+  const avgBalance = safeStats.avgBalanceUsd ?? fallbackStats.avgBalanceUsd!
+  const savingsRate = safeStats.savingsRate ?? fallbackStats.savingsRate!
+  const monthlyIncome = safeStats.monthlyIncome ?? fallbackStats.monthlyIncome!
+  const monthlyExpense = safeStats.monthlyExpense ?? fallbackStats.monthlyExpense!
+  const monthlyTransactions = safeStats.avgMonthlyTransactions ?? fallbackStats.avgMonthlyTransactions!
   const proPrice = useMemo(() => (isYearly ? '$9.6' : '$12'), [isYearly])
-  const trustedUsers = useMemo(() => {
-    if (typeof totalUsers === 'number' && Number.isFinite(totalUsers) && totalUsers >= 0) {
-      return new Intl.NumberFormat('en-US').format(totalUsers)
-    }
-    return '1,284'
-  }, [totalUsers])
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#f1f5f9]">
@@ -68,21 +93,86 @@ function HomePage() {
           </p>
           <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
             <Link to="/register" className="inline-flex h-[52px] items-center justify-center rounded-xl bg-gradient-to-r from-[#dc89e1] to-[#ff9eff] px-8 text-[15px] font-extrabold text-black">
-              Get started free →
+              Get started free -&gt;
             </Link>
             <a href="#features" className="inline-flex h-[52px] items-center justify-center rounded-xl border border-white/15 px-8 text-[15px] font-medium text-white hover:bg-white/5">
               See how it works
             </a>
           </div>
           <p className="mt-7 text-[12px] text-[#64748b]">
-            Trusted by <span className="font-semibold text-[#f1f5f9]">{trustedUsers}</span> members · No credit card required
+            Trusted by <span className="font-semibold text-[#f1f5f9]">{trustedUsers}</span> members - No credit card required
           </p>
         </div>
       </section>
 
-      <section className="px-6 pb-20">
-        <div className="mx-auto w-full max-w-[980px] overflow-hidden rounded-[16px] border border-white/10 bg-black shadow-[0_40px_80px_rgba(0,0,0,0.65)]">
-          <iframe title="MET motion preview" src="/gif.html" className="h-[450px] w-full border-0" loading="lazy" />
+      <section className="px-6 pb-24">
+        <div className="mx-auto w-full max-w-[900px] overflow-hidden rounded-[16px] border border-white/[0.08] bg-[#0a0a0a] shadow-[0_40px_80px_rgba(0,0,0,0.65),0_0_0_1px_rgba(255,255,255,0.04)]">
+          <div className="flex h-10 items-center gap-2 border-b border-white/[0.06] bg-[#111] px-4">
+            <div className="flex gap-1.5">
+              <div className="h-2.5 w-2.5 rounded-full bg-red-500/60" />
+              <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/60" />
+              <div className="h-2.5 w-2.5 rounded-full bg-green-500/60" />
+            </div>
+            <div className="flex flex-1 justify-center">
+              <div className="flex h-6 w-[200px] items-center justify-center rounded-md bg-[#1a1a1a]">
+                <span className="text-[11px] text-[#64748b]">app.met.app</span>
+              </div>
+            </div>
+          </div>
+          <div className="bg-[#0a0a0a] p-5">
+            <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4">
+              <DashboardMiniCard label="Balance" value={formatUsdCompact(avgBalance)} />
+              <DashboardMiniCard label="Income" value={formatUsdCompact(monthlyIncome)} valueClass="text-emerald-400" />
+              <DashboardMiniCard label="Expenses" value={formatUsdCompact(monthlyExpense)} valueClass="text-red-400" />
+              <DashboardMiniCard label="Savings" value={`${Math.round(savingsRate)}%`} valueClass="text-[#ff9eff]" />
+            </div>
+
+            <div className="mb-5 h-[110px] w-full overflow-hidden rounded-xl border border-white/[0.05] bg-white/[0.02] px-3 pb-1 pt-3">
+              <svg viewBox="0 0 400 80" className="h-full w-full" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#ff9eff" stopOpacity="0.2" />
+                    <stop offset="100%" stopColor="#ff9eff" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                <path d="M0,65 C60,50 120,35 180,42 S300,18 400,8 L400,80 L0,80 Z" fill="url(#cg)" />
+                <path d="M0,65 C60,50 120,35 180,42 S300,18 400,8" stroke="#ff9eff" strokeWidth="2" fill="none" strokeLinecap="round" />
+                <circle cx="0" cy="65" r="3" fill="#ff9eff" />
+                <circle cx="100" cy="42" r="3" fill="#ff9eff" />
+                <circle cx="200" cy="28" r="3" fill="#ff9eff" />
+                <circle cx="300" cy="15" r="3" fill="#ff9eff" />
+                <circle cx="400" cy="8" r="3.5" fill="#ff9eff" stroke="#0a0a0a" strokeWidth="1.5" />
+              </svg>
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <div>
+                <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-[#64748b]">Recent Transactions</p>
+                <div className="space-y-2">
+                  <TransactionRow label="Stripe Payout" value={`+${formatUsdCompact(monthlyIncome * 0.2)}`} tone="income" />
+                  <TransactionRow label="Subscription Costs" value={`-${formatUsdCompact(monthlyExpense * 0.32)}`} tone="expense" />
+                  <TransactionRow label="Team Tools" value={`-${formatUsdCompact(monthlyExpense * 0.08)}`} tone="expense" />
+                </div>
+              </div>
+              <div>
+                <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-[#64748b]">Budget Progress</p>
+                <div className="space-y-4">
+                  <ProgressBar label="Housing" value={52} />
+                  <ProgressBar label="Food" value={43} />
+                  <ProgressBar label="Entertainment" value={Math.min(95, Math.max(35, Math.round(savingsRate + 28)))} warn />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="w-full border-y border-white/[0.06] bg-white/[0.015] py-10">
+        <div className="mx-auto flex max-w-4xl flex-wrap justify-center gap-10 px-6 text-center md:gap-20">
+          <StatBlock value={`${trustedUsers}+`} label="Members" />
+          <StatBlock value={formatUsdCompact(avgBalance)} label="Avg Balance" />
+          <StatBlock value={`${Math.round(savingsRate)}%`} label="Savings Rate" />
+          <StatBlock value={`${Math.round(monthlyTransactions)} / mo`} label="Avg Tx Per User" accent />
         </div>
       </section>
 
@@ -92,12 +182,12 @@ function HomePage() {
           <h2 className="mt-4 text-[40px] font-extrabold tracking-tight">Everything you need to grow</h2>
         </div>
         <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-          <FeatureCard title="Transaction Intelligence" text="Advanced filters, split transactions, and recurring templates for cleaner ledgers." />
-          <FeatureCard title="Budget Control" text="Category targets, budget health signals, and trend-aware dashboard analysis." />
-          <FeatureCard title="Import & Export" text="Excel/PDF export plus Excel import with auto-categorization support." />
-          <FeatureCard title="Premium Insights" text="AI-style recommendations, benchmark context, and plan-aware analytics." />
-          <FeatureCard title="Multi-Account Tracking" text="Track cash flow across account groups with role-based account limits." />
-          <FeatureCard title="Admin Controls" text="User moderation, promo codes, and audit logs for platform operations." />
+          <FeatureCard icon={<Activity size={18} />} title="Transaction Intelligence" text="Advanced filters, split transactions, and recurring templates for cleaner ledgers." />
+          <FeatureCard icon={<SlidersHorizontal size={18} />} title="Budget Control" text="Category targets, budget health signals, and trend-aware dashboard analysis." />
+          <FeatureCard icon={<TrendingUp size={18} />} title="Import and Export" text="Excel and PDF export plus Excel import with auto-categorization support." />
+          <FeatureCard icon={<Shield size={18} />} title="Bank-Level Security" text="Strong credential hashing, access controls, and transport-level security by default." />
+          <FeatureCard icon={<PieChart size={18} />} title="Multi-Account Tracking" text="Track cash flow across account groups with role-based account limits." />
+          <FeatureCard icon={<Sparkles size={18} />} title="Admin Controls" text="User moderation, promo codes, and audit logs for platform operations." />
         </div>
       </section>
 
@@ -159,7 +249,7 @@ function HomePage() {
               <PriceLine ok text="Priority support" />
             </div>
             <Link to="/register" className="mt-8 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#dc89e1] to-[#ff9eff] py-3 text-[14px] font-extrabold text-black">
-              Start Pro trial →
+              Start Pro trial -&gt;
             </Link>
           </div>
         </div>
@@ -186,23 +276,121 @@ function HomePage() {
           <h2 className="relative z-10 text-[36px] font-extrabold leading-tight tracking-tight">Ready to take control<br />of your finances?</h2>
           <p className="relative z-10 mt-4 max-w-sm text-[15px] text-[#64748b]">Join the next generation of wealth builders today.</p>
           <div className="relative z-10 mt-10 flex flex-col items-center gap-3 sm:flex-row">
-            <Link to="/register" className="inline-flex h-[52px] items-center justify-center rounded-xl bg-gradient-to-r from-[#dc89e1] to-[#ff9eff] px-8 text-[15px] font-extrabold text-black">Get started free →</Link>
+            <Link to="/register" className="inline-flex h-[52px] items-center justify-center rounded-xl bg-gradient-to-r from-[#dc89e1] to-[#ff9eff] px-8 text-[15px] font-extrabold text-black">Get started free -&gt;</Link>
             <a href="#features" className="inline-flex h-[52px] items-center rounded-xl border border-white/15 px-8 text-[15px] font-medium text-white hover:bg-white/5">
               See how it works
             </a>
           </div>
-          <p className="relative z-10 mt-5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">Free forever · No credit card · Cancel anytime</p>
+          <p className="relative z-10 mt-5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">Free forever - No credit card - Cancel anytime</p>
         </div>
       </section>
+
+      <footer className="border-t border-white/[0.06] px-6 pb-10 pt-16">
+        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-10 md:grid-cols-5">
+          <div className="col-span-2">
+            <div className="mb-4 flex items-center gap-2.5">
+              <MetLogo compact />
+              <span className="text-[18px] font-extrabold tracking-tighter">MET</span>
+            </div>
+            <p className="max-w-[200px] text-[13px] leading-relaxed text-[#64748b]">Your wealth, clearly.<br />Built for serious savers.</p>
+          </div>
+
+          <FooterColumn
+            title="Product"
+            links={[
+              { label: 'Features', href: '#features' },
+              { label: 'Pricing', href: '#pricing' },
+              { label: 'Changelog', href: '#' },
+              { label: 'Roadmap', href: '#' }
+            ]}
+          />
+          <FooterColumn
+            title="Company"
+            links={[
+              { label: 'About', href: '#' },
+              { label: 'Blog', href: '#' },
+              { label: 'Careers', href: '#' },
+              { label: 'Press', href: '#' }
+            ]}
+          />
+          <FooterColumn
+            title="Legal"
+            links={[
+              { label: 'Privacy', href: '#' },
+              { label: 'Terms', href: '#' },
+              { label: 'Security', href: '#' },
+              { label: 'Cookies', href: '#' }
+            ]}
+          />
+        </div>
+
+        <div className="mx-auto mt-14 flex max-w-6xl flex-col justify-between gap-3 border-t border-white/[0.06] pt-7 md:flex-row">
+          <p className="text-[12px] text-[#64748b]">Copyright 2026 MET Technologies. All rights reserved.</p>
+          <p className="text-[12px] text-[#64748b]">Made for finance nerds.</p>
+        </div>
+      </footer>
     </div>
   )
 }
 
-function FeatureCard({ title, text }: { title: string; text: string }) {
+function DashboardMiniCard({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) {
+  return (
+    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-4">
+      <p className="mb-1.5 text-[9px] font-semibold uppercase text-[#64748b]">{label}</p>
+      <p className={`text-[15px] font-extrabold ${valueClass || ''}`}>{value}</p>
+    </div>
+  )
+}
+
+function ProgressBar({ label, value, warn }: { label: string; value: number; warn?: boolean }) {
+  return (
+    <div>
+      <div className="mb-1.5 flex justify-between text-[10px]">
+        <span className="text-[#64748b]">{label}</span>
+        <span className={`font-bold ${warn ? 'text-red-400' : ''}`}>{value}%</span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.05]">
+        <div
+          className="h-full rounded-full"
+          style={{
+            width: `${value}%`,
+            background: warn
+              ? 'linear-gradient(90deg,#dc89e1,#ef4444)'
+              : 'linear-gradient(90deg,#dc89e1,#ff9eff)'
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function TransactionRow({
+  label,
+  value,
+  tone
+}: {
+  label: string
+  value: string
+  tone: 'income' | 'expense'
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-white/[0.04] bg-white/[0.02] p-2.5">
+      <div className="flex items-center gap-2.5">
+        <div className={`flex h-6 w-6 items-center justify-center rounded-lg ${tone === 'income' ? 'bg-[rgba(255,158,255,0.1)]' : 'bg-[rgba(220,137,225,0.1)]'}`}>
+          <div className={`h-2 w-2 rounded-full ${tone === 'income' ? 'bg-[#ff9eff]' : 'bg-[#dc89e1]'}`} />
+        </div>
+        <span className="text-[11px] font-semibold">{label}</span>
+      </div>
+      <span className={`text-[11px] font-bold ${tone === 'income' ? 'text-emerald-400' : 'text-red-400'}`}>{value}</span>
+    </div>
+  )
+}
+
+function FeatureCard({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
   return (
     <article className="rounded-2xl border border-white/12 bg-white/5 p-5 transition hover:border-[#ff9eff]/25">
       <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[#ff9eff]/12 text-[#ff9eff]">
-        <Check size={18} />
+        {icon}
       </div>
       <h3 className="text-lg font-bold">{title}</h3>
       <p className="mt-2 text-sm text-slate-400">{text}</p>
@@ -222,7 +410,7 @@ function PriceLine({ ok, text }: { ok: boolean; text: string }) {
 function Testimonial({ quote, name, role }: { quote: string; name: string; role: string }) {
   return (
     <article className="rounded-2xl border border-white/12 bg-white/5 p-7">
-      <p className="mb-4 text-[16px] tracking-wider text-[#ff9eff]">★★★★★</p>
+      <p className="mb-4 text-[16px] tracking-wider text-[#ff9eff]">*****</p>
       <p className="text-[13px] leading-[1.75] text-[#f1f5f9]">"{quote}"</p>
       <div className="mt-6 border-t border-white/10 pt-5">
         <p className="text-[13px] font-bold">{name}</p>
@@ -230,6 +418,38 @@ function Testimonial({ quote, name, role }: { quote: string; name: string; role:
       </div>
     </article>
   )
+}
+
+function StatBlock({ value, label, accent }: { value: string; label: string; accent?: boolean }) {
+  return (
+    <div>
+      <p className={`text-[28px] font-extrabold ${accent ? 'text-[#ff9eff]' : ''}`}>{value}</p>
+      <p className="mt-1 text-[11px] uppercase tracking-wider text-[#64748b]">{label}</p>
+    </div>
+  )
+}
+
+function FooterColumn({ title, links }: { title: string; links: Array<{ label: string; href: string }> }) {
+  return (
+    <div className="space-y-4">
+      <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-[#f1f5f9]">{title}</h4>
+      <div className="flex flex-col gap-2.5 text-[13px] text-[#64748b]">
+        {links.map((link) => (
+          <a key={link.label} href={link.href} className="hover:text-[#ff9eff]">{link.label}</a>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function formatUsdCompact(value: number) {
+  const compact = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    notation: 'compact',
+    maximumFractionDigits: 1
+  }).format(value)
+  return compact.replace('K', 'k')
 }
 
 export default HomePage

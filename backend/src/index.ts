@@ -58,8 +58,62 @@ app.get('/health', (req, res) => {
 
 app.get('/api/public/stats', async (_req, res) => {
   try {
-    const totalUsers = await prisma.user.count()
-    res.json({ totalUsers })
+    const [totalUsers, premiumUsers, totalIncomeAgg, totalExpenseAgg, monthlyTransactions, monthlyIncomeAgg, monthlyExpenseAgg] = await Promise.all([
+      prisma.user.count({ where: { isBanned: false } }),
+      prisma.user.count({ where: { role: 'PREMIUM', isBanned: false } }),
+      prisma.transaction.aggregate({
+        where: { type: 'INCOME', user: { isBanned: false } },
+        _sum: { amount: true }
+      }),
+      prisma.transaction.aggregate({
+        where: { type: 'EXPENSE', user: { isBanned: false } },
+        _sum: { amount: true }
+      }),
+      prisma.transaction.count({
+        where: {
+          date: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+          user: { isBanned: false }
+        }
+      }),
+      prisma.transaction.aggregate({
+        where: {
+          type: 'INCOME',
+          date: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+          user: { isBanned: false }
+        },
+        _sum: { amount: true }
+      }),
+      prisma.transaction.aggregate({
+        where: {
+          type: 'EXPENSE',
+          date: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+          user: { isBanned: false }
+        },
+        _sum: { amount: true }
+      })
+    ])
+
+    const minUsersForFinancialStats = 10
+    const totalIncome = totalIncomeAgg._sum.amount ?? 0
+    const totalExpense = totalExpenseAgg._sum.amount ?? 0
+    const monthlyIncome = monthlyIncomeAgg._sum.amount ?? 0
+    const monthlyExpense = monthlyExpenseAgg._sum.amount ?? 0
+    const net = totalIncome - totalExpense
+    const avgBalanceUsd = totalUsers > 0 ? net / totalUsers : 0
+    const savingsRate = totalIncome > 0 ? Math.max(0, Math.min(100, (net / totalIncome) * 100)) : 0
+    const avgMonthlyTransactions = totalUsers > 0 ? monthlyTransactions / totalUsers : 0
+    const premiumRate = totalUsers > 0 ? (premiumUsers / totalUsers) * 100 : 0
+
+    res.json({
+      totalUsers,
+      premiumUsers,
+      premiumRate,
+      avgBalanceUsd: totalUsers >= minUsersForFinancialStats ? avgBalanceUsd : null,
+      savingsRate: totalUsers >= minUsersForFinancialStats ? savingsRate : null,
+      avgMonthlyTransactions: totalUsers >= minUsersForFinancialStats ? avgMonthlyTransactions : null,
+      monthlyIncome: totalUsers >= minUsersForFinancialStats ? monthlyIncome : null,
+      monthlyExpense: totalUsers >= minUsersForFinancialStats ? monthlyExpense : null
+    })
   } catch {
     res.status(500).json({ error: 'Failed to load public stats.' })
   }
