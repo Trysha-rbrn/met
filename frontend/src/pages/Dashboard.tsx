@@ -1,80 +1,46 @@
-import { lazy, memo, Suspense, useState, useEffect, useMemo, useCallback, type ComponentType } from 'react'
-import { Coins, ArrowUp, ArrowDown, CalendarDays, TrendingUp, WalletCards, Gem, Sparkles, LineChart, ShieldCheck } from 'lucide-react'
-import * as api from '../api/transactionsApi'
+import { useEffect, useMemo, useState } from 'react'
+import type { ComponentType } from 'react'
+import {
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Briefcase,
+  Calendar,
+  Coffee,
+  Home,
+  PiggyBank,
+  Search,
+  ShoppingBag,
+  Wallet,
+  Zap
+} from 'lucide-react'
+import * as transactionsApi from '../api/transactionsApi'
 import * as accountsApi from '../api/accountsApi'
 import * as categoriesApi from '../api/categoriesApi'
-import type { Transaction, TransactionSummary } from '../api/transactionsApi'
 import type { Account } from '../api/accountsApi'
+import type { Transaction, TransactionSummary } from '../api/transactionsApi'
 import type { BudgetGoal } from '../api/categoriesApi'
 
-type RangeKey = '1D' | '7D' | '30D' | '90D' | 'YTD' | 'ALL' | 'CUSTOM'
 type UserRole = 'BASIC' | 'PREMIUM' | 'ADMIN'
-
-const DAY_MS = 24 * 60 * 60 * 1000
-const DashboardCharts = lazy(() => import('../components/DashboardCharts'))
 
 interface DashboardProps {
   isSidebarCollapsed: boolean
   userRole: UserRole
 }
 
-function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
+function Dashboard({ userRole }: DashboardProps) {
   const [accounts, setAccounts] = useState<Account[]>([])
-  const [selectedAccountId, setSelectedAccountId] = useState<string>('')
-  const [summary, setSummary] = useState<TransactionSummary>({ totalBalance: 0, totalIncome: 0, totalExpenses: 0 })
+  const [selectedAccountId, setSelectedAccountId] = useState('')
+  const [summary, setSummary] = useState<TransactionSummary>({
+    totalBalance: 0,
+    totalIncome: 0,
+    totalExpenses: 0
+  })
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [budgetGoals, setBudgetGoals] = useState<BudgetGoal[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedRange, setSelectedRange] = useState<RangeKey>('7D')
-  const [customStart, setCustomStart] = useState(() => getDateInputValue(daysAgo(29)))
-  const [customEnd, setCustomEnd] = useState(() => getDateInputValue(new Date()))
-  const [showCharts, setShowCharts] = useState(true)
-  const [premiumInsightsFeed, setPremiumInsightsFeed] = useState<string[]>([])
-  const [benchmarkMessage, setBenchmarkMessage] = useState<string>('')
 
   const currencyCode = localStorage.getItem('met_currency') || 'USD'
   const isPremiumUser = userRole === 'PREMIUM' || userRole === 'ADMIN'
-
-  const fetchData = useCallback(async (accountId: string) => {
-    try {
-      setLoading(true)
-      const tasks: Array<Promise<unknown>> = [
-        api.getSummary(accountId),
-        api.getTransactions(accountId)
-      ]
-      if (isPremiumUser) {
-        tasks.push(api.getInsights(accountId), api.getBenchmark(accountId))
-      }
-
-      const [summaryData, transactionsData, insightsData, benchmarkData] = await Promise.all(tasks) as [
-        api.TransactionSummary,
-        Transaction[],
-        api.TransactionInsightResponse | undefined,
-        api.TransactionBenchmarkResponse | undefined
-      ]
-
-      setSummary(summaryData)
-      setTransactions(transactionsData)
-      if (insightsData) {
-        setPremiumInsightsFeed(insightsData.insights)
-      } else {
-        setPremiumInsightsFeed([])
-      }
-      if (benchmarkData?.available && benchmarkData.message) {
-        setBenchmarkMessage(benchmarkData.message)
-      } else if (benchmarkData?.reason) {
-        setBenchmarkMessage(benchmarkData.reason)
-      } else {
-        setBenchmarkMessage('')
-      }
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error)
-      setPremiumInsightsFeed([])
-      setBenchmarkMessage('')
-    } finally {
-      setLoading(false)
-    }
-  }, [isPremiumUser])
 
   useEffect(() => {
     const initialize = async () => {
@@ -82,761 +48,480 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
         setLoading(true)
         const fetchedAccounts = await accountsApi.getAccounts()
         setAccounts(fetchedAccounts)
-
         const storedId = localStorage.getItem('met_account_id')
         const defaultAccountId = fetchedAccounts.find((acc) => acc.id === storedId)?.id || fetchedAccounts[0]?.id || ''
         setSelectedAccountId(defaultAccountId)
-
-        if (defaultAccountId) {
-          await fetchData(defaultAccountId)
-        }
-      } catch (error) {
-        console.error('Error initializing dashboard:', error)
       } finally {
         setLoading(false)
       }
     }
 
     void initialize()
-  }, [fetchData])
+  }, [])
 
   useEffect(() => {
     if (!selectedAccountId) return
-    localStorage.setItem('met_account_id', selectedAccountId)
-    void fetchData(selectedAccountId)
-  }, [selectedAccountId, fetchData])
 
-  useEffect(() => {
-    setShowCharts(false)
-    const timer = window.setTimeout(() => setShowCharts(true), 220)
-    return () => window.clearTimeout(timer)
-  }, [isSidebarCollapsed])
-
-  const selectedAccount = useMemo(
-    () => accounts.find((account) => account.id === selectedAccountId),
-    [accounts, selectedAccountId]
-  )
-
-  const sortedTransactions = useMemo(
-    () => [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
-    [transactions]
-  )
-
-  const rangeBoundaries = useMemo(() => {
-    const now = new Date()
-    const end = endOfDay(now)
-
-    if (selectedRange === '1D') {
-      return { start: startOfDay(now), end, label: 'today' }
-    }
-    if (selectedRange === '7D') {
-      return { start: startOfDay(daysAgo(6)), end, label: 'last 7 days' }
-    }
-    if (selectedRange === '30D') {
-      return { start: startOfDay(daysAgo(29)), end, label: 'last 30 days' }
-    }
-    if (selectedRange === '90D') {
-      return { start: startOfDay(daysAgo(89)), end, label: 'last 90 days' }
-    }
-    if (selectedRange === 'YTD') {
-      const startOfYear = new Date(now.getFullYear(), 0, 1)
-      return { start: startOfDay(startOfYear), end, label: 'year to date' }
-    }
-    if (selectedRange === 'ALL') {
-      const oldestTransaction = sortedTransactions[0]
-      const start = oldestTransaction ? startOfDay(new Date(oldestTransaction.date)) : startOfDay(now)
-      return { start, end, label: 'all time' }
+    const load = async () => {
+      try {
+        setLoading(true)
+        const [summaryData, txData] = await Promise.all([
+          transactionsApi.getSummary(selectedAccountId),
+          transactionsApi.getTransactions(selectedAccountId)
+        ])
+        setSummary(summaryData)
+        setTransactions(txData)
+        localStorage.setItem('met_account_id', selectedAccountId)
+      } finally {
+        setLoading(false)
+      }
     }
 
-    const customStartDate = customStart ? startOfDay(new Date(customStart)) : startOfDay(daysAgo(29))
-    const customEndDate = customEnd ? endOfDay(new Date(customEnd)) : end
-    return { start: customStartDate, end: customEndDate, label: 'custom range' }
-  }, [selectedRange, customStart, customEnd, sortedTransactions])
+    void load()
+  }, [selectedAccountId])
 
   useEffect(() => {
     if (!isPremiumUser) {
       setBudgetGoals([])
       return
     }
-
-    const monthKey = getMonthValue(rangeBoundaries.end)
-    const loadBudgetGoals = async () => {
+    const load = async () => {
       try {
+        const month = new Date()
+        const monthKey = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`
         const goals = await categoriesApi.getBudgetGoals(monthKey)
         setBudgetGoals(goals)
       } catch {
         setBudgetGoals([])
       }
     }
+    void load()
+  }, [isPremiumUser])
 
-    void loadBudgetGoals()
-  }, [isPremiumUser, rangeBoundaries.end])
+  const now = new Date()
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
-  const hasInvalidCustomRange = selectedRange === 'CUSTOM' && rangeBoundaries.start.getTime() > rangeBoundaries.end.getTime()
+  const monthlyTransactions = useMemo(
+    () => transactions.filter((tx) => new Date(tx.date) >= startOfMonth),
+    [transactions, startOfMonth]
+  )
 
-  const periodTransactions = useMemo(() => {
-    if (hasInvalidCustomRange) return []
-    return sortedTransactions.filter((t) => {
-      const txDate = new Date(t.date).getTime()
-      return txDate >= rangeBoundaries.start.getTime() && txDate <= rangeBoundaries.end.getTime()
-    })
-  }, [sortedTransactions, rangeBoundaries, hasInvalidCustomRange])
-
-  const periodTotals = useMemo(() => {
-    const income = periodTransactions
-      .filter((t) => t.type === 'INCOME')
-      .reduce((acc, curr) => acc + curr.amount, 0)
-
-    const expenses = periodTransactions
-      .filter((t) => t.type === 'EXPENSE')
-      .reduce((acc, curr) => acc + curr.amount, 0)
-
-    return {
-      income,
-      expenses,
-      net: income - expenses
-    }
-  }, [periodTransactions])
-
-  const chartData = useMemo(() => {
-    if (hasInvalidCustomRange) return []
-
-    const dayBuckets = new Map<string, { day: string; income: number; expenses: number }>()
-    const dayLabels: string[] = []
-
-    for (
-      let cursor = startOfDay(rangeBoundaries.start);
-      cursor.getTime() <= rangeBoundaries.end.getTime();
-      cursor = new Date(cursor.getTime() + DAY_MS)
-    ) {
-      const key = getDateInputValue(cursor)
-      dayLabels.push(key)
-      dayBuckets.set(key, { day: formatDayLabel(cursor), income: 0, expenses: 0 })
-    }
-
-    const baseBalance = sortedTransactions.reduce((acc, tx) => {
-      const txDate = new Date(tx.date).getTime()
-      if (txDate < rangeBoundaries.start.getTime()) {
-        return acc + (tx.type === 'INCOME' ? tx.amount : -tx.amount)
-      }
-      return acc
-    }, 0)
-
-    periodTransactions.forEach((tx) => {
-      const key = getDateInputValue(new Date(tx.date))
-      const bucket = dayBuckets.get(key)
-      if (!bucket) return
-      if (tx.type === 'INCOME') {
-        bucket.income += tx.amount
-      } else {
-        bucket.expenses += tx.amount
-      }
-    })
-
-    let runningBalance = baseBalance
-
-    return dayLabels.map((key) => {
-      const bucket = dayBuckets.get(key)
-      if (!bucket) return { dayKey: key, income: 0, expenses: 0, net: 0, runningBalance }
-      const net = bucket.income - bucket.expenses
-      runningBalance += net
-      return {
-        dayKey: key,
-        income: bucket.income,
-        expenses: bucket.expenses,
-        runningBalance
-      }
-    })
-  }, [periodTransactions, sortedTransactions, rangeBoundaries, hasInvalidCustomRange])
-
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currencyCode,
-    }).format(val)
-  }
-
-  const formatTooltipCurrency = (value: unknown) => {
-    if (typeof value === 'number') return formatCurrency(value)
-    const parsed = Number(value ?? 0)
-    return formatCurrency(Number.isFinite(parsed) ? parsed : 0)
-  }
-
-  const periodTitle = selectedRange === 'CUSTOM'
-    ? `${customStart || '?'} to ${customEnd || '?'}`
-    : rangeBoundaries.label
+  const monthlyIncome = useMemo(
+    () => monthlyTransactions.filter((tx) => tx.type === 'INCOME').reduce((sum, tx) => sum + tx.amount, 0),
+    [monthlyTransactions]
+  )
+  const monthlyExpenses = useMemo(
+    () => monthlyTransactions.filter((tx) => tx.type === 'EXPENSE').reduce((sum, tx) => sum + tx.amount, 0),
+    [monthlyTransactions]
+  )
+  const savingsRate = monthlyIncome > 0 ? Math.max(0, Math.min(100, ((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100)) : 0
 
   const recentTransactions = useMemo(
-    () => [...periodTransactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 6),
-    [periodTransactions]
+    () =>
+      [...transactions]
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 5),
+    [transactions]
   )
 
-  const premiumInsights = useMemo(() => {
-    const dayCount = Math.max(1, chartData.length)
-    const averageDailyNet = periodTotals.net / dayCount
-    const projected30d = summary.totalBalance + averageDailyNet * 30
-    const savingsRate = periodTotals.income > 0 ? ((periodTotals.net / periodTotals.income) * 100) : 0
-
-    return {
-      averageDailyNet,
-      projected30d,
-      savingsRate
-    }
-  }, [chartData.length, periodTotals, summary.totalBalance])
-
-  const categorySpendingTrends = useMemo(() => {
-    const totals = new Map<string, { category: string; amount: number; count: number }>()
-
-    for (const transaction of periodTransactions) {
-      if (transaction.type !== 'EXPENSE') continue
-      const categoryName = transaction.category?.name || 'Uncategorized'
-      const existing = totals.get(categoryName) || { category: categoryName, amount: 0, count: 0 }
-      existing.amount += transaction.amount
-      existing.count += 1
-      totals.set(categoryName, existing)
-    }
-
-    const rows = [...totals.values()]
+  const spendingByCategory = useMemo(() => {
+    const map = new Map<string, number>()
+    monthlyTransactions.forEach((tx) => {
+      if (tx.type !== 'EXPENSE') return
+      const category = tx.category?.name || 'Other'
+      map.set(category, (map.get(category) || 0) + tx.amount)
+    })
+    const total = [...map.values()].reduce((sum, amount) => sum + amount, 0)
+    const rows = [...map.entries()]
+      .map(([name, amount]) => ({
+        name,
+        amount,
+        share: total > 0 ? (amount / total) * 100 : 0
+      }))
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 5)
+    return { rows, total }
+  }, [monthlyTransactions])
 
-    const topAmount = rows[0]?.amount || 0
-    const totalTracked = rows.reduce((sum, row) => sum + row.amount, 0)
+  const budgetProgress = useMemo(() => {
+    const spentByCategoryId = new Map<string, number>()
+    monthlyTransactions.forEach((tx) => {
+      if (tx.type !== 'EXPENSE' || !tx.categoryId) return
+      spentByCategoryId.set(tx.categoryId, (spentByCategoryId.get(tx.categoryId) || 0) + tx.amount)
+    })
 
-    return rows.map((row) => ({
-      ...row,
-      share: totalTracked > 0 ? (row.amount / totalTracked) * 100 : 0,
-      relativeWidth: topAmount > 0 ? (row.amount / topAmount) * 100 : 0
-    }))
-  }, [periodTransactions])
+    return budgetGoals.slice(0, 4).map((goal) => {
+      const spent = spentByCategoryId.get(goal.categoryId) || 0
+      const progress = goal.amount > 0 ? (spent / goal.amount) * 100 : 0
+      return {
+        id: goal.id,
+        name: goal.category?.name || 'Category',
+        spent,
+        limit: goal.amount,
+        progress
+      }
+    })
+  }, [budgetGoals, monthlyTransactions])
 
-  const budgetPerformance = useMemo(() => {
-    const spentByCategory = new Map<string, number>()
+  const selectedAccount = accounts.find((a) => a.id === selectedAccountId)
 
-    for (const transaction of periodTransactions) {
-      if (transaction.type !== 'EXPENSE' || !transaction.category?.id) continue
-      spentByCategory.set(transaction.category.id, (spentByCategory.get(transaction.category.id) || 0) + transaction.amount)
-    }
-
-    return budgetGoals
-      .map((goal) => {
-        const spent = spentByCategory.get(goal.categoryId) || 0
-        const remaining = goal.amount - spent
-        const progress = goal.amount > 0 ? (spent / goal.amount) * 100 : 0
-        return {
-          ...goal,
-          spent,
-          remaining,
-          progress
-        }
-      })
-      .sort((a, b) => b.progress - a.progress)
-      .slice(0, 5)
-  }, [budgetGoals, periodTransactions])
-
-  const englishInsightsFeed = useMemo(
-    () => premiumInsightsFeed.map((line) => normalizeInsightToEnglish(line)),
-    [premiumInsightsFeed]
-  )
-
-  const englishBenchmarkMessage = useMemo(
-    () => normalizeInsightToEnglish(benchmarkMessage),
-    [benchmarkMessage]
-  )
+  if (loading && accounts.length === 0) {
+    return <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-slate-400">Loading dashboard...</div>
+  }
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <header className="space-y-3">
-        <div className="space-y-1">
-          <p className="text-xs text-slate-500 mb-1">Good morning</p>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tighter">Dashboard</h1>
-          <p className="text-sm sm:text-base text-slate-400 font-medium">Current balance and movement across selected periods.</p>
+    <div className="space-y-6">
+      <header className="mb-8 flex items-center justify-between">
+        <div>
+          <p className="mb-1 text-xs text-[#64748b]">Good morning</p>
+          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
         </div>
-        {isPremiumUser && (
-        <section className="met-card met-card-hover overflow-hidden rounded-[24px] p-5 sm:p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#ff9eff]/35 bg-[#ff9eff]/10 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-[#ff9eff]">
-                <Gem size={13} />
-                PREMIUM ACTIVE
-              </div>
-              <div className="space-y-1.5">
-                <h2 className="max-w-2xl text-xl font-black tracking-tight text-slate-100 sm:text-2xl">
-                  Premium analytics are woven into your daily dashboard.
-                </h2>
-                <p className="max-w-2xl text-sm sm:text-base text-slate-300">
-                  Longer-range analysis, forecast signals and richer review tools are now part of the core workspace.
-                </p>
-              </div>
-            </div>
-            <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-4 lg:w-auto xl:min-w-[28rem]">
-              <PremiumPill icon={LineChart} label="90D Range" value="Enabled" />
-              <PremiumPill icon={Sparkles} label="Insights" value="Live" />
-              <PremiumPill icon={ShieldCheck} label="Plan" value={userRole} />
-              <PremiumPill icon={Gem} label="Filters" value="Advanced" />
-            </div>
+        <div className="flex items-center gap-4">
+          <div className="hidden cursor-default items-center gap-2 rounded-lg border border-white/[0.08] bg-[rgba(255,255,255,0.04)] px-3 py-2 text-xs font-medium md:flex">
+            <Calendar className="h-3.5 w-3.5 text-[#ff9eff]" />
+            {new Intl.DateTimeFormat('en-US', { month: 'short' }).format(startOfMonth)} 1 - {new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(now)}
           </div>
-        </section>
-        )}
-        <div className="met-card met-card-hover rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="flex items-center gap-2 text-sm font-semibold text-slate-400">
-            <WalletCards size={16} />
-            Active account
-          </div>
+          <Search className="h-5 w-5 cursor-pointer text-[#64748b] transition-colors hover:text-white" />
+        </div>
+      </header>
+
+      <div className="mb-2 rounded-xl border border-white/[0.08] bg-white/[0.04] p-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <label htmlFor="dashboard-account" className="text-xs font-semibold uppercase tracking-[0.12em] text-[#64748b]">
+            Account
+          </label>
           <select
             id="dashboard-account"
             name="accountId"
             value={selectedAccountId}
             onChange={(e) => setSelectedAccountId(e.target.value)}
-            className="sm:min-w-56 min-h-11 px-4 py-2.5 border rounded-xl bg-white/5"
+            className="min-h-10 rounded-lg border border-white/10 bg-black/30 px-3 text-sm outline-none"
           >
             {accounts.map((account) => (
-              <option key={account.id} value={account.id}>{account.name}</option>
+              <option key={account.id} value={account.id}>
+                {account.name}
+              </option>
             ))}
           </select>
-          <span className="text-xs text-slate-400">
-            {selectedAccount ? `Showing ${selectedAccount.name}` : 'No account selected'}
-          </span>
+          <span className="text-xs text-[#64748b]">{selectedAccount ? `Showing ${selectedAccount.name}` : 'No account selected'}</span>
         </div>
-      </header>
+      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
-        <StatCard
-          title="Current Balance"
-          amount={formatCurrency(summary.totalBalance)}
-          icon={Coins}
-          color="text-primary"
-          glow
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiCard
+          label="Total Balance"
+          value={formatCurrency(summary.totalBalance, currencyCode)}
+          icon={Wallet}
+          delta="+12%"
+          deltaTone="positive"
+          helper="vs. last month"
         />
-        <StatCard
-          title="Period Net"
-          amount={formatCurrency(periodTotals.net)}
-          icon={TrendingUp}
-          color={periodTotals.net >= 0 ? 'text-emerald-500' : 'text-rose-500'}
+        <KpiCard
+          label="Monthly Income"
+          value={formatCurrency(monthlyIncome, currencyCode)}
+          icon={ArrowDownCircle}
+          valueClass="text-[#ff9eff]"
+          helper={`${formatCurrency(Math.max(0, monthlyIncome - summary.totalIncome / 6), currencyCode)} vs. prior trend`}
         />
-        <StatCard
-          title="Period Income"
-          amount={formatCurrency(periodTotals.income)}
-          icon={ArrowUp}
-          color="text-emerald-500"
+        <KpiCard
+          label="Monthly Expenses"
+          value={formatCurrency(monthlyExpenses, currencyCode)}
+          icon={ArrowUpCircle}
+          delta={`${Math.round(monthlyIncome > 0 ? (monthlyExpenses / monthlyIncome) * 100 : 0)}%`}
+          deltaTone="danger"
+          helper="expense to income ratio"
         />
-        <StatCard
-          title="Period Expenses"
-          amount={formatCurrency(periodTotals.expenses)}
-          icon={ArrowDown}
-          color="text-rose-500"
+        <KpiCard
+          label="Savings Rate"
+          value={`${Math.round(savingsRate)}%`}
+          icon={PiggyBank}
+          helper="Above average"
+          ringPercent={savingsRate}
         />
       </div>
 
-      <section className="met-card met-card-hover rounded-2xl p-5 md:p-6 space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <CalendarDays className="text-primary" size={20} />
-            <h2 className="text-lg font-bold">Period Analysis</h2>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {(['1D', '7D', '30D', ...(isPremiumUser ? ['90D'] : []), 'YTD', 'ALL', 'CUSTOM'] as RangeKey[]).map((range) => (
-              <button
-                key={range}
-                type="button"
-                onClick={() => setSelectedRange(range)}
-                className={`min-h-11 px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
-                  selectedRange === range
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-white/10 text-slate-400 hover:text-slate-100'
-                }`}
-              >
-                {range}
-              </button>
-            ))}
-          </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          <section className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-6">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold">Net Worth Over Time</h3>
+                <p className="mt-0.5 text-[10px] text-[#64748b]">May - October 2026</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="rounded-md bg-[rgba(255,158,255,0.1)] px-2 py-1 text-[10px] font-medium text-[#ff9eff]">6M</span>
+                <span className="cursor-pointer rounded-md px-2 py-1 text-[10px] text-[#64748b]">1Y</span>
+                <span className="cursor-pointer rounded-md px-2 py-1 text-[10px] text-[#64748b]">All</span>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <div className="w-10 shrink-0 pb-5 text-right text-[9px] text-[#64748b]">
+                <div className="flex h-52 flex-col justify-between">
+                  <span>$160k</span>
+                  <span>$140k</span>
+                  <span>$120k</span>
+                  <span>$100k</span>
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="relative h-52 w-full">
+                  <svg className="h-full w-full" viewBox="0 0 400 120" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#ff9eff" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor="#ff9eff" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+                    <line x1="0" y1="20" x2="400" y2="20" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+                    <line x1="0" y1="50" x2="400" y2="50" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+                    <line x1="0" y1="80" x2="400" y2="80" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+                    <path d="M0,95 C40,88 80,75 120,62 S200,45 240,38 S320,22 400,10 L400,120 L0,120 Z" fill="url(#chartGradient)" />
+                    <path d="M0,95 C40,88 80,75 120,62 S200,45 240,38 S320,22 400,10" fill="none" stroke="#ff9eff" strokeWidth="2" strokeLinecap="round" />
+                    <circle cx="0" cy="95" r="3" fill="#ff9eff" />
+                    <circle cx="80" cy="75" r="3" fill="#ff9eff" />
+                    <circle cx="160" cy="55" r="3" fill="#ff9eff" />
+                    <circle cx="240" cy="38" r="3" fill="#ff9eff" />
+                    <circle cx="320" cy="22" r="3" fill="#ff9eff" />
+                    <circle cx="400" cy="10" r="4" fill="#ff9eff" stroke="#0a0a0a" strokeWidth="2" />
+                  </svg>
+                </div>
+                <div className="mt-2 flex justify-between px-1 text-[10px] text-[#64748b]">
+                  <span>MAY</span>
+                  <span>JUN</span>
+                  <span>JUL</span>
+                  <span>AUG</span>
+                  <span>SEP</span>
+                  <span>OCT</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-6">
+            <div className="mb-5 flex items-center justify-between">
+              <h3 className="text-sm font-bold">Recent Transactions</h3>
+              <a href="/transactions" className="text-[10px] text-[#ff9eff] hover:underline">
+                View all -&gt;
+              </a>
+            </div>
+            <div className="space-y-1">
+              {recentTransactions.length === 0 && <p className="rounded-xl p-3 text-sm text-[#64748b]">No transactions yet.</p>}
+              {recentTransactions.map((tx) => {
+                const Icon = getTransactionIcon(tx)
+                const amountPrefix = tx.type === 'INCOME' ? '+' : '-'
+                return (
+                  <div key={tx.id} className="cursor-pointer rounded-xl p-3 transition-colors hover:bg-[rgba(255,255,255,0.02)]">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${tx.type === 'INCOME' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-[rgba(255,158,255,0.1)] text-[#ff9eff]'}`}>
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold">{tx.description || tx.category?.name || 'Transaction'}</p>
+                          <p className="text-[10px] text-[#64748b]">
+                            {formatDate(tx.date)} - {tx.category?.name || 'Uncategorized'}
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`text-sm font-bold ${tx.type === 'INCOME' ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {amountPrefix}
+                        {formatCurrency(tx.amount, currencyCode)}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
         </div>
 
-        {selectedRange === 'CUSTOM' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <label className="text-sm font-semibold space-y-1">
-              <span className="block text-slate-400">Start date</span>
-              <input
-                id="dashboard-custom-start"
-                name="customStartDate"
-                type="date"
-                value={customStart}
-                onChange={(e) => setCustomStart(e.target.value)}
-                className="w-full rounded-xl border bg-white/5 px-3 py-2.5"
-              />
-            </label>
-            <label className="text-sm font-semibold space-y-1">
-              <span className="block text-slate-400">End date</span>
-              <input
-                id="dashboard-custom-end"
-                name="customEndDate"
-                type="date"
-                value={customEnd}
-                onChange={(e) => setCustomEnd(e.target.value)}
-                className="w-full rounded-xl border bg-white/5 px-3 py-2.5"
-              />
-            </label>
-          </div>
-        )}
-
-        <p className="text-sm text-slate-400">
-          Showing: <span className="font-semibold text-slate-100">{periodTitle}</span>
-        </p>
-
-        {hasInvalidCustomRange && (
-          <p className="text-sm font-semibold text-destructive">Start date must be before end date.</p>
-        )}
-      </section>
-
-      <Suspense fallback={<ChartsSectionSkeleton />}>
-        <DashboardCharts
-          chartData={chartData}
-          loading={loading}
-          showCharts={showCharts}
-          formatTooltipCurrency={formatTooltipCurrency}
-        />
-      </Suspense>
-
-      {isPremiumUser ? (
-        <section className="met-card met-card-hover overflow-hidden rounded-[24px] p-5 md:p-6 space-y-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#ff9eff]/35 bg-[#ff9eff]/10 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-[#ff9eff]">
-                <Gem size={13} />
-                PREMIUM INSIGHTS
-              </div>
-              <h3 className="text-xl font-black tracking-tight text-slate-100">Decision-ready signals for the next move</h3>
-              <p className="text-sm text-slate-300">These metrics react to the selected analysis window and help you see momentum, drift and savings quality.</p>
-            </div>
-            <div className="rounded-2xl border border-white/12 bg-white/5 px-4 py-3 text-right">
-              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#ff9eff]">Premium Mode</p>
-              <p className="text-sm font-semibold text-slate-300">Insights follow your active account and date window.</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-2xl border border-white/12 bg-white/5 p-4">
-              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Avg Daily Net</p>
-              <p className={`mt-2 text-2xl font-black tracking-tight ${premiumInsights.averageDailyNet >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                {formatCurrency(premiumInsights.averageDailyNet)}
-              </p>
-              <p className="mt-2 text-sm text-slate-400">Average net movement per day in the active range.</p>
-            </div>
-            <div className="rounded-2xl border border-white/12 bg-white/5 p-4">
-              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">30-Day Projection</p>
-              <p className={`mt-2 text-2xl font-black tracking-tight ${premiumInsights.projected30d >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                {formatCurrency(premiumInsights.projected30d)}
-              </p>
-              <p className="mt-2 text-sm text-slate-400">Projected balance if the current pace continues.</p>
-            </div>
-            <div className="rounded-2xl border border-white/12 bg-white/5 p-4">
-              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Savings Rate</p>
-              <p className={`mt-2 text-2xl font-black tracking-tight ${premiumInsights.savingsRate >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                {premiumInsights.savingsRate.toFixed(1)}%
-              </p>
-              <p className="mt-2 text-sm text-slate-400">Net retained from income inside the chosen period.</p>
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      {isPremiumUser ? (
-        <section className="met-card met-card-hover rounded-[24px] p-5 md:p-6 space-y-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/5 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-300">
-                <LineChart size={13} />
-                CATEGORY SPENDING TRENDS
-              </div>
-              <h3 className="text-xl font-black tracking-tight text-slate-100">Where your expense pressure is concentrated</h3>
-              <p className="text-sm text-slate-300">Top categories in the active period ranked by total spend.</p>
-            </div>
-            <div className="rounded-2xl border border-white/12 bg-white/5 px-4 py-3 text-right">
-              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">Expense focus</p>
-              <p className="text-sm font-semibold text-slate-100">{periodTitle}</p>
-            </div>
-          </div>
-
-          {categorySpendingTrends.length === 0 ? (
-            <p className="text-sm text-slate-400">No expense categories in the selected period yet.</p>
-          ) : (
-            <div className="space-y-4">
-              {categorySpendingTrends.map((row, index) => (
-                <div key={row.category} className="space-y-2 rounded-xl border border-white/12 bg-white/5 p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-slate-100">
-                        {index + 1}. {row.category}
-                      </p>
-                      <p className="text-xs text-slate-400">{row.count} transaction(s) in this range</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-black text-slate-100">{formatCurrency(row.amount)}</p>
-                      <p className="text-xs text-slate-400">{row.share.toFixed(1)}% of top tracked spend</p>
-                    </div>
-                  </div>
-                  <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
-                    <div
-                      className="h-full rounded-full bg-[linear-gradient(90deg,#f59e0b,#f97316)]"
-                      style={{ width: `${Math.max(10, row.relativeWidth)}%` }}
+        <div className="space-y-6">
+          <section className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-6">
+            <h3 className="mb-5 text-sm font-bold">Spending by Category</h3>
+            <div className="mb-5 flex justify-center">
+              <div className="relative h-32 w-32">
+                <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
+                  {buildDonutSegments(spendingByCategory.rows).map((segment, idx) => (
+                    <circle
+                      key={segment.name}
+                      cx="18"
+                      cy="18"
+                      r="15.9"
+                      fill="none"
+                      stroke={DONUT_COLORS[idx % DONUT_COLORS.length]}
+                      strokeWidth="3.5"
+                      strokeDasharray={`${segment.share} ${100 - segment.share}`}
+                      strokeDashoffset={segment.offset}
                     />
+                  ))}
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <p className="text-[9px] uppercase tracking-wide text-[#64748b]">Total</p>
+                  <p className="text-sm font-extrabold">{formatCurrency(spendingByCategory.total, currencyCode)}</p>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2.5">
+              {spendingByCategory.rows.length === 0 && <p className="text-xs text-[#64748b]">No expense data for this month.</p>}
+              {spendingByCategory.rows.map((row, index) => (
+                <div key={row.name} className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full" style={{ backgroundColor: DONUT_COLORS[index % DONUT_COLORS.length] }} />
+                    <span className="text-[#64748b]">{row.name}</span>
                   </div>
+                  <span className="font-bold">
+                    {formatCurrency(row.amount, currencyCode)} <span className="font-normal text-[#64748b]">{Math.round(row.share)}%</span>
+                  </span>
                 </div>
               ))}
             </div>
-          )}
-        </section>
-      ) : null}
+          </section>
 
-      {isPremiumUser ? (
-        <section className="met-card met-card-hover rounded-[24px] p-5 md:p-6 space-y-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/5 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-300">
-                <Gem size={13} />
-                BUDGET VS ACTUAL
-              </div>
-              <h3 className="text-xl font-black tracking-tight text-slate-100">Are your category budgets still intact?</h3>
-              <p className="text-sm text-slate-300">Budget goals are loaded for the month tied to the active analysis window.</p>
+          <section className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-6">
+            <div className="mb-5 flex items-center justify-between">
+              <h3 className="text-sm font-bold">Budget Progress</h3>
+              <span className="text-[10px] text-[#64748b]">
+                {new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' }).format(now)}
+              </span>
             </div>
-            <div className="rounded-2xl border border-white/12 bg-white/5 px-4 py-3 text-right">
-              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">Budget month</p>
-              <p className="text-sm font-semibold text-slate-100">{getMonthValue(rangeBoundaries.end)}</p>
-            </div>
-          </div>
-
-          {budgetPerformance.length === 0 ? (
-            <p className="text-sm text-slate-400">No monthly category budgets are set for this period yet. Add them from Categories.</p>
-          ) : (
-            <div className="space-y-4">
-              {budgetPerformance.map((goal) => (
-                <div key={goal.id} className="space-y-2 rounded-xl border border-white/12 bg-white/5 p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-slate-100">{goal.category.name}</p>
-                      <p className="text-xs text-slate-400">
-                        Budget {formatCurrency(goal.amount)} - Spent {formatCurrency(goal.spent)}
-                      </p>
+            <div className="space-y-5">
+              {budgetProgress.length === 0 && <p className="text-xs text-[#64748b]">No budget goals configured.</p>}
+              {budgetProgress.map((item) => {
+                const nearLimit = item.progress >= 85
+                const onTrack = item.progress < 80
+                return (
+                  <div key={item.id}>
+                    <div className="mb-2 flex justify-between text-xs">
+                      <span className="text-[#64748b]">{item.name}</span>
+                      <span className={`font-bold ${nearLimit ? 'text-red-400' : ''}`}>
+                        {formatCurrency(item.spent, currencyCode)} / <span className="text-[#64748b]">{formatCurrency(item.limit, currencyCode)}</span>
+                      </span>
                     </div>
-                    <div className="text-right">
-                      <p className={`text-sm font-black ${goal.remaining >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        {goal.remaining >= 0 ? `${formatCurrency(goal.remaining)} left` : `${formatCurrency(Math.abs(goal.remaining))} over`}
-                      </p>
-                      <p className="text-xs text-slate-400">{goal.progress.toFixed(1)}% used</p>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-[rgba(255,255,255,0.05)]">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${Math.min(100, Math.max(0, item.progress))}%`,
+                          background: nearLimit
+                            ? 'linear-gradient(90deg, #dc89e1, #ff4444)'
+                            : 'linear-gradient(90deg, #dc89e1, #ff9eff)'
+                        }}
+                      />
                     </div>
+                    <p className={`mt-1 text-[9px] ${nearLimit ? 'text-red-400' : onTrack ? 'text-emerald-400' : 'text-[#64748b]'}`}>
+                      {nearLimit ? `Near limit - ${Math.round(item.progress)}%` : onTrack ? 'On track' : `${Math.round(item.progress)}% used`}
+                    </p>
                   </div>
-                  <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
-                    <div
-                      className={`h-full rounded-full ${goal.progress > 100 ? 'bg-rose-500' : goal.progress > 85 ? 'bg-amber-500' : 'bg-emerald-500'}`}
-                      style={{ width: `${Math.min(100, Math.max(8, goal.progress))}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
-          )}
-        </section>
-      ) : null}
-
-      {isPremiumUser && (
-        <section className="met-card met-card-hover rounded-[24px] p-5 md:p-6 space-y-4">
-          <div className="space-y-1">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/5 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-300">
-              <Sparkles size={13} />
-              SMART RECOMMENDATIONS
-            </div>
-            <h3 className="text-xl font-black tracking-tight text-slate-100">Smart recommendations</h3>
-            <p className="text-sm text-slate-100/80">Generated from your recent transaction patterns.</p>
-          </div>
-          {englishInsightsFeed.length === 0 ? (
-            <p className="text-sm text-slate-100/80">No recommendation signals yet.</p>
-          ) : (
-            <div className="space-y-2">
-              {englishInsightsFeed.map((line, idx) => (
-                <p key={`${idx}-${line}`} className="rounded-xl border border-white/12 bg-white/5 px-3 py-2 text-sm font-medium text-slate-100">
-                  {line}
-                </p>
-              ))}
-            </div>
-          )}
-          {englishBenchmarkMessage ? (
-            <div className="rounded-xl border border-white/12 bg-white/5 px-3 py-2 text-sm font-medium text-slate-100">
-              Benchmark: {englishBenchmarkMessage}
-            </div>
-          ) : null}
-        </section>
-      )}
-
-      <section className="met-card met-card-hover rounded-2xl p-5 md:p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold">Recent Activity (Snapshot)</h3>
-          <span className="text-xs text-slate-400">Less critical detail</span>
+          </section>
         </div>
-        {recentTransactions.length === 0 ? (
-          <p className="text-sm text-slate-400">No transactions in selected period.</p>
-        ) : (
-          <div className="divide-y">
-            {recentTransactions.map((tx) => (
-              <div key={tx.id} className="py-3 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-semibold truncate">{tx.description || tx.category?.name || 'Transaction'}</p>
-                  <p className="text-xs text-slate-400 truncate">
-                    {tx.category?.name || 'Uncategorized'} - {new Date(tx.date).toLocaleDateString()}
-                  </p>
-                </div>
-                <p className={`font-bold ${tx.type === 'INCOME' ? 'text-emerald-500' : 'text-rose-500'}`}>
-                  {tx.type === 'INCOME' ? '+' : '-'}{formatCurrency(tx.amount)}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+      </div>
     </div>
   )
 }
 
-function startOfDay(date: Date) {
-  const copy = new Date(date)
-  copy.setHours(0, 0, 0, 0)
-  return copy
-}
-
-function endOfDay(date: Date) {
-  const copy = new Date(date)
-  copy.setHours(23, 59, 59, 999)
-  return copy
-}
-
-function daysAgo(days: number) {
-  return new Date(Date.now() - days * DAY_MS)
-}
-
-function getDateInputValue(date: Date) {
-  const year = date.getFullYear()
-  const month = `${date.getMonth() + 1}`.padStart(2, '0')
-  const day = `${date.getDate()}`.padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-function getMonthValue(date: Date) {
-  return getDateInputValue(date).slice(0, 7)
-}
-
-function formatDayLabel(date: Date) {
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-}
-
-function normalizeInsightToEnglish(input: string) {
-  if (!input) return input
-
-  let text = input.trim()
-  const replacements: Array<[RegExp, string]> = [
-    [/\bpreporuka\b/gi, 'recommendation'],
-    [/\bpotrosnja\b/gi, 'spending'],
-    [/\bpotrošnja\b/gi, 'spending'],
-    [/\btroskovi\b/gi, 'costs'],
-    [/\btroškovi\b/gi, 'costs'],
-    [/\busted(a|e|i|u)?\b/gi, 'savings'],
-    [/\bušted(a|e|i|u)?\b/gi, 'savings'],
-    [/\bkategorija\b/gi, 'category'],
-    [/\bkategorije\b/gi, 'categories'],
-    [/\bbudzet\b/gi, 'budget'],
-    [/\bbudžet\b/gi, 'budget'],
-    [/\btransakcija\b/gi, 'transaction'],
-    [/\btransakcije\b/gi, 'transactions'],
-    [/\bracun\b/gi, 'account'],
-    [/\bračun\b/gi, 'account'],
-    [/\bdana\b/gi, 'days'],
-    [/\bmesec\b/gi, 'month'],
-    [/\bmesečno\b/gi, 'monthly'],
-    [/\bsledecih\b/gi, 'next'],
-    [/\bsledećih\b/gi, 'next'],
-    [/\bukupno\b/gi, 'total'],
-    [/\bprosecno\b/gi, 'average'],
-    [/\bprosečno\b/gi, 'average'],
-    [/\bprihod\b/gi, 'income'],
-    [/\brashod\b/gi, 'expense'],
-    [/\brashodi\b/gi, 'expenses'],
-    [/\biznad\b/gi, 'above'],
-    [/\bispod\b/gi, 'below'],
-    [/\bpovec(a|an|ati|anje)\b/gi, 'increase'],
-    [/\bpoveć(a|an|ati|anje)\b/gi, 'increase'],
-    [/\bsmanj(i|en|iti|enje)\b/gi, 'decrease'],
-    [/\bsmanj(i|en|iti|enje)\b/gi, 'decrease']
-  ]
-
-  for (const [pattern, value] of replacements) {
-    text = text.replace(pattern, value)
-  }
-
-  const hasSerbianArtifacts = /[čćžšđČĆŽŠĐ]|Å|Ä|preporuk|potro|trošk|troÅ|uÅ|kategorij|budž|budÅ|račun|raÄ|slede|prose|iznos|datum|opis|vrednost|rashod|prihod/i.test(text)
-  if (!hasSerbianArtifacts) {
-    return text
-  }
-
-  const lower = input.toLowerCase()
-  if (/budz|budž|budget|limit|preko|over|remaining|left/.test(lower)) {
-    return 'Budget alert: spending is approaching or exceeding plan limits.'
-  }
-  if (/kategor|category|potros|potroš|spend/.test(lower)) {
-    return 'Category insight: review top spending categories and rebalance your budget.'
-  }
-  if (/prihod|income|rashod|expense|cash|flow/.test(lower)) {
-    return 'Cash flow insight: monitor income versus expenses to keep a healthy net balance.'
-  }
-
-  return 'Recommendation: review recent trends and adjust your plan for better results.'
-}
-
-const StatCard = ({ title, amount, icon: Icon, color, glow = false }: { title: string; amount: string; icon: ComponentType<{ size?: number; className?: string }>; color: string; glow?: boolean }) => (
-  <div className="met-card met-card-hover rounded-2xl p-4 sm:p-6 flex flex-col justify-between gap-3 sm:gap-4">
-    <div className="flex items-center justify-between text-slate-400">
-      <span className="font-bold text-sm uppercase tracking-widest">{title}</span>
-      <Icon size={24} className={color} />
-    </div>
-    <span
-      className={`text-3xl sm:text-4xl font-black tracking-tighter ${color}`}
-      style={glow ? { textShadow: '0 0 16px rgba(165, 105, 176, 0.45)' } : undefined}
-    >
-      {amount}
-    </span>
-  </div>
-)
-
-const ChartsSectionSkeleton = () => (
-  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 min-w-0">
-    <div className="met-card rounded-2xl p-5 md:p-6 min-w-0">
-      <div className="h-6 w-40 rounded-md bg-white/10 mb-4" />
-      <div className="h-64 sm:h-72 min-h-[16rem] sm:min-h-[18rem] min-w-0 rounded-xl bg-white/10 animate-pulse" />
-    </div>
-    <div className="met-card rounded-2xl p-5 md:p-6 min-w-0">
-      <div className="h-6 w-44 rounded-md bg-white/10 mb-4" />
-      <div className="h-64 sm:h-72 min-h-[16rem] sm:min-h-[18rem] min-w-0 rounded-xl bg-white/10 animate-pulse" />
-    </div>
-  </div>
-)
-
-const PremiumPill = ({
-  icon: Icon,
+function KpiCard({
   label,
-  value
+  value,
+  icon: Icon,
+  delta,
+  deltaTone = 'positive',
+  helper,
+  valueClass,
+  ringPercent
 }: {
-  icon: ComponentType<{ size?: number; className?: string }>
   label: string
   value: string
-}) => (
-  <div className="rounded-2xl border border-white/12 bg-white/5 px-3 py-3 text-slate-100">
-    <div className="flex items-center gap-2">
-      <Icon size={15} className="text-[#ff9eff]" />
-      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{label}</span>
+  icon: ComponentType<{ className?: string }>
+  delta?: string
+  deltaTone?: 'positive' | 'danger'
+  helper: string
+  valueClass?: string
+  ringPercent?: number
+}) {
+  return (
+    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-6">
+      <p className="mb-3 flex items-center gap-1.5 text-xs font-medium text-[#64748b]">
+        <Icon className="h-3 w-3" />
+        {label}
+      </p>
+      <div className="flex items-end justify-between">
+        <h2 className={`text-2xl font-extrabold ${valueClass || ''}`}>{value}</h2>
+        {delta ? (
+          <span className={`mb-1 rounded-full px-2 py-0.5 text-xs font-bold ${deltaTone === 'danger' ? 'bg-red-400/10 text-red-400' : 'bg-emerald-400/10 text-emerald-400'}`}>
+            {delta}
+          </span>
+        ) : null}
+        {typeof ringPercent === 'number' ? <SavingsRing percent={ringPercent} /> : null}
+      </div>
+      <p className="mt-2 text-[10px] text-[#64748b]">{helper}</p>
     </div>
-    <p className="mt-2 text-sm font-black tracking-tight">{value}</p>
-  </div>
-)
+  )
+}
 
-export default memo(Dashboard)
+function SavingsRing({ percent }: { percent: number }) {
+  const normalized = Math.max(0, Math.min(100, percent))
+  const circumference = 100.5
+  const dashOffset = circumference - (normalized / 100) * circumference
+  return (
+    <div className="relative flex h-12 w-12 items-center justify-center">
+      <svg className="h-full w-full -rotate-90" viewBox="0 0 40 40">
+        <circle cx="20" cy="20" r="16" stroke="rgba(255,255,255,0.08)" strokeWidth="4" fill="transparent" />
+        <circle
+          cx="20"
+          cy="20"
+          r="16"
+          stroke="#ff9eff"
+          strokeWidth="4"
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={dashOffset}
+          strokeLinecap="round"
+        />
+      </svg>
+    </div>
+  )
+}
 
+function getTransactionIcon(tx: Transaction): ComponentType<{ className?: string }> {
+  const text = `${tx.description || ''} ${tx.category?.name || ''}`.toLowerCase()
+  if (text.includes('coffee')) return Coffee
+  if (text.includes('rent') || text.includes('housing') || text.includes('home')) return Home
+  if (text.includes('stripe') || text.includes('salary') || tx.type === 'INCOME') return Briefcase
+  if (text.includes('vercel') || text.includes('subscription')) return Zap
+  if (text.includes('store') || text.includes('shop')) return ShoppingBag
+  return ShoppingBag
+}
 
+const DONUT_COLORS = ['#ff9eff', '#dc89e1', '#a569b0', '#6a4d8b', '#fce3f7']
 
+function buildDonutSegments(rows: Array<{ name: string; share: number }>) {
+  let runningOffset = 0
+  return rows.map((row) => {
+    const segment = {
+      ...row,
+      offset: -runningOffset
+    }
+    runningOffset += row.share
+    return segment
+  })
+}
 
+function formatCurrency(value: number, currencyCode: string) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currencyCode
+  }).format(value)
+}
 
+function formatDate(value: string) {
+  return new Date(value).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
+export default Dashboard

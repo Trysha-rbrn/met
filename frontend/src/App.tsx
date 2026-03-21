@@ -27,7 +27,6 @@ const baseNavItems = [
   { path: '/admin', label: 'Admin', icon: Shield, adminOnly: true },
 ]
 
-type ThemeMode = 'light' | 'dark' | 'system'
 const PREMIUM_OFFER_STORAGE_KEY = 'met_premium_offer_state'
 const ACTIVE_USAGE_STORAGE_KEY = 'met_active_usage_state'
 
@@ -58,11 +57,6 @@ const readJsonStorage = <T,>(key: string, fallback: T): T => {
 }
 
 function App() {
-  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
-    const stored = localStorage.getItem('met_theme_mode')
-    if (stored === 'light' || stored === 'dark' || stored === 'system') return stored
-    return 'system'
-  })
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [user, setUser] = useState<AuthUser | null>(null)
   const [token, setToken] = useState<string | null>(localStorage.getItem('met_token'))
@@ -71,27 +65,8 @@ function App() {
   const hadConnectionDropRef = useRef(false)
 
   useEffect(() => {
-    const media = window.matchMedia('(prefers-color-scheme: dark)')
-    const applyTheme = () => {
-      const shouldUseDark = themeMode === 'dark' || (themeMode === 'system' && media.matches)
-      if (shouldUseDark) {
-        document.documentElement.classList.add('dark')
-      } else {
-        document.documentElement.classList.remove('dark')
-      }
-    }
-
-    applyTheme()
-    localStorage.setItem('met_theme_mode', themeMode)
-
-    if (themeMode === 'system') {
-      const listener = () => applyTheme()
-      media.addEventListener('change', listener)
-      return () => media.removeEventListener('change', listener)
-    } else {
-      return undefined
-    }
-  }, [themeMode])
+    document.documentElement.classList.add('dark')
+  }, [])
 
   useEffect(() => {
     if (!user) return
@@ -266,7 +241,7 @@ function App() {
                       <Route path="/" element={<Dashboard isSidebarCollapsed={isSidebarCollapsed} userRole={user?.role || 'BASIC'} />} />
                       <Route path="/transactions" element={<TransactionsPage userRole={user?.role || 'BASIC'} />} />
                       <Route path="/categories" element={<CategoriesPage userRole={user?.role || 'BASIC'} />} />
-                      <Route path="/settings" element={<SettingsPage user={user} onUserUpdate={setUser} themeMode={themeMode} onThemeModeChange={setThemeMode} />} />
+                      <Route path="/settings" element={<SettingsPage user={user} onUserUpdate={setUser} />} />
                       <Route path="/admin" element={user?.role === 'ADMIN' ? <AdminPage /> : <NotFoundPage isAuthenticated />} />
                       <Route path="/auth" element={<Navigate to="/" replace />} />
                       <Route path="/register" element={<Navigate to="/" replace />} />

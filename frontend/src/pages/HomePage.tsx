@@ -52,6 +52,7 @@ function HomePage() {
   const monthlyExpense = safeStats.monthlyExpense ?? fallbackStats.monthlyExpense!
   const monthlyTransactions = safeStats.avgMonthlyTransactions ?? fallbackStats.avgMonthlyTransactions!
   const proPrice = useMemo(() => (isYearly ? '$9.6' : '$12'), [isYearly])
+  const primaryButtonClass = 'inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#dc89e1] to-[#ff9eff] font-extrabold text-black transition-all duration-200 hover:scale-[1.02] hover:shadow-[0_0_24px_rgba(255,158,255,0.4)]'
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#f1f5f9]">
@@ -70,7 +71,7 @@ function HomePage() {
             <Link to="/auth" className="rounded-[10px] border border-white/15 px-[18px] py-2 text-[13px] font-semibold hover:border-white/20 hover:bg-white/5">
               Sign in
             </Link>
-            <Link to="/register" className="rounded-[10px] bg-gradient-to-r from-[#dc89e1] to-[#ff9eff] px-[18px] py-2 text-[13px] font-extrabold text-black">
+            <Link to="/register" className="rounded-[10px] bg-gradient-to-r from-[#dc89e1] to-[#ff9eff] px-[18px] py-2 text-[13px] font-extrabold text-black transition-all duration-200 hover:scale-[1.02] hover:shadow-[0_0_24px_rgba(255,158,255,0.4)]">
               Get started free
             </Link>
           </div>
@@ -92,7 +93,7 @@ function HomePage() {
             Track every transaction, set smart budgets, and grow your net worth - all in one beautifully simple dashboard.
           </p>
           <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
-            <Link to="/register" className="inline-flex h-[52px] items-center justify-center rounded-xl bg-gradient-to-r from-[#dc89e1] to-[#ff9eff] px-8 text-[15px] font-extrabold text-black">
+            <Link to="/register" className={`${primaryButtonClass} h-[52px] px-8 text-[15px]`}>
               Get started free -&gt;
             </Link>
             <a href="#features" className="inline-flex h-[52px] items-center justify-center rounded-xl border border-white/15 px-8 text-[15px] font-medium text-white hover:bg-white/5">
@@ -248,7 +249,7 @@ function HomePage() {
               <PriceLine ok text="Investment tracking" />
               <PriceLine ok text="Priority support" />
             </div>
-            <Link to="/register" className="mt-8 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#dc89e1] to-[#ff9eff] py-3 text-[14px] font-extrabold text-black">
+            <Link to="/register" className={`${primaryButtonClass} mt-8 w-full py-3 text-[14px]`}>
               Start Pro trial -&gt;
             </Link>
           </div>
@@ -276,7 +277,7 @@ function HomePage() {
           <h2 className="relative z-10 text-[36px] font-extrabold leading-tight tracking-tight">Ready to take control<br />of your finances?</h2>
           <p className="relative z-10 mt-4 max-w-sm text-[15px] text-[#64748b]">Join the next generation of wealth builders today.</p>
           <div className="relative z-10 mt-10 flex flex-col items-center gap-3 sm:flex-row">
-            <Link to="/register" className="inline-flex h-[52px] items-center justify-center rounded-xl bg-gradient-to-r from-[#dc89e1] to-[#ff9eff] px-8 text-[15px] font-extrabold text-black">Get started free -&gt;</Link>
+            <Link to="/register" className={`${primaryButtonClass} h-[52px] px-8 text-[15px]`}>Get started free -&gt;</Link>
             <a href="#features" className="inline-flex h-[52px] items-center rounded-xl border border-white/15 px-8 text-[15px] font-medium text-white hover:bg-white/5">
               See how it works
             </a>
@@ -300,26 +301,26 @@ function HomePage() {
             links={[
               { label: 'Features', href: '#features' },
               { label: 'Pricing', href: '#pricing' },
-              { label: 'Changelog', href: '#' },
-              { label: 'Roadmap', href: '#' }
+              { label: 'Reviews', href: '#testimonials' },
+              { label: 'Get Started', href: '/register' }
             ]}
           />
           <FooterColumn
             title="Company"
             links={[
-              { label: 'About', href: '#' },
-              { label: 'Blog', href: '#' },
-              { label: 'Careers', href: '#' },
-              { label: 'Press', href: '#' }
+              { label: 'Sign In', href: '/auth' },
+              { label: 'Create Account', href: '/register' },
+              { label: 'Dashboard', href: '/auth' },
+              { label: 'Support', href: 'mailto:support@met.app' }
             ]}
           />
           <FooterColumn
             title="Legal"
             links={[
-              { label: 'Privacy', href: '#' },
-              { label: 'Terms', href: '#' },
-              { label: 'Security', href: '#' },
-              { label: 'Cookies', href: '#' }
+              { label: 'Privacy', href: '/auth' },
+              { label: 'Terms', href: '/auth' },
+              { label: 'Security', href: '/auth' },
+              { label: 'Status', href: '/auth' }
             ]}
           />
         </div>
@@ -435,7 +436,7 @@ function FooterColumn({ title, links }: { title: string; links: Array<{ label: s
       <h4 className="text-[10px] font-extrabold uppercase tracking-widest text-[#f1f5f9]">{title}</h4>
       <div className="flex flex-col gap-2.5 text-[13px] text-[#64748b]">
         {links.map((link) => (
-          <a key={link.label} href={link.href} className="hover:text-[#ff9eff]">{link.label}</a>
+          <a key={link.label} href={link.href} className="transition-colors hover:text-[#ff9eff]">{link.label}</a>
         ))}
       </div>
     </div>

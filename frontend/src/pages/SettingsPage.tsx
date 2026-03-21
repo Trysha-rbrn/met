@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { AlertCircle, ArrowRight, ChevronDown, Coins, DatabaseZap, Gem, KeyRound, Palette, Trash2, User } from 'lucide-react'
+import { AlertCircle, ArrowRight, ChevronDown, Coins, DatabaseZap, Gem, KeyRound, Trash2, User } from 'lucide-react'
 import * as api from '../api/authApi'
 import * as dataTransferApi from '../api/dataTransferApi'
 import type { AuthUser, SubscriptionSummary } from '../api/authApi'
@@ -9,16 +9,12 @@ import { extractApiError, notify } from '../lib/toast'
 import { CURRENCIES, type CurrencyCode } from '../lib/currencies'
 import PremiumComparisonModal from '../components/PremiumComparisonModal'
 
-type ThemeMode = 'light' | 'dark' | 'system'
-
 interface SettingsPageProps {
   user: AuthUser | null
   onUserUpdate: (user: AuthUser) => void
-  themeMode: ThemeMode
-  onThemeModeChange: (mode: ThemeMode) => void
 }
 
-function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: SettingsPageProps) {
+function SettingsPage({ user, onUserUpdate }: SettingsPageProps) {
   const [name, setName] = useState(user?.name || '')
   const [currency, setCurrency] = useState<CurrencyCode>(user?.preferredCurrency || 'USD')
   const [currentPassword, setCurrentPassword] = useState('')
@@ -39,8 +35,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
   const didHydrateRef = useRef(false)
   const lastSavedRef = useRef({
     name: user?.name || '',
-    currency: (user?.preferredCurrency || 'USD') as CurrencyCode,
-    theme: themeMode as ThemeMode
+    currency: (user?.preferredCurrency || 'USD') as CurrencyCode
   })
   const lastPasswordAttemptRef = useRef('')
 
@@ -101,8 +96,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
     const nextName = name.trim()
     const hasProfileChanges =
       nextName !== (lastSavedRef.current.name || '') ||
-      currency !== lastSavedRef.current.currency ||
-      themeMode !== lastSavedRef.current.theme
+      currency !== lastSavedRef.current.currency
 
     if (!hasProfileChanges) return
 
@@ -115,7 +109,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
         })
         onUserUpdate(updatedUser)
         localStorage.setItem('met_currency', currency)
-        lastSavedRef.current = { name: updatedUser.name || '', currency, theme: themeMode }
+        lastSavedRef.current = { name: updatedUser.name || '', currency }
         notify.success('Settings saved.')
       } catch (error: unknown) {
         notify.error(extractApiError(error, 'Failed to save settings.'))
@@ -125,7 +119,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
     }, 700)
 
     return () => window.clearTimeout(timer)
-  }, [name, currency, themeMode, onUserUpdate])
+  }, [name, currency, onUserUpdate])
 
   useEffect(() => {
     if (!currentPassword && !newPassword) return
@@ -152,10 +146,6 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
 
     return () => window.clearTimeout(timer)
   }, [currentPassword, newPassword])
-
-  const handleThemeModeChange = (mode: ThemeMode) => {
-    onThemeModeChange(mode)
-  }
 
   const handleBenchmarkPreferenceChange = async (nextOptOut: boolean) => {
     setBenchmarkOptOut(nextOptOut)
@@ -297,7 +287,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
             <CollapsibleHeader
               icon={User}
               title="Profile"
-              subtitle="Core identity, default currency, and appearance settings."
+              subtitle="Core identity and default currency settings."
               open={openSection === 'profile'}
               onToggle={() => setOpenSection(openSection === 'profile' ? 'security' : 'profile')}
             />
@@ -313,16 +303,6 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                   <Coins size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <select id="settings-currency" value={currency} onChange={(e) => setCurrency(e.target.value as CurrencyCode)} className="h-12 w-full rounded-xl border border-white/12 bg-white/5 pl-9 pr-4 text-slate-100 outline-none transition focus:border-[#ff9eff]/45 focus:ring-4 focus:ring-[#ff9eff]/15">
                     {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{`${c.symbol} - ${c.name} (${c.code})`}</option>)}
-                  </select>
-                </div>
-              </Field>
-              <Field label="Theme mode" htmlFor="settings-theme">
-                <div className="relative">
-                  <Palette size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <select id="settings-theme" value={themeMode} onChange={(e) => handleThemeModeChange(e.target.value as ThemeMode)} className="h-12 w-full rounded-xl border border-white/12 bg-white/5 pl-9 pr-4 text-slate-100 outline-none transition focus:border-[#ff9eff]/45 focus:ring-4 focus:ring-[#ff9eff]/15">
-                    <option value="system">System</option>
-                    <option value="light">Light</option>
-                    <option value="dark">Dark</option>
                   </select>
                 </div>
               </Field>
