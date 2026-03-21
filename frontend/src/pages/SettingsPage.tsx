@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { AlertCircle, ArrowRight, Coins, DatabaseZap, Gem, KeyRound, Palette, Trash2, User } from 'lucide-react'
+import { AlertCircle, ArrowRight, ChevronDown, Coins, DatabaseZap, Gem, KeyRound, Palette, Trash2, User } from 'lucide-react'
 import * as api from '../api/authApi'
 import * as dataTransferApi from '../api/dataTransferApi'
 import type { AuthUser, SubscriptionSummary } from '../api/authApi'
@@ -35,6 +35,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
   const [isLoadingSubscription, setIsLoadingSubscription] = useState(false)
   const [isSubmittingSubscription, setIsSubmittingSubscription] = useState(false)
   const [showPremiumComparisonModal, setShowPremiumComparisonModal] = useState(false)
+  const [openSection, setOpenSection] = useState<'profile' | 'security' | 'subscription' | 'data' | 'danger'>('profile')
   const didHydrateRef = useRef(false)
   const lastSavedRef = useRef({
     name: user?.name || '',
@@ -293,8 +294,14 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
 
         <main className="space-y-6">
           <section id="profile" className="met-card met-card-hover rounded-2xl p-6 md:p-8">
-            <SectionHeader icon={User} title="Profile & Preferences" subtitle="Core identity, default currency, and appearance settings." />
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <CollapsibleHeader
+              icon={User}
+              title="Profile"
+              subtitle="Core identity, default currency, and appearance settings."
+              open={openSection === 'profile'}
+              onToggle={() => setOpenSection(openSection === 'profile' ? 'security' : 'profile')}
+            />
+            {openSection === 'profile' ? <div className="mt-6 grid gap-4 md:grid-cols-2">
               <Field label="Display name" htmlFor="settings-display-name">
                 <input id="settings-display-name" type="text" autoComplete="name" placeholder={user?.name || 'Enter your display name'} value={name} onChange={(e) => setName(e.target.value)} className="h-12 w-full rounded-xl border border-white/12 bg-white/5 px-4 text-slate-100 outline-none transition focus:border-[#ff9eff]/45 focus:ring-4 focus:ring-[#ff9eff]/15" />
               </Field>
@@ -319,12 +326,18 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                   </select>
                 </div>
               </Field>
-            </div>
+            </div> : null}
           </section>
 
           <section id="security" className="met-card met-card-hover rounded-2xl p-6 md:p-8">
-            <SectionHeader icon={KeyRound} title="Security & Privacy" subtitle="Password rotation and benchmarking privacy controls." />
-            <div className="mt-6 grid gap-4 lg:grid-cols-2">
+            <CollapsibleHeader
+              icon={KeyRound}
+              title="Security"
+              subtitle="Password rotation and benchmarking privacy controls."
+              open={openSection === 'security'}
+              onToggle={() => setOpenSection(openSection === 'security' ? 'subscription' : 'security')}
+            />
+            {openSection === 'security' ? <div className="mt-6 grid gap-4 lg:grid-cols-2">
               <div className="rounded-2xl border border-white/12 bg-white/5 p-4">
                 <p className="text-sm font-bold text-slate-100">Password Update</p>
                 <p className="mt-1 text-xs text-slate-400">Enter current + new password. Save runs automatically after brief pause.</p>
@@ -342,12 +355,18 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                   <input type="checkbox" checked={benchmarkOptOut} onChange={(e) => void handleBenchmarkPreferenceChange(e.target.checked)} className="h-4 w-4" />
                 </label>
               </div>
-            </div>
+            </div> : null}
           </section>
 
           <section id="subscription" className="met-card met-card-hover rounded-2xl p-6 md:p-8">
-            <SectionHeader icon={Gem} title="Subscription" subtitle="Modernized premium presentation with clear status and lifecycle controls." />
-            {isLoadingSubscription ? (
+            <CollapsibleHeader
+              icon={Gem}
+              title="Subscription"
+              subtitle="Plan status and lifecycle controls."
+              open={openSection === 'subscription'}
+              onToggle={() => setOpenSection(openSection === 'subscription' ? 'data' : 'subscription')}
+            />
+            {openSection !== 'subscription' ? null : isLoadingSubscription ? (
               <p className="mt-6 text-sm text-slate-400">Loading subscription...</p>
             ) : user?.role === 'ADMIN' ? (
               <p className="mt-6 rounded-xl border border-white/12 bg-white/5 px-4 py-3 text-sm font-medium text-slate-300">Admin accounts already include premium capabilities. Billing lifecycle controls are intentionally disabled.</p>
@@ -402,7 +421,14 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
           </section>
 
           <section id="data" className="met-card met-card-hover rounded-2xl p-6 md:p-8">
-            <SectionHeader icon={DatabaseZap} title="Data Activity" subtitle="Import/export audit trail visible to the user for transparency." />
+            <CollapsibleHeader
+              icon={DatabaseZap}
+              title="Data Activity"
+              subtitle="Import/export audit trail visible to the user for transparency."
+              open={openSection === 'data'}
+              onToggle={() => setOpenSection(openSection === 'data' ? 'danger' : 'data')}
+            />
+            {openSection === 'data' ? <>
             <div className="mt-6 rounded-xl border border-white/12 bg-white/5">
               {transferLogs.length === 0 ? (
                 <p className="p-4 text-sm text-slate-400">No import/export activity yet.</p>
@@ -410,7 +436,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                 <div className="divide-y">
                   {transferLogs.slice(0, 10).map((log) => (
                     <div key={log.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                      <p className="text-sm font-semibold">{log.action} • {log.format}<span className="ml-2 text-xs text-slate-400">Rows: {log.rows}</span></p>
+                      <p className="text-sm font-semibold">{log.action} - {log.format}<span className="ml-2 text-xs text-slate-400">Rows: {log.rows}</span></p>
                       <p className="text-xs text-slate-400">{new Date(log.createdAt).toLocaleString()}</p>
                     </div>
                   ))}
@@ -421,11 +447,18 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
               <AlertCircle size={14} />
               Settings are auto-saved and confirmation appears via toast notifications.
             </p>
+            </> : null}
           </section>
 
           <section id="danger" className="rounded-2xl border border-rose-400/35 bg-rose-500/10 p-6 md:p-8">
-            <SectionHeader icon={Trash2} title="Danger Zone" subtitle="Sensitive operations protected by password confirmation." />
-            <div className="mt-6 grid gap-4 lg:grid-cols-2">
+            <CollapsibleHeader
+              icon={Trash2}
+              title="Danger Zone"
+              subtitle="Sensitive operations protected by password confirmation."
+              open={openSection === 'danger'}
+              onToggle={() => setOpenSection(openSection === 'danger' ? 'profile' : 'danger')}
+            />
+            {openSection === 'danger' ? <div className="mt-6 grid gap-4 lg:grid-cols-2">
               <form onSubmit={handleResetData} className="rounded-2xl border border-[#ff9eff]/35 bg-white/5 p-4">
                 <input type="text" name="username" autoComplete="username" value={user?.email || ''} readOnly tabIndex={-1} aria-hidden="true" className="sr-only" />
                 <p className="flex items-center gap-2 text-sm font-bold text-slate-100"><DatabaseZap size={16} />Reset Financial Data</p>
@@ -441,6 +474,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                 <button type="submit" className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 font-bold text-white transition hover:bg-rose-700"><Trash2 size={16} />Delete Account</button>
               </form>
             </div>
+            : null}
           </section>
         </main>
       </div>
@@ -470,6 +504,25 @@ const SectionHeader = ({ icon: Icon, title, subtitle }: { icon: typeof User; tit
     </div>
     <p className="mt-1 text-[11px] text-slate-400">{subtitle}</p>
   </div>
+)
+
+const CollapsibleHeader = ({
+  icon,
+  title,
+  subtitle,
+  open,
+  onToggle
+}: {
+  icon: typeof User
+  title: string
+  subtitle: string
+  open: boolean
+  onToggle: () => void
+}) => (
+  <button type="button" onClick={onToggle} className="flex w-full items-center justify-between text-left">
+    <SectionHeader icon={icon} title={title} subtitle={subtitle} />
+    <ChevronDown size={16} className={`text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+  </button>
 )
 
 const Field = ({ label, htmlFor, children }: { label: string; htmlFor: string; children: ReactNode }) => (
