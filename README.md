@@ -150,6 +150,21 @@ Defined in `.github/workflows`:
 - `security.yml` - npm audit + CodeQL
 - `docker.yml` - Docker image build (and push to GHCR on `main`)
 - `docs.yml` - auto-generated docs artifact
+- `post-deploy-smoke.yml` - post-push Render health and CORS smoke checks
+- `uptime-monitor.yml` - scheduled backend uptime monitor with GitHub issue alerting
+
+## Deployment Automation Setup
+
+To enable smoke tests and uptime alerting, configure repository secrets in GitHub:
+
+- `RENDER_HEALTH_URL` (example: `https://ekonomija-backend.onrender.com/health`)
+- `RENDER_API_BASE_URL` (example: `https://ekonomija-backend.onrender.com/api`)
+- `FRONTEND_ORIGIN` (example: `https://met-five.vercel.app`)
+
+For frontend preview deployments, `frontend/src/api/baseUrl.ts` now supports:
+
+- `VITE_API_BASE_URL` (preferred explicit API base for build envs)
+- `VITE_VERCEL_FALLBACK_API_BASE_URL` (optional fallback for `*.vercel.app` hosts)
 
 ## Public Repository Readiness Checklist
 

@@ -1,0 +1,125 @@
+name: Uptime Monitor
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    outputs:
+      healthy: ${{ steps.check.outputs.healthy }}
+      details: ${{ steps.check.outputs.details }}
+    steps:
+      - name: Check backend health endpoint
+        id: check
+        env:
+          RENDER_HEALTH_URL: ${{ secrets.RENDER_HEALTH_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${RENDER_HEALTH_URL}" ]; then
+            echo "healthy=false" >> "$GITHUB_OUTPUT"
+            echo "details=Missing RENDER_HEALTH_URL secret." >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          status=$(curl -sS -o /tmp/health-body.txt -w "%{http_code}" "$RENDER_HEALTH_URL" || true)
+          body=$(tr -d '\n' < /tmp/health-body.txt | head -c 500)
+
+          if [ "$status" = "200" ]; then
+            echo "healthy=true" >> "$GITHUB_OUTPUT"
+            echo "details=Health check OK (200)." >> "$GITHUB_OUTPUT"
+          else
+            echo "healthy=false" >> "$GITHUB_OUTPUT"
+            echo "details=Health check failed with status ${status}. Body: ${body}" >> "$GITHUB_OUTPUT"
+          fi
+
+  alert:
+    runs-on: ubuntu-latest
+    needs: monitor
+    steps:
+      - name: Open or update uptime alert issue on failure
+        if: needs.monitor.outputs.healthy != 'true'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const owner = context.repo.owner
+            const repo = context.repo.repo
+            const title = 'Uptime alert: backend healthcheck failing'
+            const details = `${{ toJson(needs.monitor.outputs.details) }}`
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`
+
+            const issues = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: 'open',
+              per_page: 100
+            })
+
+            const existing = issues.data.find(i => i.title === title)
+            const body = [
+              'Backend healthcheck is failing.',
+              '',
+              `Details: ${details}`,
+              `Workflow run: ${runUrl}`,
+              `Timestamp: ${new Date().toISOString()}`
+            ].join('\n')
+
+            if (!existing) {
+              await github.rest.issues.create({
+                owner,
+                repo,
+                title,
+                body,
+                labels: ['ops', 'uptime-alert']
+              })
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: existing.number,
+                body
+              })
+            }
+
+      - name: Close uptime alert issue on recovery
+        if: needs.monitor.outputs.healthy == 'true'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const owner = context.repo.owner
+            const repo = context.repo.repo
+            const title = 'Uptime alert: backend healthcheck failing'
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`
+
+            const issues = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: 'open',
+              per_page: 100
+            })
+
+            const existing = issues.data.find(i => i.title === title)
+            if (!existing) return
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: existing.number,
+              body: `Healthcheck recovered. Closing alert. Workflow run: ${runUrl}`
+            })
+
+            await github.rest.issues.update({
+              owner,
+              repo,
+              issue_number: existing.number,
+              state: 'closed'
+            })
