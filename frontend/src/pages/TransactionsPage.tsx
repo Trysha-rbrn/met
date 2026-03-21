@@ -913,7 +913,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                   <label className="relative block w-full sm:min-w-80">
-                    <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-amber-700 dark:text-amber-300" />
+                    <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#ff9eff]" />
                     <input
                       type="text"
                       value={searchTerm}
@@ -937,7 +937,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
             <div className="met-card met-card-hover rounded-[24px] p-4">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="space-y-1">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/5 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-300">
                     <BookmarkPlus size={13} />
                     SMART VIEWS
                   </div>
@@ -947,7 +947,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
                 <button
                   type="button"
                   onClick={handleSaveCurrentFilter}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-800 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-bold text-slate-200 transition hover:bg-white/10"
                 >
                   <BookmarkPlus size={15} />
                   Save Current View
@@ -955,7 +955,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 {savedFilters.length === 0 ? (
-                  <p className="text-sm text-slate-500 dark:text-slate-400">No saved views yet. Build one with search or type filter, then save it.</p>
+                  <p className="text-sm text-slate-400">No saved views yet. Build one with search or type filter, then save it.</p>
                 ) : (
                   savedFilters.map((filter) => (
                     <div
@@ -980,7 +980,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
                       <button
                         type="button"
                         onClick={() => handleDeleteSavedFilter(filter.id)}
-                        className="rounded-full p-0.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+                        className="rounded-full p-0.5 text-slate-400 transition hover:bg-white/10 hover:text-slate-200"
                         aria-label={`Delete ${filter.name}`}
                       >
                         <X size={13} />
@@ -1135,7 +1135,7 @@ const TransactionRow = ({
             </span>
           )}
           {isRecurring && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
+            <span className="inline-flex items-center gap-1 rounded-full border border-[#ff9eff]/45 bg-[#ff9eff]/14 px-2 py-0.5 text-[11px] font-semibold text-[#ffc8ff]">
               <Repeat2 size={11} />
               Recurring
             </span>
@@ -1156,7 +1156,7 @@ const TransactionRow = ({
     </td>
     <td className="p-4 md:p-6 w-24">
       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        {onSplit ? <button onClick={onSplit} className="p-2 text-muted-foreground hover:text-amber-600 dark:hover:text-amber-300"><Scissors size={16} /></button> : null}
+        {onSplit ? <button onClick={onSplit} className="p-2 text-muted-foreground hover:text-[#ff9eff]"><Scissors size={16} /></button> : null}
         <button onClick={onEdit} className="p-2 text-muted-foreground hover:text-foreground"><Edit2 size={16} /></button>
         <button onClick={onDelete} className="p-2 text-muted-foreground hover:text-destructive"><Trash2 size={16} /></button>
       </div>
@@ -1223,7 +1223,7 @@ const MobileTransactionCard = ({
             </span>
           )}
           {isRecurring && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
+            <span className="inline-flex items-center gap-1 rounded-full border border-[#ff9eff]/45 bg-[#ff9eff]/14 px-2 py-0.5 text-[10px] font-semibold text-[#ffc8ff]">
               <Repeat2 size={10} />
               Recurring
             </span>
@@ -1243,7 +1243,7 @@ const MobileTransactionCard = ({
       <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
       <div className="flex items-center gap-2">
         {onSplit ? (
-          <button onClick={onSplit} className="h-11 w-11 rounded-lg border text-muted-foreground hover:text-amber-600 dark:hover:text-amber-300 flex items-center justify-center">
+          <button onClick={onSplit} className="h-11 w-11 rounded-lg border text-muted-foreground hover:text-[#ff9eff] flex items-center justify-center">
             <Scissors size={15} />
           </button>
         ) : null}
@@ -1291,7 +1291,7 @@ const PremiumSignal = ({
   <div className="rounded-2xl border border-white/12 bg-white/5 px-3 py-3 text-slate-100">
     <div className="flex items-center gap-2">
       <Icon size={15} className="text-[#ff9eff]" />
-      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{label}</span>
+      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{label}</span>
     </div>
     <p className="mt-2 text-sm font-black tracking-tight">{value}</p>
   </div>

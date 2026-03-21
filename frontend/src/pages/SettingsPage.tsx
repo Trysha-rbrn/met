@@ -389,7 +389,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                         <option value="YEARLY">Yearly</option>
                       </select>
                       <input id="settings-premium-code" name="premiumCode" type="text" autoComplete="off" value={premiumCode} onChange={(e) => setPremiumCode(e.target.value)} placeholder="Optional promo code" className="h-12 rounded-xl border border-border bg-background px-4 outline-none transition focus:ring-4 focus:ring-primary/15" />
-                      <button type="submit" disabled={isSubmittingSubscription} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-5 font-black text-white transition hover:opacity-95 disabled:opacity-60">
+                      <button type="submit" disabled={isSubmittingSubscription} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#ff9eff] via-[#dc89e1] to-[#a569b0] px-5 font-black text-[#1c0d32] transition hover:opacity-95 disabled:opacity-60">
                         {subscription?.status === 'PENDING' ? 'Request Again' : 'Upgrade'}
                         <ArrowRight size={16} />
                       </button>
@@ -435,7 +435,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
             </p>
           </section>
 
-          <section id="danger" className="rounded-2xl border border-rose-200/70 bg-rose-50/35 p-6 md:p-8 dark:border-rose-500/35 dark:bg-rose-950/20">
+          <section id="danger" className="rounded-2xl border border-rose-400/35 bg-rose-500/10 p-6 md:p-8">
             <SectionHeader icon={Trash2} title="Danger Zone" subtitle="Sensitive operations protected by password confirmation." />
             <div className="mt-6 grid gap-4 lg:grid-cols-2">
               <form onSubmit={handleResetData} className="rounded-2xl border border-[#ff9eff]/35 bg-white/5 p-4">
@@ -515,7 +515,7 @@ const SubscriptionMetric = ({ label, value, description }: { label: string; valu
 )
 
 const Badge = ({ children, tone }: { children: ReactNode; tone: 'warm' | 'neutral' }) => (
-  <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${tone === 'warm' ? 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200' : 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200'}`}>{children}</span>
+  <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${tone === 'warm' ? 'border-[#ff9eff]/40 bg-[#ff9eff]/14 text-[#ffc8ff]' : 'border-white/15 bg-white/5 text-slate-300'}`}>{children}</span>
 )
 
 export default SettingsPage

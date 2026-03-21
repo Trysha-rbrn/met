@@ -234,7 +234,7 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
       <header className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
         <div className="space-y-2">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Categories</h1>
-          <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400">Manage your income and expense categories.</p>
+          <p className="text-sm sm:text-base text-slate-400">Manage your income and expense categories.</p>
         </div>
         <button 
           onClick={handleAddCategory}
@@ -268,9 +268,9 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
           </div>
 
           {budgetLoading ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400">Loading budget goals...</p>
+            <p className="text-sm text-slate-400">Loading budget goals...</p>
           ) : expenseCategoryOptions.length === 0 ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400">Create at least one expense category to start budgeting.</p>
+            <p className="text-sm text-slate-400">Create at least one expense category to start budgeting.</p>
           ) : (
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {expenseCategoryOptions.map((category) => {
@@ -280,7 +280,7 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-black tracking-tight text-slate-100">{category.name}</p>
-                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 inline-flex items-center gap-2">
+                        <p className="mt-1 text-xs text-slate-400 inline-flex items-center gap-2">
                           <CategoryIcon icon={category.icon} small />
                           Expense category
                         </p>
@@ -296,7 +296,7 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
                     </div>
                     <div className="mt-4 flex items-end justify-between gap-3">
                       <div>
-                        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Monthly target</p>
+                        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Monthly target</p>
                         <p className="mt-1 text-xl font-black tracking-tight text-slate-100">
                           {goal ? formatBudgetCurrency(goal.amount) : 'Not set'}
                         </p>
@@ -305,7 +305,7 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
                         <button
                           type="button"
                           onClick={() => handleDeleteBudgetGoal(goal)}
-                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700 transition hover:bg-rose-100 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/20"
+                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-400/35 bg-rose-500/10 px-3 py-2 text-sm font-bold text-rose-200 transition hover:bg-rose-500/15"
                         >
                           <Trash2 size={14} />
                           Remove
@@ -321,7 +321,7 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
           <div className="rounded-2xl border border-white/12 bg-white/5 p-4 space-y-4">
             <div className="space-y-1">
               <h3 className="text-base font-black tracking-tight text-slate-100">Auto-categorization rules</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">If description contains a keyword, transaction gets assigned to selected category.</p>
+              <p className="text-xs text-slate-400">If description contains a keyword, transaction gets assigned to selected category.</p>
             </div>
             <div className="grid grid-cols-1 gap-2 md:grid-cols-[1fr,1fr,auto]">
               <input
@@ -333,7 +333,7 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
               <select
                 value={newRuleCategoryId}
                 onChange={(e) => setNewRuleCategoryId(e.target.value)}
-                className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-amber-200/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:ring-amber-500/20"
+                className="min-h-11 rounded-xl border border-white/12 bg-white/5 px-3 text-sm outline-none focus:ring-4 focus:ring-[#ff9eff]/20 text-slate-100"
               >
                 <option value="">Choose category</option>
                 {categories.map((category) => (
@@ -351,7 +351,7 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
               </button>
             </div>
             {categoryRules.length === 0 ? (
-              <p className="text-xs text-slate-500 dark:text-slate-400">No rules yet.</p>
+              <p className="text-xs text-slate-400">No rules yet.</p>
             ) : (
               <div className="space-y-2">
                 {categoryRules.map((rule) => (
@@ -363,14 +363,14 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
                       <button
                         type="button"
                         onClick={() => handleToggleRule(rule)}
-                        className="rounded-lg border px-2 py-1 text-xs font-semibold hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+                        className="rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-xs font-semibold text-slate-200 hover:bg-white/10"
                       >
                         {rule.isActive ? 'Disable' : 'Enable'}
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDeleteRule(rule.id)}
-                        className="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/20"
+                        className="rounded-lg border border-rose-400/35 bg-rose-500/10 px-2 py-1 text-xs font-semibold text-rose-200 hover:bg-rose-500/15"
                       >
                         Delete
                       </button>
@@ -496,7 +496,7 @@ function CategoryItem({ category, isExpanded, onToggle, onEdit, onDelete, onSubE
         <div className="bg-white/4 pl-12 pr-4 py-2 space-y-1 border-t border-white/8">
           {category.subcategories?.map(sub => (
             <div key={sub.id} className="flex items-center justify-between py-2 group/sub">
-              <span className="text-slate-600 dark:text-slate-400 text-sm font-medium inline-flex items-center gap-2">
+              <span className="text-slate-400 text-sm font-medium inline-flex items-center gap-2">
                 <CategoryIcon icon={sub.icon} small />
                 {sub.name}
               </span>
