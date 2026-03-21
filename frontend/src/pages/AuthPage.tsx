@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import axios from 'axios'
-import { Wallet, Mail, Lock, User, ArrowRight } from 'lucide-react'
+import { Mail, Lock, User, ArrowRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import * as api from '../api/authApi'
 import type { AuthUser } from '../api/authApi'
+import MetLogo from '../components/MetLogo'
 
 interface AuthPageProps {
   onLogin: (user: AuthUser, token: string) => void
@@ -43,9 +44,9 @@ function AuthPage({ onLogin }: AuthPageProps) {
   }
 
   return (
-    <div className="h-full w-full flex items-center justify-center bg-background p-4 relative overflow-hidden">
-      {/* Background Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60rem] h-[60rem] bg-primary/15 rounded-full blur-3xl -z-10 animate-pulse" />
+    <div className="met-app-bg h-full w-full flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute top-1/2 left-[35%] -translate-x-1/2 -translate-y-1/2 w-[50rem] h-[50rem] bg-[#ff9eff]/20 rounded-full blur-3xl -z-10" />
+      <div className="absolute top-1/3 right-[15%] w-[28rem] h-[28rem] bg-[#a569b0]/20 rounded-full blur-3xl -z-10" />
 
       <motion.div 
         initial={{ opacity: 0, y: 50 }}
@@ -53,19 +54,16 @@ function AuthPage({ onLogin }: AuthPageProps) {
         transition={{ duration: 0.5, ease: "easeInOut" }}
         className="w-full max-w-md"
       >
-        <div className="bg-card/80 dark:bg-card/60 backdrop-blur-xl rounded-2xl border shadow-2xl shadow-black/5">
+        <div className="met-card rounded-2xl shadow-2xl shadow-black/30">
           <div className="p-8 lg:p-12">
             <div className="flex flex-col items-center text-center mb-8">
-              <motion.div 
-                className="p-3 bg-gradient-to-tr from-[#a569b0] to-[#6a4d8b] rounded-xl text-white shadow-lg shadow-[#a569b0]/30 mb-5"
-                whileHover={{ scale: 1.1, rotate: 10 }}
-              >
-                <Wallet size={28} />
+              <motion.div whileHover={{ scale: 1.03 }} className="mb-5">
+                <MetLogo />
               </motion.div>
-              <h1 className="text-3xl font-black tracking-tighter mb-1">
+              <h1 className="text-3xl font-black tracking-tighter mb-1 text-slate-100">
                 {isLogin ? 'Welcome Back' : 'Create Account'}
               </h1>
-              <p className="text-muted-foreground font-medium">
+              <p className="text-slate-400 font-medium">
                 {isLogin ? 'Enter your details to sign in' : 'Begin your financial journey'}
               </p>
             </div>
@@ -81,10 +79,10 @@ function AuthPage({ onLogin }: AuthPageProps) {
                 </div>
               )}
 
-              <motion.button 
+              <motion.button
                 type="submit" 
                 disabled={loading}
-                className="w-full bg-primary text-primary-foreground font-bold py-3.5 rounded-lg transition-all shadow-lg shadow-primary/20 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 group"
+                className="w-full bg-[#ff9eff] text-[#1c0d32] font-bold py-3.5 rounded-lg transition-all shadow-lg shadow-[#ff9eff]/25 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 group"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -97,10 +95,10 @@ function AuthPage({ onLogin }: AuthPageProps) {
               </motion.button>
             </form>
           </div>
-          <div className="p-6 border-t bg-muted/30 text-center">
+          <div className="p-6 border-t border-white/10 bg-black/10 text-center">
             <button 
               onClick={() => { setIsLogin(!isLogin); setError(''); }}
-              className="text-muted-foreground font-bold hover:text-foreground transition-colors text-sm"
+              className="text-slate-400 font-bold hover:text-slate-100 transition-colors text-sm"
             >
               {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </button>
@@ -124,7 +122,7 @@ interface AuthInputProps {
 
 const AuthInput = ({ id, name, type, autoComplete, placeholder, value, onChange, icon: Icon }: AuthInputProps) => (
   <div className="relative group">
-    <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={20} />
+    <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[#ff9eff] transition-colors" size={20} />
     <input 
       id={id}
       name={name}
@@ -133,7 +131,7 @@ const AuthInput = ({ id, name, type, autoComplete, placeholder, value, onChange,
       placeholder={placeholder} 
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full pl-12 pr-4 py-3 bg-muted/50 border-2 border-transparent focus:border-primary/50 rounded-lg outline-none transition-all font-semibold"
+      className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 focus:border-[#ff9eff]/50 rounded-lg outline-none transition-all font-semibold text-slate-100 placeholder:text-slate-500"
       required
     />
   </div>

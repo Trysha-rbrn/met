@@ -197,7 +197,7 @@ function AdminPage() {
   return (
     <div className="space-y-6">
       <header className="overflow-hidden rounded-[28px] border border-white/55 bg-[linear-gradient(120deg,rgba(15,23,42,0.97),rgba(30,41,59,0.95),rgba(30,64,175,0.82))] px-6 py-6 text-white shadow-xl sm:px-8">
-        <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-300">Admin Console</p>
+        <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-400">Admin Console</p>
         <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="inline-flex items-center gap-2 text-3xl font-black tracking-tight sm:text-4xl">
@@ -216,7 +216,7 @@ function AdminPage() {
         </div>
       </header>
 
-      <section className="rounded-2xl border bg-card p-3 sm:p-4">
+      <section className="met-card rounded-2xl p-3 sm:p-4">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={Activity}>Overview</TabButton>
           <TabButton active={activeTab === 'users'} onClick={() => setActiveTab('users')} icon={Users}>Users</TabButton>
@@ -230,7 +230,7 @@ function AdminPage() {
           <MetricCard title="Total users" value={String(summary.users)} description="All visible users in current query scope." />
           <MetricCard title="Premium users" value={String(summary.premium)} description="Accounts with active premium role." />
           <MetricCard title="Active promo codes" value={String(summary.activePromoCodes)} description={`${summary.promoCodes} total promo codes configured.`} />
-          <div className="rounded-2xl border bg-card p-5 lg:col-span-2">
+          <div className="met-card rounded-2xl p-5 lg:col-span-2">
             <p className="text-sm font-bold text-foreground">Recent Users</p>
             <div className="mt-3 space-y-2">
               {users.slice(0, 5).map((user) => (
@@ -242,7 +242,7 @@ function AdminPage() {
               {users.length === 0 && <p className="text-sm text-muted-foreground">No users found.</p>}
             </div>
           </div>
-          <div className="rounded-2xl border bg-card p-5">
+          <div className="met-card rounded-2xl p-5">
             <p className="text-sm font-bold text-foreground">Recent Audit Events</p>
             <div className="mt-3 space-y-2">
               {logs.slice(0, 5).map((log) => (
@@ -259,7 +259,7 @@ function AdminPage() {
 
       {activeTab === 'users' && (
         <>
-          <section className="rounded-2xl border bg-card p-4 sm:p-5">
+          <section className="met-card rounded-2xl p-4 sm:p-5">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
               <label className="md:col-span-2 flex items-center gap-2 rounded-xl border bg-background px-3">
                 <Search size={16} className="text-muted-foreground" />
@@ -284,7 +284,7 @@ function AdminPage() {
           </section>
 
           <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-            <section className="rounded-2xl border bg-card">
+            <section className="met-card rounded-2xl">
               <div className="border-b px-4 py-3"><p className="font-bold inline-flex items-center gap-2"><Users size={16} /> User List</p></div>
               <div className="max-h-[520px] overflow-auto p-2">
                 {users.length === 0 && <p className="p-4 text-sm text-muted-foreground">No users found.</p>}
@@ -302,7 +302,7 @@ function AdminPage() {
             </section>
 
             <section className="space-y-6 xl:col-span-2">
-              <article className="rounded-2xl border bg-card p-4 sm:p-5">
+              <article className="met-card rounded-2xl p-4 sm:p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <h2 className="text-lg font-black tracking-tight">Selected User</h2>
                   <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
@@ -339,7 +339,7 @@ function AdminPage() {
       )}
 
       {activeTab === 'promo' && (
-        <section className="rounded-2xl border bg-card p-4 sm:p-5 space-y-3">
+        <section className="met-card rounded-2xl p-4 sm:p-5 space-y-3">
           <div className="flex items-center gap-2">
             <TicketPercent size={18} className="text-primary" />
             <h2 className="text-lg font-black tracking-tight">Premium Promo Codes</h2>
@@ -369,7 +369,7 @@ function AdminPage() {
       )}
 
       {activeTab === 'audit' && (
-        <article className="rounded-2xl border bg-card p-4 sm:p-5">
+        <article className="met-card rounded-2xl p-4 sm:p-5">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-black tracking-tight inline-flex items-center gap-2">
               <Activity size={18} className="text-primary" />
@@ -398,7 +398,7 @@ function AdminPage() {
 
 function MetricCard({ title, value, description }: { title: string; value: string; description: string }) {
   return (
-    <div className="rounded-2xl border bg-card p-5">
+    <div className="met-card rounded-2xl p-5">
       <p className="text-sm font-semibold text-muted-foreground">{title}</p>
       <p className="mt-2 text-3xl font-black tracking-tight">{value}</p>
       <p className="mt-2 text-xs text-muted-foreground">{description}</p>
@@ -440,11 +440,12 @@ function TabButton({
 
 function StatPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-center">
-      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">{label}</p>
+    <div className="rounded-xl border border-[#ff9eff]/30 bg-[#ff9eff]/10 px-3 py-2 text-center">
+      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{label}</p>
       <p className="mt-1 text-sm font-black text-white">{value}</p>
     </div>
   )
 }
 
 export default AdminPage
+

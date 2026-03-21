@@ -286,7 +286,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[260px,minmax(0,1fr)]">
         <aside className="space-y-4 xl:sticky xl:top-24 xl:h-fit">
-          <div className="rounded-2xl border bg-card p-4">
+          <div className="met-card met-card-hover rounded-2xl p-4">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-muted-foreground">Quick Navigation</p>
             <nav className="mt-3 space-y-1.5">
               <SettingsNavLink href="#profile" label="Profile & Preferences" icon={User} />
@@ -297,14 +297,14 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
             </nav>
           </div>
 
-          <div className="rounded-2xl border bg-card p-4">
+          <div className="met-card met-card-hover rounded-2xl p-4">
             <p className="text-sm font-bold text-foreground">Save Status</p>
             <p className="mt-2 text-xs text-muted-foreground">{saveStateLabel}</p>
           </div>
         </aside>
 
         <main className="space-y-6">
-          <section id="profile" className="rounded-2xl border bg-card p-6 md:p-8">
+          <section id="profile" className="met-card met-card-hover rounded-2xl p-6 md:p-8">
             <SectionHeader icon={User} title="Profile & Preferences" subtitle="Core identity, default currency, and appearance settings." />
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               <Field label="Display name" htmlFor="settings-display-name">
@@ -334,7 +334,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
             </div>
           </section>
 
-          <section id="security" className="rounded-2xl border bg-card p-6 md:p-8">
+          <section id="security" className="met-card met-card-hover rounded-2xl p-6 md:p-8">
             <SectionHeader icon={KeyRound} title="Security & Privacy" subtitle="Password rotation and benchmarking privacy controls." />
             <div className="mt-6 grid gap-4 lg:grid-cols-2">
               <div className="rounded-2xl border bg-background p-4">
@@ -357,12 +357,12 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
             </div>
           </section>
 
-          <section id="subscription" className="rounded-2xl border bg-card p-6 md:p-8">
+          <section id="subscription" className="met-card met-card-hover rounded-2xl p-6 md:p-8">
             <SectionHeader icon={Gem} title="Subscription" subtitle="Modernized premium presentation with clear status and lifecycle controls." />
             {isLoadingSubscription ? (
               <p className="mt-6 text-sm text-muted-foreground">Loading subscription...</p>
             ) : user?.role === 'ADMIN' ? (
-              <p className="mt-6 rounded-xl border border-slate-200/80 bg-slate-50/70 px-4 py-3 text-sm font-medium text-slate-900 dark:border-slate-700/80 dark:bg-slate-800/35 dark:text-slate-100">Admin accounts already include premium capabilities. Billing lifecycle controls are intentionally disabled.</p>
+              <p className="mt-6 rounded-xl border border-white/12 bg-white/5 px-4 py-3 text-sm font-medium text-slate-300">Admin accounts already include premium capabilities. Billing lifecycle controls are intentionally disabled.</p>
             ) : (
               <div className="mt-6 space-y-4">
                 <div className="rounded-2xl border border-border bg-background p-5">
@@ -380,8 +380,8 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                 {!isPremiumUser ? (
                   <form onSubmit={handleActivatePremium} className="rounded-2xl border border-border bg-background p-5">
                     <div className="mb-4">
-                      <p className="text-lg font-black tracking-tight text-slate-900 dark:text-slate-100">Upgrade Path</p>
-                      <p className="text-sm text-slate-600 dark:text-slate-300">Choose cadence and optionally apply a promo code.</p>
+                      <p className="text-lg font-black tracking-tight text-slate-100">Upgrade Path</p>
+                      <p className="text-sm text-slate-300">Choose cadence and optionally apply a promo code.</p>
                     </div>
                     <div className="grid gap-3 lg:grid-cols-[minmax(0,0.8fr),minmax(0,1.2fr),auto]">
                       <select value={billingInterval} onChange={(e) => setBillingInterval(e.target.value as 'MONTHLY' | 'YEARLY')} className="h-12 rounded-xl border border-border bg-background px-4 outline-none transition focus:ring-4 focus:ring-primary/15">
@@ -397,13 +397,13 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                   </form>
                 ) : (
                   <div className="rounded-2xl border border-border bg-background p-5">
-                    <p className="text-lg font-black tracking-tight text-slate-900 dark:text-slate-100">Membership Actions</p>
-                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Control renewal and downgrade behavior with explicit actions.</p>
+                    <p className="text-lg font-black tracking-tight text-slate-100">Membership Actions</p>
+                    <p className="mt-1 text-sm text-slate-300">Control renewal and downgrade behavior with explicit actions.</p>
                     <div className="mt-4 grid gap-2 sm:grid-cols-2">
                       {subscription?.cancelAtPeriodEnd ? (
                         <button type="button" onClick={handleResumeSubscription} disabled={isSubmittingSubscription} className="h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-4 font-black text-white transition hover:opacity-95 disabled:opacity-60">Resume Renewal</button>
                       ) : (
-                        <button type="button" onClick={() => handleDowngradeSubscription(false)} disabled={isSubmittingSubscription} className="h-12 rounded-xl border border-slate-300 bg-white px-4 font-bold text-slate-800 transition hover:bg-slate-50 disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800">Cancel At Period End</button>
+                        <button type="button" onClick={() => handleDowngradeSubscription(false)} disabled={isSubmittingSubscription} className="h-12 rounded-xl border border-white/15 bg-white/5 px-4 font-bold text-slate-200 transition hover:bg-white/10 disabled:opacity-60">Cancel At Period End</button>
                       )}
                       <button type="button" onClick={() => handleDowngradeSubscription(true)} disabled={isSubmittingSubscription} className="h-12 rounded-xl border border-rose-300 bg-rose-50 px-4 font-bold text-rose-700 transition hover:bg-rose-100 disabled:opacity-60">Downgrade Now</button>
                     </div>
@@ -413,7 +413,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
             )}
           </section>
 
-          <section id="data" className="rounded-2xl border bg-card p-6 md:p-8">
+          <section id="data" className="met-card met-card-hover rounded-2xl p-6 md:p-8">
             <SectionHeader icon={DatabaseZap} title="Data Activity" subtitle="Import/export audit trail visible to the user for transparency." />
             <div className="mt-6 rounded-xl border bg-background">
               {transferLogs.length === 0 ? (
@@ -438,14 +438,14 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
           <section id="danger" className="rounded-2xl border border-rose-200/70 bg-rose-50/35 p-6 md:p-8 dark:border-rose-500/35 dark:bg-rose-950/20">
             <SectionHeader icon={Trash2} title="Danger Zone" subtitle="Sensitive operations protected by password confirmation." />
             <div className="mt-6 grid gap-4 lg:grid-cols-2">
-              <form onSubmit={handleResetData} className="rounded-2xl border border-amber-300 bg-white p-4 dark:border-amber-500/35 dark:bg-slate-900/80">
+              <form onSubmit={handleResetData} className="rounded-2xl border border-[#ff9eff]/35 bg-white/5 p-4">
                 <input type="text" name="username" autoComplete="username" value={user?.email || ''} readOnly tabIndex={-1} aria-hidden="true" className="sr-only" />
                 <p className="flex items-center gap-2 text-sm font-bold text-foreground"><DatabaseZap size={16} />Reset Financial Data</p>
                 <p className="mt-1 text-xs text-muted-foreground">Deletes transactions, categories, and extra accounts while preserving the primary account.</p>
-                <input id="settings-reset-data-password" name="resetDataPassword" type="password" autoComplete="current-password" placeholder="Confirm password" value={resetDataPassword} onChange={(e) => setResetDataPassword(e.target.value)} className="mt-3 h-11 w-full rounded-xl border bg-background px-4 outline-none transition focus:ring-4 focus:ring-amber-500/20" />
-                <button type="submit" className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 font-bold text-white transition hover:bg-amber-700"><DatabaseZap size={16} />Clear User Data</button>
+                <input id="settings-reset-data-password" name="resetDataPassword" type="password" autoComplete="current-password" placeholder="Confirm password" value={resetDataPassword} onChange={(e) => setResetDataPassword(e.target.value)} className="mt-3 h-11 w-full rounded-xl border border-white/12 bg-white/5 px-4 outline-none transition focus:ring-4 focus:ring-[#ff9eff]/20" />
+                <button type="submit" className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#ff9eff] px-4 font-bold text-[#1c0d32] transition hover:opacity-90"><DatabaseZap size={16} />Clear User Data</button>
               </form>
-              <form onSubmit={handleDeleteAccount} className="rounded-2xl border border-rose-300 bg-white p-4 dark:border-rose-500/35 dark:bg-slate-900/80">
+              <form onSubmit={handleDeleteAccount} className="rounded-2xl border border-rose-400/45 bg-white/5 p-4">
                 <input type="text" name="username" autoComplete="username" value={user?.email || ''} readOnly tabIndex={-1} aria-hidden="true" className="sr-only" />
                 <p className="text-sm font-bold text-foreground">Delete Account</p>
                 <p className="mt-1 text-xs text-muted-foreground">Permanently removes your account and all related data.</p>
@@ -507,10 +507,10 @@ const MembershipChip = ({ icon: Icon, label, value }: { icon: typeof Gem; label:
 )
 
 const SubscriptionMetric = ({ label, value, description }: { label: string; value: string; description: string }) => (
-  <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-800/70">
-    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{label}</p>
-    <p className="mt-2 text-lg font-black tracking-tight text-slate-900 dark:text-slate-100">{value}</p>
-    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{description}</p>
+  <div className="rounded-xl border border-white/12 bg-white/5 p-4">
+    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{label}</p>
+    <p className="mt-2 text-lg font-black tracking-tight text-slate-100">{value}</p>
+    <p className="mt-2 text-xs text-slate-400">{description}</p>
   </div>
 )
 
@@ -519,4 +519,5 @@ const Badge = ({ children, tone }: { children: ReactNode; tone: 'warm' | 'neutra
 )
 
 export default SettingsPage
+
 

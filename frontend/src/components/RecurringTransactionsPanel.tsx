@@ -131,15 +131,15 @@ function RecurringTransactionsPanel({
 
   if (!isPremiumUser) {
     return (
-      <section className="overflow-hidden rounded-[28px] border border-dashed border-slate-300 bg-[linear-gradient(135deg,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] p-5 md:p-6 dark:border-slate-700 dark:bg-[linear-gradient(135deg,rgba(30,41,59,0.9),rgba(15,23,42,0.96))]">
+      <section className="met-card overflow-hidden rounded-[28px] p-5 md:p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-300">
               <Lock size={13} />
               LOCKED RECURRING PREVIEW
             </div>
             <h3 className="text-xl font-black tracking-tight text-slate-900 sm:text-2xl dark:text-slate-100">Recurring plans keep routine cash flow on rails.</h3>
-            <p className="max-w-2xl text-sm text-slate-600 dark:text-slate-300">
+            <p className="max-w-2xl text-sm text-slate-300">
               Premium lets you define salary, rent, subscriptions and other repeating entries once, then generate due transactions on demand.
             </p>
           </div>
@@ -154,15 +154,15 @@ function RecurringTransactionsPanel({
   }
 
   return (
-    <section className="overflow-hidden rounded-[28px] border border-amber-200/70 bg-[linear-gradient(145deg,rgba(255,248,235,0.92),rgba(255,255,255,0.98))] p-5 md:p-6 dark:border-amber-500/30 dark:bg-[linear-gradient(145deg,rgba(41,37,36,0.94),rgba(17,24,39,0.96))]">
-      <div className="flex flex-col gap-5 border-b border-amber-200/60 pb-5 lg:flex-row lg:items-end lg:justify-between dark:border-amber-500/30">
+    <section className="met-card met-card-hover overflow-hidden rounded-[28px] p-5 md:p-6">
+      <div className="flex flex-col gap-5 border-b border-white/10 pb-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#ff9eff]/35 bg-[#ff9eff]/10 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-[#ff9eff]">
             <Repeat2 size={13} />
             RECURRING ENGINE
           </div>
-          <h3 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">Routine money movement, already staged.</h3>
-          <p className="max-w-2xl text-sm text-slate-600 dark:text-slate-300">
+          <h3 className="text-2xl font-black tracking-tight text-slate-100">Routine money movement, already staged.</h3>
+          <p className="max-w-2xl text-sm text-slate-300">
             Set repeating templates for income or expenses, then push due entries into the ledger when you are ready to review them.
           </p>
         </div>
@@ -175,19 +175,19 @@ function RecurringTransactionsPanel({
       </div>
 
       <div className="mt-5 grid gap-4 xl:grid-cols-[1.2fr,0.8fr]">
-        <form onSubmit={handleSubmit} className="rounded-[24px] border border-amber-100 bg-white p-4 shadow-md shadow-amber-100/60 backdrop-blur dark:border-slate-700 dark:bg-slate-900/85 dark:shadow-none">
-          <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 md:flex-row md:items-center md:justify-between dark:border-slate-700">
+        <form onSubmit={handleSubmit} className="rounded-[24px] border border-white/12 bg-white/5 p-4 backdrop-blur">
+          <div className="flex flex-col gap-3 border-b border-white/10 pb-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-sm font-black tracking-[0.18em] text-slate-500 dark:text-slate-400">
+              <p className="text-sm font-black tracking-[0.18em] text-slate-400">
                 {editingId ? 'EDIT TEMPLATE' : 'NEW TEMPLATE'}
               </p>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Best for salary, rent, subscriptions, savings transfers or any predictable flow.</p>
+              <p className="mt-1 text-sm text-slate-300">Best for salary, rent, subscriptions, savings transfers or any predictable flow.</p>
             </div>
             <button
               type="button"
               onClick={onRunDue}
               disabled={loading || dueCount === 0}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-bold text-amber-900 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200 dark:hover:bg-amber-500/20"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-[#ff9eff]/35 bg-[#ff9eff]/10 px-4 py-2.5 text-sm font-bold text-[#ff9eff] transition hover:bg-[#ff9eff]/18 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <PlayCircle size={15} />
               Run Due Items
@@ -196,7 +196,7 @@ function RecurringTransactionsPanel({
 
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <label className="space-y-2">
-              <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Amount</span>
+              <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Amount</span>
               <input
                 type="number"
                 step="0.01"
@@ -204,16 +204,16 @@ function RecurringTransactionsPanel({
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
                 placeholder="0.00"
-                className="w-full min-h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-200/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-900 dark:focus:ring-amber-500/20"
+                className="w-full min-h-12 rounded-2xl border border-white/12 bg-white/5 px-4 text-sm outline-none transition focus:border-[#ff9eff]/55 focus:bg-white/8 focus:ring-4 focus:ring-[#ff9eff]/20 text-slate-100 placeholder:text-slate-500"
                 required
               />
             </label>
             <label className="space-y-2">
-              <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Frequency</span>
+              <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Frequency</span>
               <select
                 value={frequency}
                 onChange={(event) => setFrequency(event.target.value as RecurringFrequency)}
-                className="w-full min-h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-200/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-900 dark:focus:ring-amber-500/20"
+                className="w-full min-h-12 rounded-2xl border border-white/12 bg-white/5 px-4 text-sm font-semibold outline-none transition focus:border-[#ff9eff]/55 focus:bg-white/8 focus:ring-4 focus:ring-[#ff9eff]/20 text-slate-100"
               >
                 <option value="DAILY">Daily</option>
                 <option value="WEEKLY">Weekly</option>
@@ -221,30 +221,30 @@ function RecurringTransactionsPanel({
               </select>
             </label>
             <label className="space-y-2">
-              <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Type</span>
-              <div className="grid grid-cols-2 rounded-2xl border border-slate-200 bg-slate-50 p-1 dark:border-slate-700 dark:bg-slate-800">
+              <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Type</span>
+              <div className="grid grid-cols-2 rounded-2xl border border-white/12 bg-white/5 p-1 dark:border-slate-700 dark:bg-slate-800">
                 <button
                   type="button"
                   onClick={() => setType('EXPENSE')}
-                  className={`min-h-10 rounded-xl text-sm font-bold transition ${type === 'EXPENSE' ? 'bg-white text-rose-600 shadow-sm dark:bg-slate-900 dark:text-rose-300' : 'text-slate-500 dark:text-slate-400'}`}
+                  className={`min-h-10 rounded-xl text-sm font-bold transition ${type === 'EXPENSE' ? 'bg-white text-rose-600 shadow-sm dark:bg-slate-900 dark:text-rose-300' : 'text-slate-400'}`}
                 >
                   Expense
                 </button>
                 <button
                   type="button"
                   onClick={() => setType('INCOME')}
-                  className={`min-h-10 rounded-xl text-sm font-bold transition ${type === 'INCOME' ? 'bg-white text-emerald-600 shadow-sm dark:bg-slate-900 dark:text-emerald-300' : 'text-slate-500 dark:text-slate-400'}`}
+                  className={`min-h-10 rounded-xl text-sm font-bold transition ${type === 'INCOME' ? 'bg-white text-emerald-600 shadow-sm dark:bg-slate-900 dark:text-emerald-300' : 'text-slate-400'}`}
                 >
                   Income
                 </button>
               </div>
             </label>
             <label className="space-y-2">
-              <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Account</span>
+              <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Account</span>
               <select
                 value={accountId}
                 onChange={(event) => setAccountId(event.target.value)}
-                className="w-full min-h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-200/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-900 dark:focus:ring-amber-500/20"
+                className="w-full min-h-12 rounded-2xl border border-white/12 bg-white/5 px-4 text-sm outline-none transition focus:border-[#ff9eff]/55 focus:bg-white/8 focus:ring-4 focus:ring-[#ff9eff]/20 text-slate-100"
               >
                 {accounts.map((account) => (
                   <option key={account.id} value={account.id}>{account.name}</option>
@@ -252,11 +252,11 @@ function RecurringTransactionsPanel({
               </select>
             </label>
             <label className="space-y-2 md:col-span-2">
-              <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Category</span>
+              <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Category</span>
               <select
                 value={categoryId}
                 onChange={(event) => setCategoryId(event.target.value)}
-                className="w-full min-h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-200/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-900 dark:focus:ring-amber-500/20"
+                className="w-full min-h-12 rounded-2xl border border-white/12 bg-white/5 px-4 text-sm outline-none transition focus:border-[#ff9eff]/55 focus:bg-white/8 focus:ring-4 focus:ring-[#ff9eff]/20 text-slate-100"
                 required
               >
                 <option value="">Select category</option>
@@ -266,38 +266,38 @@ function RecurringTransactionsPanel({
               </select>
             </label>
             <label className="space-y-2 md:col-span-2">
-              <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Description</span>
+              <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Description</span>
               <input
                 type="text"
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
                 placeholder="Optional note shown on generated transactions"
-                className="w-full min-h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-200/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-900 dark:focus:ring-amber-500/20"
+                className="w-full min-h-12 rounded-2xl border border-white/12 bg-white/5 px-4 text-sm outline-none transition focus:border-[#ff9eff]/55 focus:bg-white/8 focus:ring-4 focus:ring-[#ff9eff]/20 text-slate-100 placeholder:text-slate-500"
               />
             </label>
             <label className="space-y-2">
-              <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Start date</span>
+              <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Start date</span>
               <input
                 type="date"
                 value={startDate}
                 onChange={(event) => setStartDate(event.target.value)}
-                className="w-full min-h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-200/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-900 dark:focus:ring-amber-500/20"
+                className="w-full min-h-12 rounded-2xl border border-white/12 bg-white/5 px-4 text-sm outline-none transition focus:border-[#ff9eff]/55 focus:bg-white/8 focus:ring-4 focus:ring-[#ff9eff]/20 text-slate-100"
                 required
               />
             </label>
             <label className="space-y-2">
-              <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">End date</span>
+              <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">End date</span>
               <input
                 type="date"
                 value={endDate}
                 onChange={(event) => setEndDate(event.target.value)}
-                className="w-full min-h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-200/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-900 dark:focus:ring-amber-500/20"
+                className="w-full min-h-12 rounded-2xl border border-white/12 bg-white/5 px-4 text-sm outline-none transition focus:border-[#ff9eff]/55 focus:bg-white/8 focus:ring-4 focus:ring-[#ff9eff]/20 text-slate-100"
               />
             </label>
           </div>
 
           {editingId ? (
-            <label className="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+            <label className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/5 px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
               <input
                 type="checkbox"
                 checked={isActive}
@@ -308,7 +308,7 @@ function RecurringTransactionsPanel({
           ) : null}
 
           <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-xs text-slate-500 dark:text-slate-400">
+            <div className="text-xs text-slate-400">
               Due items are created as real transactions with recurring metadata for easier review later.
             </div>
             <div className="flex gap-2">
@@ -316,7 +316,7 @@ function RecurringTransactionsPanel({
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                  className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-bold text-slate-300 transition hover:bg-white/10"
                 >
                   Cancel edit
                 </button>
@@ -324,7 +324,7 @@ function RecurringTransactionsPanel({
               <button
                 type="submit"
                 disabled={submitting}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-60"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[#ff9eff] px-5 py-2.5 text-sm font-bold text-[#1c0d32] transition hover:opacity-90 disabled:opacity-60"
               >
                 <Plus size={15} />
                 {submitting ? 'Saving...' : editingId ? 'Update template' : 'Create template'}
@@ -333,13 +333,13 @@ function RecurringTransactionsPanel({
           </div>
         </form>
 
-        <div className="rounded-[24px] border border-amber-100 bg-white p-4 shadow-md shadow-amber-100/60 backdrop-blur dark:border-slate-700 dark:bg-slate-900/85 dark:shadow-none">
+        <div className="rounded-[24px] border border-white/12 bg-white/5 p-4 backdrop-blur">
           <div className="flex items-center justify-between border-b border-slate-200 pb-4 dark:border-slate-700">
             <div>
-              <p className="text-sm font-black tracking-[0.18em] text-slate-500 dark:text-slate-400">LIVE TEMPLATES</p>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Active templates keep next run dates and last execution timestamps in view.</p>
+              <p className="text-sm font-black tracking-[0.18em] text-slate-400">LIVE TEMPLATES</p>
+              <p className="mt-1 text-sm text-slate-300">Active templates keep next run dates and last execution timestamps in view.</p>
             </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-bold text-slate-300">
               <CalendarClock size={13} />
               {loading ? 'Loading...' : `${recurringTransactions.length} total`}
             </div>
@@ -347,29 +347,29 @@ function RecurringTransactionsPanel({
 
           <div className="mt-4 space-y-3">
             {recurringTransactions.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-5 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-400">
+              <div className="rounded-2xl border border-dashed border-white/15 bg-white/4 p-5 text-sm text-slate-400">
                 No recurring templates yet. Start with salary, rent or any subscription that keeps showing up every month.
               </div>
             ) : (
               recurringTransactions.map((item) => (
-                <div key={item.id} className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                <div key={item.id} className="rounded-2xl border border-white/12 bg-white/5 p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-base font-bold text-slate-900 dark:text-slate-100">{item.description || item.category?.name || 'Recurring template'}</p>
+                        <p className="text-base font-bold text-slate-100">{item.description || item.category?.name || 'Recurring template'}</p>
                         <span className={`rounded-full px-2.5 py-1 text-[11px] font-black tracking-[0.16em] ${item.isActive ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-200'}`}>
                           {item.isActive ? 'ACTIVE' : 'PAUSED'}
                         </span>
-                        <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-black tracking-[0.16em] text-amber-800 dark:bg-amber-500/15 dark:text-amber-200">
+                        <span className="rounded-full bg-[#ff9eff]/12 px-2.5 py-1 text-[11px] font-black tracking-[0.16em] text-[#ff9eff]">
                           {item.frequency}
                         </span>
                       </div>
-                      <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-600 dark:text-slate-300">
+                      <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-300">
                         <span>{formatCurrency(item.amount)}</span>
                         <span>{item.account?.name || 'No account'}</span>
                         <span>{item.category?.name || 'No category'}</span>
                       </div>
-                      <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-500 dark:text-slate-400">
+                      <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-400">
                         <span>Starts {formatDate(item.startDate)}</span>
                         <span>Next run {formatDate(item.nextRunDate)}</span>
                         <span>{item.lastRunAt ? `Last run ${formatDate(item.lastRunAt)}` : 'Not run yet'}</span>
@@ -379,7 +379,7 @@ function RecurringTransactionsPanel({
                       <button
                         type="button"
                         onClick={() => onUpdate(item.id, { isActive: !item.isActive })}
-                        className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                        className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/5 px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                       >
                         {item.isActive ? <PauseCircle size={15} /> : <PlayCircle size={15} />}
                         {item.isActive ? 'Pause' : 'Resume'}
@@ -387,7 +387,7 @@ function RecurringTransactionsPanel({
                       <button
                         type="button"
                         onClick={() => handleEdit(item)}
-                        className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                        className="inline-flex min-h-10 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
                       >
                         Edit
                       </button>
@@ -423,20 +423,21 @@ const SignalCard = ({
   label: string
   value: string
 }) => (
-  <div className="rounded-2xl border border-amber-100 bg-white px-3 py-3 shadow-sm shadow-amber-100/50 dark:border-slate-700 dark:bg-slate-900/85 dark:shadow-none">
+  <div className="rounded-2xl border border-white/12 bg-white/5 px-3 py-3">
     <div className="flex items-center gap-2">
-      <Icon size={15} className="text-amber-700 dark:text-amber-300" />
-      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{label}</span>
+      <Icon size={15} className="text-[#ff9eff]" />
+      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{label}</span>
     </div>
-    <p className="mt-2 text-sm font-black tracking-tight text-slate-900 dark:text-slate-100">{value}</p>
+    <p className="mt-2 text-sm font-black tracking-tight text-slate-100">{value}</p>
   </div>
 )
 
 const PreviewCard = ({ title, subtitle }: { title: string; subtitle: string }) => (
-  <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{title}</p>
-    <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">{subtitle}</p>
+  <div className="rounded-2xl border border-white/12 bg-white/5 p-4">
+    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{title}</p>
+    <p className="mt-3 text-sm text-slate-300">{subtitle}</p>
   </div>
 )
 
 export default RecurringTransactionsPanel
+

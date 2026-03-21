@@ -62,20 +62,20 @@ function CategoryModal({ isOpen, onClose, onSave, initialData, parentId, type }:
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="met-card w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-white/10">
           <h2 className="text-lg sm:text-xl font-bold">
             {initialData ? 'Edit Category' : parentId ? 'Add Subcategory' : 'Add Category'}
           </h2>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-500">
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400">
             <X size={20} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-5 sm:space-y-6">
           <div className="space-y-2">
-            <label htmlFor="name" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <label htmlFor="name" className="text-sm font-medium text-slate-300">
               Category Name
             </label>
             <input
@@ -86,14 +86,14 @@ function CategoryModal({ isOpen, onClose, onSave, initialData, parentId, type }:
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Groceries, Freelance..."
               autoFocus
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-primary/40 outline-none transition-all"
+              className="w-full px-4 py-2.5 rounded-xl border border-white/12 bg-white/5 text-slate-100 placeholder:text-slate-500 focus:ring-2 focus:ring-[#ff9eff]/35 outline-none transition-all"
               required
             />
           </div>
 
           {!parentId && !initialData?.parentId && (
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <label className="text-sm font-medium text-slate-300">
                 Type
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -102,8 +102,8 @@ function CategoryModal({ isOpen, onClose, onSave, initialData, parentId, type }:
                   onClick={() => setSelectedType('INCOME')}
                   className={`py-2 rounded-xl border font-medium transition-all ${
                     selectedType === 'INCOME' 
-                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400' 
-                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+                      ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300' 
+                      : 'border-white/12 hover:bg-white/8 text-slate-300'
                   }`}
                 >
                   Income
@@ -113,8 +113,8 @@ function CategoryModal({ isOpen, onClose, onSave, initialData, parentId, type }:
                   onClick={() => setSelectedType('EXPENSE')}
                   className={`py-2 rounded-xl border font-medium transition-all ${
                     selectedType === 'EXPENSE' 
-                      ? 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-900/20 dark:border-rose-800 dark:text-rose-400' 
-                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+                      ? 'bg-rose-500/15 border-rose-400/40 text-rose-300' 
+                      : 'border-white/12 hover:bg-white/8 text-slate-300'
                   }`}
                 >
                   Expense
@@ -124,7 +124,7 @@ function CategoryModal({ isOpen, onClose, onSave, initialData, parentId, type }:
           )}
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <label className="text-sm font-medium text-slate-300">
               Icon
             </label>
             <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
@@ -137,8 +137,8 @@ function CategoryModal({ isOpen, onClose, onSave, initialData, parentId, type }:
                     onClick={() => setIcon(option.key)}
                     className={`px-2 py-2 rounded-xl border transition-all flex flex-col items-center gap-1 ${
                       active
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        ? 'border-[#ff9eff]/45 bg-[#ff9eff]/12 text-[#ff9eff]'
+                        : 'border-white/12 hover:bg-white/8 text-slate-300'
                     }`}
                     title={option.label}
                   >
@@ -154,7 +154,7 @@ function CategoryModal({ isOpen, onClose, onSave, initialData, parentId, type }:
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-primary hover:opacity-90 text-primary-foreground font-bold py-3 rounded-xl transition-all shadow-lg shadow-primary/20 active:scale-[0.98] disabled:opacity-50"
+              className="w-full bg-[#ff9eff] hover:opacity-90 text-[#1c0d32] font-bold py-3 rounded-xl transition-all shadow-lg shadow-[#ff9eff]/20 active:scale-[0.98] disabled:opacity-50"
             >
               {isSubmitting ? 'Saving...' : initialData ? 'Update Category' : 'Create Category'}
             </button>

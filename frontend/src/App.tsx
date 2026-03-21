@@ -1,6 +1,6 @@
 ﻿import { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom'
-import { Wallet, Settings, LayoutDashboard, LogOut, User, BarChart, PanelLeftClose, PanelLeftOpen, Shield, Twitter, Instagram, Linkedin, Github } from 'lucide-react'
+import { Wallet, Settings, LayoutDashboard, LogOut, User, BarChart, PanelLeftClose, PanelLeftOpen, Shield } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ToastContainer } from 'react-toastify'
 
@@ -10,6 +10,7 @@ import * as authApi from './api/authApi'
 import type { AuthUser } from './api/authApi'
 import { notify } from './lib/toast'
 import PremiumComparisonModal from './components/PremiumComparisonModal'
+import MetLogo from './components/MetLogo'
 
 const CategoriesPage = lazy(() => import('./pages/CategoriesPage'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
@@ -240,7 +241,7 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen overflow-x-hidden bg-muted/40 font-sans antialiased">
+      <div className="met-app-bg min-h-screen overflow-x-hidden antialiased">
         {!token ? (
           <div className="min-h-screen flex flex-col">
             <div className="flex-1">
@@ -324,20 +325,17 @@ function Sidebar({
   const navItems = baseNavItems.filter((item) => !item.adminOnly || user?.role === 'ADMIN')
   
   return (
-    <aside className={`hidden lg:flex flex-col border-r bg-background fixed top-0 left-0 h-screen z-40 transition-[width] duration-200 ease-out will-change-[width] ${isCollapsed ? 'w-24' : 'w-64'}`}>
+    <aside className={`hidden lg:flex flex-col border-r border-white/10 bg-[#0a0a0a]/95 fixed top-0 left-0 h-screen z-40 transition-[width] duration-200 ease-out will-change-[width] ${isCollapsed ? 'w-24' : 'w-64'}`}>
       <button
         type="button"
         onClick={onToggle}
-        className="absolute -right-5 top-1/2 -translate-y-1/2 z-50 h-11 w-11 rounded-full border bg-background shadow-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        className="absolute -right-5 top-1/2 -translate-y-1/2 z-50 h-11 w-11 rounded-full border border-white/10 bg-[#111114] shadow-md flex items-center justify-center text-slate-400 hover:text-slate-100 hover:bg-[#1a1a20] transition-colors"
         aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
         {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
       </button>
-      <div className={`flex items-center h-20 px-6 border-b ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
-        <div className="p-2.5 bg-gradient-to-tr from-[#a569b0] to-[#6a4d8b] rounded-xl text-white shadow-lg shadow-[#a569b0]/25">
-          <Wallet size={24} />
-        </div>
-        {!isCollapsed && <span className="text-2xl font-black tracking-tighter">MET</span>}
+      <div className={`flex items-center h-20 px-6 border-b border-white/10 ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+        <MetLogo compact={isCollapsed} />
       </div>
       <nav className="flex-1 px-4 py-6 space-y-2">
         {navItems.map(item => (
@@ -345,10 +343,10 @@ function Sidebar({
             key={item.path}
             to={item.path}
             title={item.label}
-            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-bold transition-all duration-200 ${
+            className={`met-sidebar-item flex items-center gap-3 px-4 py-2.5 font-bold transition-all duration-200 ${
               location.pathname === item.path
-                ? 'bg-primary text-primary-foreground shadow-md'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                ? 'met-sidebar-item-active'
+                : 'text-slate-500'
             } ${isCollapsed ? 'justify-center' : ''}`}
           >
             <item.icon size={20} />
@@ -366,22 +364,28 @@ interface HeaderProps {
 }
 
 function Header({ user, onLogout }: HeaderProps) {
+  const location = useLocation()
+  const title = location.pathname === '/'
+    ? 'Dashboard'
+    : location.pathname.replace('/', '').replace('-', ' ').replace(/\b\w/g, (char) => char.toUpperCase())
+
   return (
-    <header className="sticky top-0 z-30 flex h-20 items-center gap-4 border-b bg-background/80 backdrop-blur-lg px-6">
-       <div className="flex-1">
-         {/* Can add breadcrumbs or page title here */}
+    <header className="sticky top-0 z-30 flex h-20 items-center gap-4 border-b border-white/10 bg-[#0a0a0a]/70 backdrop-blur-lg px-6">
+       <div className="flex-1 space-y-1">
+         <p className="text-[10px] font-semibold tracking-[0.2em] text-slate-500 uppercase">MET Workspace</p>
+         <p className="text-sm font-bold tracking-wide text-slate-100">{title}</p>
        </div>
        <div className="flex items-center gap-4">
         <div className="flex items-center gap-3">
           <div className="flex flex-col items-end">
-            <span className="text-sm font-bold text-foreground">{user?.name || 'User'}</span>
-            <span className="text-xs text-muted-foreground">{user?.email}</span>
+            <span className="text-sm font-bold text-slate-100">{user?.name || 'User'}</span>
+            <span className="text-xs text-slate-400">{user?.email}</span>
           </div>
           <motion.button 
             onClick={onLogout}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            className="w-11 h-11 flex items-center justify-center rounded-full bg-primary/15 text-primary hover:bg-primary/25 transition-colors border border-primary/25"
+            className="w-11 h-11 flex items-center justify-center rounded-full bg-[#ff9eff]/12 text-[#ff9eff] hover:bg-[#ff9eff]/20 transition-colors border border-[#ff9eff]/30"
             aria-label="Logout"
           >
             <LogOut size={20} />
@@ -397,7 +401,7 @@ function MobileNav({ user }: { user: AuthUser | null }) {
   const navItems = baseNavItems.filter((item) => !item.adminOnly || user?.role === 'ADMIN')
 
   return (
-    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 overflow-hidden border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 overflow-hidden border-t border-white/10 bg-[#0a0a0a]/95 backdrop-blur supports-[backdrop-filter]:bg-[#0a0a0a]/80">
       <div className={`grid px-2 py-2 ${navItems.length === 5 ? 'grid-cols-5' : 'grid-cols-4'}`}>
         {navItems.map((item) => (
           <Link
@@ -405,8 +409,8 @@ function MobileNav({ user }: { user: AuthUser | null }) {
             to={item.path}
             className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl min-h-11 px-1 py-2 text-[10px] font-semibold transition-colors ${
               location.pathname === item.path
-                ? 'text-primary bg-primary/10'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                ? 'text-[#ff9eff] bg-[#ff9eff]/10'
+                : 'text-slate-500 hover:text-slate-100 hover:bg-white/5'
             }`}
           >
             <item.icon size={18} />
@@ -420,63 +424,22 @@ function MobileNav({ user }: { user: AuthUser | null }) {
 
 function AppFooter() {
   return (
-    <footer className="mt-auto border-t border-slate-200 bg-slate-100/80 dark:border-slate-800 dark:bg-slate-950/70">
-      <div className="mx-auto max-w-7xl px-6 py-10 lg:px-10">
-        <div className="grid gap-10 lg:grid-cols-[1.35fr,2fr]">
-          <div className="space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900">
-                <Wallet size={18} />
-              </div>
-              <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Graphy</p>
-            </div>
-            <p className="max-w-md text-sm leading-6 text-slate-600 dark:text-slate-400">
-              Graphy empowers teams to transform raw data into clear, compelling visuals - making insights easier to share, understand, and act on.
-            </p>
-            <div className="flex items-center gap-4 text-slate-900 dark:text-slate-200">
-              <a href="#" aria-label="X" className="transition hover:opacity-70"><Twitter size={18} /></a>
-              <a href="#" aria-label="Instagram" className="transition hover:opacity-70"><Instagram size={18} /></a>
-              <a href="#" aria-label="LinkedIn" className="transition hover:opacity-70"><Linkedin size={18} /></a>
-              <a href="#" aria-label="GitHub" className="transition hover:opacity-70"><Github size={18} /></a>
-            </div>
+    <footer className="mt-auto border-t border-white/10 bg-[#0a0a0a]/85">
+      <div className="mx-auto max-w-7xl px-6 py-8 lg:px-10">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <MetLogo />
+            <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">Finance Tracker</p>
           </div>
-
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
-            <FooterColumn title="Product" links={['Features', 'Pricing', 'Integrations', 'Changelog']} />
-            <FooterColumn title="Resources" links={['Documentation', 'Tutorials', 'Blog', 'Support']} />
-            <FooterColumn title="Company" links={['About', 'Careers', 'Contact', 'Partners']} />
-          </div>
+          <p className="text-sm text-slate-400">
+            Analyze spending, shape budgets, and operate from one clean financial workspace.
+          </p>
         </div>
-
-        <div className="mt-10 flex flex-col gap-4 border-t border-slate-200 pt-6 text-sm text-slate-500 dark:border-slate-800 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2025 Graphy. All rights reserved.</p>
-          <div className="flex items-center gap-6">
-            <a href="#" className="transition hover:text-slate-700 dark:hover:text-slate-200">Privacy Policy</a>
-            <a href="#" className="transition hover:text-slate-700 dark:hover:text-slate-200">Terms of Service</a>
-            <a href="#" className="transition hover:text-slate-700 dark:hover:text-slate-200">Cookies Settings</a>
-          </div>
+        <div className="mt-6 border-t border-white/10 pt-5 text-xs text-slate-500">
+          © 2026 MET. All rights reserved.
         </div>
       </div>
     </footer>
-  )
-}
-
-function FooterColumn({ title, links }: { title: string; links: string[] }) {
-  return (
-    <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
-      <div className="space-y-2 text-sm">
-        {links.map((label) => (
-          <a
-            key={label}
-            href="#"
-            className="block text-slate-600 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
-          >
-            {label}
-          </a>
-        ))}
-      </div>
-    </div>
   )
 }
 

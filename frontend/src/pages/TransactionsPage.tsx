@@ -811,18 +811,18 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
         </div>
 
         {isPremiumUser && (
-        <section className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-5 md:p-6 dark:border-amber-500/30 dark:bg-[linear-gradient(135deg,rgba(41,37,36,0.94),rgba(17,24,39,0.96))]">
+        <section className="met-card met-card-hover overflow-hidden rounded-[24px] p-5 md:p-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-black tracking-[0.24em] text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#ff9eff]/35 bg-[#ff9eff]/10 px-3 py-1 text-xs font-black tracking-[0.24em] text-[#ff9eff]">
                 <Gem size={14} />
                 PREMIUM FLOW
               </div>
               <div className="space-y-2">
-                <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">
+                <h2 className="text-2xl font-black tracking-tight text-slate-100 sm:text-3xl">
                   Filter faster. Scan less. Find patterns sooner.
                 </h2>
-                <p className="max-w-2xl text-sm sm:text-base text-slate-600 dark:text-slate-300">
+                <p className="max-w-2xl text-sm sm:text-base text-slate-300">
                   Advanced search and type filtering are active, with a higher account cap for segmented budgets and cleaner ledgers.
                 </p>
               </div>
@@ -837,7 +837,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
         </section>
         )}
 
-        <div className="bg-card border rounded-2xl p-4 md:p-5 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+        <div className="met-card met-card-hover rounded-2xl p-4 md:p-5 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
           <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
             <WalletCards size={16} />
             Active account
@@ -868,7 +868,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
           Plan: <span className="font-semibold">{userRole}</span> • Account limit: {maxAccounts}
         </p>
         {isPremiumUser && (
-          <div className="rounded-2xl border bg-card p-4">
+          <div className="met-card met-card-hover rounded-2xl p-4">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="space-y-1">
                 <p className="text-sm font-bold">Bulk assign category</p>
@@ -901,15 +901,15 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
         )}
         {isPremiumUser ? (
           <div className="space-y-3">
-            <div className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-4 md:p-5 dark:border-amber-500/30 dark:bg-[linear-gradient(135deg,rgba(41,37,36,0.94),rgba(17,24,39,0.96))]">
+            <div className="met-card met-card-hover overflow-hidden rounded-[24px] p-4 md:p-5">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="space-y-1">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-[#ff9eff]/35 bg-[#ff9eff]/10 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-[#ff9eff]">
                     <Gem size={13} />
                     PREMIUM FILTERS
                   </div>
-                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Refine by text, category context and transaction type without leaving the ledger.</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Search hits check description, category and account labels.</p>
+                  <p className="text-sm font-semibold text-slate-200">Refine by text, category context and transaction type without leaving the ledger.</p>
+                  <p className="text-xs text-slate-400">Search hits check description, category and account labels.</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                   <label className="relative block w-full sm:min-w-80">
@@ -919,13 +919,13 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       placeholder="Search description, category, account..."
-                      className="w-full min-h-12 rounded-2xl border border-amber-200 bg-white/90 dark:border-amber-500/35 dark:bg-slate-900 pl-11 pr-4 text-sm shadow-sm outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-200/40 dark:focus:ring-amber-500/20"
+                      className="w-full min-h-12 rounded-2xl border border-white/12 bg-white/5 pl-11 pr-4 text-sm shadow-sm outline-none transition focus:border-[#ff9eff]/55 focus:ring-4 focus:ring-[#ff9eff]/20"
                     />
                   </label>
                   <select
                     value={typeFilter}
                     onChange={(e) => setTypeFilter(e.target.value as 'ALL' | 'INCOME' | 'EXPENSE')}
-                    className="w-full sm:w-44 min-h-12 rounded-2xl border border-amber-200 bg-white/90 dark:border-amber-500/35 dark:bg-slate-900 px-4 text-sm font-semibold shadow-sm outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-200/40 dark:focus:ring-amber-500/20"
+                    className="w-full sm:w-44 min-h-12 rounded-2xl border border-white/12 bg-white/5 px-4 text-sm font-semibold shadow-sm outline-none transition focus:border-[#ff9eff]/55 focus:ring-4 focus:ring-[#ff9eff]/20"
                   >
                     <option value="ALL">All types</option>
                     <option value="INCOME">Income</option>
@@ -934,15 +934,15 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
                 </div>
               </div>
             </div>
-            <div className="rounded-[24px] border bg-card p-4 dark:border-slate-700 dark:bg-slate-900/80">
+            <div className="met-card met-card-hover rounded-[24px] p-4">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="space-y-1">
                   <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
                     <BookmarkPlus size={13} />
                     SMART VIEWS
                   </div>
-                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Save your current premium filter setup and reuse it instantly.</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Best for recurring reviews like payroll, groceries or expense-only scans.</p>
+                  <p className="text-sm font-semibold text-slate-200">Save your current premium filter setup and reuse it instantly.</p>
+                  <p className="text-xs text-slate-400">Best for recurring reviews like payroll, groceries or expense-only scans.</p>
                 </div>
                 <button
                   type="button"
@@ -962,8 +962,8 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
                       key={filter.id}
                       className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm ${
                         activeSavedFilterId === filter.id
-                          ? 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200'
-                          : 'border-slate-200 bg-white text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200'
+                          ? 'border-[#ff9eff]/35 bg-[#ff9eff]/12 text-[#ff9eff]'
+                          : 'border-white/12 bg-white/5 text-slate-300'
                       }`}
                     >
                       <button
@@ -974,7 +974,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
                         {filter.name}
                       </button>
                       <span className="text-xs text-slate-400">•</span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                      <span className="text-xs text-slate-400">
                         {filter.typeFilter}{filter.searchTerm ? ` / ${filter.searchTerm}` : ''}
                       </span>
                       <button
@@ -1008,7 +1008,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
         onUpdate={handleUpdateRecurringTransaction}
       />
 
-      <div className="bg-card border rounded-2xl shadow-sm overflow-hidden">
+      <div className="met-card rounded-2xl shadow-sm overflow-hidden">
         <div className="px-5 md:px-6 py-4 border-b bg-muted/30 text-sm font-semibold text-muted-foreground">
           {selectedAccount ? `Showing transactions for ${selectedAccount.name}` : 'No account selected'}
         </div>
@@ -1288,13 +1288,15 @@ const PremiumSignal = ({
   label: string
   value: string
 }) => (
-  <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+  <div className="rounded-2xl border border-white/12 bg-white/5 px-3 py-3 text-slate-100">
     <div className="flex items-center gap-2">
-      <Icon size={15} className="text-amber-600 dark:text-amber-300" />
+      <Icon size={15} className="text-[#ff9eff]" />
       <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{label}</span>
     </div>
     <p className="mt-2 text-sm font-black tracking-tight">{value}</p>
   </div>
 )
+
+
 
 

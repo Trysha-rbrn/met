@@ -246,23 +246,23 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
       </header>
 
       {isPremiumUser ? (
-        <section className="rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-5 md:p-6 space-y-4 dark:border-amber-500/30 dark:bg-[linear-gradient(135deg,rgba(41,37,36,0.94),rgba(17,24,39,0.96))]">
+        <section className="met-card met-card-hover rounded-[24px] p-5 md:p-6 space-y-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#ff9eff]/35 bg-[#ff9eff]/10 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-[#ff9eff]">
                 <Gem size={13} />
                 MONTHLY BUDGET GOALS
               </div>
-              <h2 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-100">Set category targets before the month runs away</h2>
-              <p className="text-sm text-slate-600 dark:text-slate-300">Budget goals are available for expense categories and feed premium dashboard analysis.</p>
+              <h2 className="text-xl font-black tracking-tight text-slate-100">Set category targets before the month runs away</h2>
+              <p className="text-sm text-slate-300">Budget goals are available for expense categories and feed premium dashboard analysis.</p>
             </div>
-            <label className="space-y-1 text-sm font-semibold text-slate-600 dark:text-slate-300">
+            <label className="space-y-1 text-sm font-semibold text-slate-300">
               <span className="inline-flex items-center gap-2"><CalendarDays size={15} /> Budget month</span>
               <input
                 type="month"
                 value={selectedBudgetMonth}
                 onChange={(e) => setSelectedBudgetMonth(e.target.value)}
-                className="min-h-11 rounded-2xl border border-amber-200 bg-white px-4 py-2.5 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-200/40 dark:border-amber-500/35 dark:bg-slate-900 dark:text-slate-100 dark:focus:ring-amber-500/20"
+                className="min-h-11 rounded-2xl border border-white/12 bg-white/5 px-4 py-2.5 outline-none transition focus:border-[#ff9eff]/55 focus:ring-4 focus:ring-[#ff9eff]/20 text-slate-100"
               />
             </label>
           </div>
@@ -276,10 +276,10 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
               {expenseCategoryOptions.map((category) => {
                 const goal = budgetMap.get(category.id)
                 return (
-                  <div key={category.id} className="rounded-2xl border border-amber-100 bg-white p-4 shadow-sm shadow-amber-100/60 dark:border-slate-700 dark:bg-slate-900/85 dark:shadow-none">
+                  <div key={category.id} className="rounded-2xl border border-white/12 bg-white/5 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-black tracking-tight text-slate-900 dark:text-slate-100">{category.name}</p>
+                        <p className="truncate text-sm font-black tracking-tight text-slate-100">{category.name}</p>
                         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 inline-flex items-center gap-2">
                           <CategoryIcon icon={category.icon} small />
                           Expense category
@@ -288,7 +288,7 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
                       <button
                         type="button"
                         onClick={() => handleSetBudgetGoal(category)}
-                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-800 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-bold text-slate-200 transition hover:bg-white/10"
                       >
                         <Target size={15} />
                         {goal ? 'Edit' : 'Set'}
@@ -297,7 +297,7 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
                     <div className="mt-4 flex items-end justify-between gap-3">
                       <div>
                         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Monthly target</p>
-                        <p className="mt-1 text-xl font-black tracking-tight text-slate-900 dark:text-slate-100">
+                        <p className="mt-1 text-xl font-black tracking-tight text-slate-100">
                           {goal ? formatBudgetCurrency(goal.amount) : 'Not set'}
                         </p>
                       </div>
@@ -318,9 +318,9 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
             </div>
           )}
 
-          <div className="rounded-2xl border border-amber-100 bg-white p-4 space-y-4 shadow-sm shadow-amber-100/60 dark:border-slate-700 dark:bg-slate-900/85 dark:shadow-none">
+          <div className="rounded-2xl border border-white/12 bg-white/5 p-4 space-y-4">
             <div className="space-y-1">
-              <h3 className="text-base font-black tracking-tight text-slate-900 dark:text-slate-100">Auto-categorization rules</h3>
+              <h3 className="text-base font-black tracking-tight text-slate-100">Auto-categorization rules</h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">If description contains a keyword, transaction gets assigned to selected category.</p>
             </div>
             <div className="grid grid-cols-1 gap-2 md:grid-cols-[1fr,1fr,auto]">
@@ -328,7 +328,7 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
                 value={newRuleKeyword}
                 onChange={(e) => setNewRuleKeyword(e.target.value)}
                 placeholder='Keyword (e.g. "lidl")'
-                className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-amber-200/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:ring-amber-500/20"
+                className="min-h-11 rounded-xl border border-white/12 bg-white/5 px-3 text-sm outline-none focus:ring-4 focus:ring-[#ff9eff]/20 text-slate-100 placeholder:text-slate-500"
               />
               <select
                 value={newRuleCategoryId}
@@ -345,7 +345,7 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
               <button
                 type="button"
                 onClick={handleCreateCategoryRule}
-                className="min-h-11 rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+                className="min-h-11 rounded-xl border border-white/15 bg-white/5 px-4 text-sm font-bold text-slate-200 hover:bg-white/10"
               >
                 Add Rule
               </button>
@@ -355,8 +355,8 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
             ) : (
               <div className="space-y-2">
                 {categoryRules.map((rule) => (
-                  <div key={rule.id} className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-900">
-                    <p className="text-sm text-slate-700 dark:text-slate-200">
+                  <div key={rule.id} className="flex flex-col gap-2 rounded-xl border border-white/12 bg-white/5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-sm text-slate-200">
                       <span className="font-bold">"{rule.keyword}"</span> {'->'} {rule.category.name}
                     </p>
                     <div className="flex items-center gap-2">
@@ -390,7 +390,7 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
             <Tag size={20} />
             <h2>Income</h2>
           </div>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+          <div className="met-card rounded-2xl overflow-hidden shadow-sm">
             {incomeCats.length > 0 ? incomeCats.map(cat => (
               <CategoryItem 
                 key={cat.id} 
@@ -415,7 +415,7 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
             <Tag size={20} />
             <h2>Expenses</h2>
           </div>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+          <div className="met-card rounded-2xl overflow-hidden shadow-sm">
             {expenseCats.length > 0 ? expenseCats.map(cat => (
               <CategoryItem 
                 key={cat.id} 
@@ -460,31 +460,31 @@ function CategoryItem({ category, isExpanded, onToggle, onEdit, onDelete, onSubE
   const hasSubs = category.subcategories && category.subcategories.length > 0
 
   return (
-    <div className="border-b border-slate-100 dark:border-slate-800 last:border-0">
-      <div className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+    <div className="border-b border-white/8 last:border-0">
+      <div className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors group">
         <div className="flex items-center gap-3">
           {hasSubs ? (
-            <button onClick={onToggle} className="h-11 w-11 -ml-1 text-slate-400 hover:text-primary transition-colors cursor-pointer flex items-center justify-center">
+            <button onClick={onToggle} className="h-11 w-11 -ml-1 text-slate-400 hover:text-[#ff9eff] transition-colors cursor-pointer flex items-center justify-center">
               {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
             </button>
           ) : (
             <div className="w-5" />
           )}
-          <span className="font-semibold text-slate-700 dark:text-slate-200">{category.name}</span>
+          <span className="font-semibold text-slate-200">{category.name}</span>
           <CategoryIcon icon={category.icon} />
         </div>
         
         <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
             <button 
               onClick={onEdit}
-              className="h-11 w-11 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-all flex items-center justify-center"
+              className="h-11 w-11 text-slate-400 hover:text-[#ff9eff] hover:bg-[#ff9eff]/12 rounded-lg transition-all flex items-center justify-center"
               title="Edit"
             >
               <Edit2 size={16} />
             </button>
             <button 
               onClick={onDelete}
-              className="h-11 w-11 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-all flex items-center justify-center"
+              className="h-11 w-11 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all flex items-center justify-center"
               title="Delete"
             >
               <Trash2 size={16} />
@@ -493,7 +493,7 @@ function CategoryItem({ category, isExpanded, onToggle, onEdit, onDelete, onSubE
       </div>
 
       {(hasSubs || isExpanded) && isExpanded && (
-        <div className="bg-slate-50/50 dark:bg-slate-800/20 pl-12 pr-4 py-2 space-y-1 border-t border-slate-100 dark:border-slate-800">
+        <div className="bg-white/4 pl-12 pr-4 py-2 space-y-1 border-t border-white/8">
           {category.subcategories?.map(sub => (
             <div key={sub.id} className="flex items-center justify-between py-2 group/sub">
               <span className="text-slate-600 dark:text-slate-400 text-sm font-medium inline-flex items-center gap-2">
@@ -503,7 +503,7 @@ function CategoryItem({ category, isExpanded, onToggle, onEdit, onDelete, onSubE
               <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover/sub:opacity-100 transition-opacity">
                 <button 
                   onClick={() => onSubEdit(sub)}
-                  className="p-1.5 text-slate-400 hover:text-primary transition-colors"
+                  className="p-1.5 text-slate-400 hover:text-[#ff9eff] transition-colors"
                 >
                   <Edit2 size={14} />
                 </button>
@@ -545,3 +545,4 @@ function CategoryIcon({ icon, small = false }: { icon: string; small?: boolean }
 }
 
 export default CategoriesPage
+

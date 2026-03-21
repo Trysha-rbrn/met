@@ -39,17 +39,17 @@ function PremiumComparisonModal({
     <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
       <div className="w-full max-w-4xl overflow-hidden rounded-[28px] border border-white/15 bg-slate-950 text-slate-100 shadow-2xl shadow-black/40">
         <div className="relative border-b border-white/10 px-6 py-6 md:px-8">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.25),transparent_45%),radial-gradient(circle_at_top_left,rgba(56,189,248,0.2),transparent_40%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,158,255,0.25),transparent_45%),radial-gradient(circle_at_top_left,rgba(165,105,176,0.2),transparent_40%)]" />
           <div className="relative flex items-start justify-between gap-4">
             <div>
-              <p className="inline-flex items-center gap-2 rounded-full border border-amber-300/35 bg-amber-300/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-amber-200">
+              <p className="inline-flex items-center gap-2 rounded-full border border-[#ff9eff]/35 bg-[#ff9eff]/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-[#ff9eff]">
                 <Sparkles size={13} />
                 Premium Plan
               </p>
               <h3 className="mt-3 text-2xl font-black tracking-tight md:text-3xl">{title}</h3>
               <p className="mt-2 max-w-2xl text-sm text-slate-300">{subtitle}</p>
             </div>
-            <div className="hidden h-12 w-12 items-center justify-center rounded-2xl border border-amber-300/30 bg-amber-300/15 text-amber-200 md:flex">
+            <div className="hidden h-12 w-12 items-center justify-center rounded-2xl border border-[#ff9eff]/35 bg-[#ff9eff]/10 text-[#ff9eff] md:flex">
               <Crown size={22} />
             </div>
           </div>
@@ -68,8 +68,8 @@ function PremiumComparisonModal({
             </ul>
           </div>
 
-          <div className="rounded-2xl border border-amber-300/40 bg-[linear-gradient(145deg,rgba(251,191,36,0.22),rgba(244,114,182,0.12),rgba(15,23,42,0.85))] p-5">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-200">Premium</p>
+          <div className="rounded-2xl border border-[#ff9eff]/40 bg-[linear-gradient(145deg,rgba(255,158,255,0.2),rgba(165,105,176,0.16),rgba(15,23,42,0.85))] p-5">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#ff9eff]">Premium</p>
             <ul className="mt-4 space-y-2.5">
               {PREMIUM_FEATURES.map((item) => (
                 <li key={item} className="flex items-start gap-2 text-sm text-slate-100">
@@ -92,7 +92,7 @@ function PremiumComparisonModal({
           <button
             type="button"
             onClick={onConfirm}
-            className="min-h-11 rounded-xl bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 px-4 py-2 text-sm font-black text-slate-950 transition hover:opacity-95"
+            className="min-h-11 rounded-xl bg-[#ff9eff] px-4 py-2 text-sm font-black text-[#1c0d32] transition hover:opacity-95"
           >
             {ctaLabel}
           </button>
