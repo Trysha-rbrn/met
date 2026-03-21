@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ToastContainer } from 'react-toastify'
 
 import AuthPage from './pages/AuthPage'
+import HomePage from './pages/HomePage'
 import NotFoundPage from './pages/NotFoundPage'
 import * as authApi from './api/authApi'
 import type { AuthUser } from './api/authApi'
@@ -243,15 +244,12 @@ function App() {
     <Router>
       <div className="met-app-bg min-h-screen overflow-x-hidden antialiased">
         {!token ? (
-          <div className="min-h-screen flex flex-col">
-            <div className="flex-1">
-              <Routes>
-                <Route path="/" element={<AuthPage onLogin={handleLogin} />} />
-                <Route path="*" element={<NotFoundPage isAuthenticated={false} />} />
-              </Routes>
-            </div>
-            <AppFooter />
-          </div>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/auth" element={<AuthPage onLogin={handleLogin} initialMode="login" />} />
+            <Route path="/register" element={<AuthPage onLogin={handleLogin} initialMode="register" />} />
+            <Route path="*" element={<NotFoundPage isAuthenticated={false} />} />
+          </Routes>
         ) : (
           <div className="min-h-screen">
             <Sidebar
