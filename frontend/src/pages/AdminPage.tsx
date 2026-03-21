@@ -231,27 +231,27 @@ function AdminPage() {
           <MetricCard title="Premium users" value={String(summary.premium)} description="Accounts with active premium role." />
           <MetricCard title="Active promo codes" value={String(summary.activePromoCodes)} description={`${summary.promoCodes} total promo codes configured.`} />
           <div className="met-card rounded-2xl p-5 lg:col-span-2">
-            <p className="text-sm font-bold text-foreground">Recent Users</p>
+            <p className="text-sm font-bold text-slate-100">Recent Users</p>
             <div className="mt-3 space-y-2">
               {users.slice(0, 5).map((user) => (
-                <div key={user.id} className="rounded-xl border bg-background px-3 py-2 text-sm">
+                <div key={user.id} className="rounded-xl border bg-white/5 px-3 py-2 text-sm">
                   <p className="font-semibold">{user.name || 'Unnamed user'}</p>
-                  <p className="text-xs text-muted-foreground">{user.email} • {user.role}</p>
+                  <p className="text-xs text-slate-400">{user.email} • {user.role}</p>
                 </div>
               ))}
-              {users.length === 0 && <p className="text-sm text-muted-foreground">No users found.</p>}
+              {users.length === 0 && <p className="text-sm text-slate-400">No users found.</p>}
             </div>
           </div>
           <div className="met-card rounded-2xl p-5">
-            <p className="text-sm font-bold text-foreground">Recent Audit Events</p>
+            <p className="text-sm font-bold text-slate-100">Recent Audit Events</p>
             <div className="mt-3 space-y-2">
               {logs.slice(0, 5).map((log) => (
-                <div key={log.id} className="rounded-xl border bg-background px-3 py-2 text-xs">
+                <div key={log.id} className="rounded-xl border bg-white/5 px-3 py-2 text-xs">
                   <p className="font-semibold">{log.action}</p>
-                  <p className="text-muted-foreground">{new Date(log.createdAt).toLocaleString()}</p>
+                  <p className="text-slate-400">{new Date(log.createdAt).toLocaleString()}</p>
                 </div>
               ))}
-              {logs.length === 0 && <p className="text-sm text-muted-foreground">No logs yet.</p>}
+              {logs.length === 0 && <p className="text-sm text-slate-400">No logs yet.</p>}
             </div>
           </div>
         </section>
@@ -261,22 +261,22 @@ function AdminPage() {
         <>
           <section className="met-card rounded-2xl p-4 sm:p-5">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
-              <label className="md:col-span-2 flex items-center gap-2 rounded-xl border bg-background px-3">
-                <Search size={16} className="text-muted-foreground" />
+              <label className="md:col-span-2 flex items-center gap-2 rounded-xl border bg-white/5 px-3">
+                <Search size={16} className="text-slate-400" />
                 <input value={query.search} onChange={(e) => setQuery((prev) => ({ ...prev, search: e.target.value }))} placeholder="Search by name or email" className="h-11 w-full bg-transparent outline-none text-sm" />
               </label>
-              <select value={query.role} onChange={(e) => setQuery((prev) => ({ ...prev, role: e.target.value as 'BASIC' | 'PREMIUM' | 'ADMIN' | 'ALL' }))} className="h-11 rounded-xl border bg-background px-3 text-sm">
+              <select value={query.role} onChange={(e) => setQuery((prev) => ({ ...prev, role: e.target.value as 'BASIC' | 'PREMIUM' | 'ADMIN' | 'ALL' }))} className="h-11 rounded-xl border bg-white/5 px-3 text-sm">
                 <option value="ALL">All roles</option>
                 <option value="BASIC">Basic</option>
                 <option value="PREMIUM">Premium</option>
                 <option value="ADMIN">Administrator</option>
               </select>
-              <select value={query.status} onChange={(e) => setQuery((prev) => ({ ...prev, status: e.target.value as 'active' | 'banned' | 'all' }))} className="h-11 rounded-xl border bg-background px-3 text-sm">
+              <select value={query.status} onChange={(e) => setQuery((prev) => ({ ...prev, status: e.target.value as 'active' | 'banned' | 'all' }))} className="h-11 rounded-xl border bg-white/5 px-3 text-sm">
                 <option value="all">All status</option>
                 <option value="active">Active</option>
                 <option value="banned">Banned</option>
               </select>
-              <button type="button" onClick={() => void loadUsers()} className="h-11 rounded-xl border bg-background px-3 text-sm font-semibold inline-flex items-center justify-center gap-2 hover:bg-muted">
+              <button type="button" onClick={() => void loadUsers()} className="h-11 rounded-xl border bg-white/5 px-3 text-sm font-semibold inline-flex items-center justify-center gap-2 hover:bg-white/10">
                 <RefreshCw size={16} />
                 {isLoadingUsers ? 'Loading...' : 'Refresh'}
               </button>
@@ -287,11 +287,11 @@ function AdminPage() {
             <section className="met-card rounded-2xl">
               <div className="border-b px-4 py-3"><p className="font-bold inline-flex items-center gap-2"><Users size={16} /> User List</p></div>
               <div className="max-h-[520px] overflow-auto p-2">
-                {users.length === 0 && <p className="p-4 text-sm text-muted-foreground">No users found.</p>}
+                {users.length === 0 && <p className="p-4 text-sm text-slate-400">No users found.</p>}
                 {users.map((user) => (
-                  <button key={user.id} type="button" onClick={() => setSelectedUserId(user.id)} className={`mb-2 w-full rounded-xl border p-3 text-left transition ${selectedUserId === user.id ? 'border-primary/30 bg-primary/10' : 'border-border bg-background hover:bg-muted'}`}>
+                  <button key={user.id} type="button" onClick={() => setSelectedUserId(user.id)} className={`mb-2 w-full rounded-xl border p-3 text-left transition ${selectedUserId === user.id ? 'border-primary/30 bg-primary/10' : 'border-white/12 bg-white/5 hover:bg-white/10'}`}>
                     <p className="truncate text-sm font-bold">{user.name || 'Unnamed user'}</p>
-                    <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                    <p className="truncate text-xs text-slate-400">{user.email}</p>
                     <div className="mt-2 flex items-center gap-2 text-[11px]">
                       <span className="rounded-md border px-2 py-0.5">{user.role}</span>
                       <span className={`rounded-md border px-2 py-0.5 ${user.isBanned ? 'border-rose-300 text-rose-600' : 'border-emerald-300 text-emerald-600'}`}>{user.isBanned ? 'BANNED' : 'ACTIVE'}</span>
@@ -306,15 +306,15 @@ function AdminPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <h2 className="text-lg font-black tracking-tight">Selected User</h2>
                   <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
-                    <button type="button" onClick={() => handleSetRole('PREMIUM')} disabled={!selectedUserListItem || selectedUserListItem.role === 'PREMIUM' || selectedUserListItem.role === 'ADMIN'} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold bg-background hover:bg-muted disabled:opacity-50 sm:text-sm"><Gem size={15} />Set Premium</button>
-                    <button type="button" onClick={() => handleSetRole('BASIC')} disabled={!selectedUserListItem || selectedUserListItem.role === 'BASIC' || selectedUserListItem.role === 'ADMIN'} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold bg-background hover:bg-muted disabled:opacity-50 sm:text-sm"><Users size={15} />Set Basic</button>
-                    <button type="button" onClick={handleToggleBan} disabled={!selectedUserListItem} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold bg-background hover:bg-muted disabled:opacity-50 sm:text-sm"><Ban size={15} />{selectedUserListItem?.isBanned ? 'Unban' : 'Ban'}</button>
+                    <button type="button" onClick={() => handleSetRole('PREMIUM')} disabled={!selectedUserListItem || selectedUserListItem.role === 'PREMIUM' || selectedUserListItem.role === 'ADMIN'} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold bg-white/5 hover:bg-white/10 disabled:opacity-50 sm:text-sm"><Gem size={15} />Set Premium</button>
+                    <button type="button" onClick={() => handleSetRole('BASIC')} disabled={!selectedUserListItem || selectedUserListItem.role === 'BASIC' || selectedUserListItem.role === 'ADMIN'} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold bg-white/5 hover:bg-white/10 disabled:opacity-50 sm:text-sm"><Users size={15} />Set Basic</button>
+                    <button type="button" onClick={handleToggleBan} disabled={!selectedUserListItem} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold bg-white/5 hover:bg-white/10 disabled:opacity-50 sm:text-sm"><Ban size={15} />{selectedUserListItem?.isBanned ? 'Unban' : 'Ban'}</button>
                     <button type="button" onClick={handleDeleteUser} disabled={!selectedUserListItem} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-50 sm:text-sm"><Trash2 size={15} />Delete</button>
                   </div>
                 </div>
 
-                {!selectedUserId && <p className="mt-4 text-sm text-muted-foreground">Select a user from the list.</p>}
-                {selectedUserId && isLoadingDetails && <p className="mt-4 text-sm text-muted-foreground">Loading details...</p>}
+                {!selectedUserId && <p className="mt-4 text-sm text-slate-400">Select a user from the list.</p>}
+                {selectedUserId && isLoadingDetails && <p className="mt-4 text-sm text-slate-400">Loading details...</p>}
                 {selectedUser && (
                   <div className="mt-4 space-y-4">
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -323,12 +323,12 @@ function AdminPage() {
                       <MiniStat label="Transactions" value={String(selectedUser.transactions.length)} />
                       <MiniStat label="Transfers" value={String(selectedUser.transferLogs.length)} />
                     </div>
-                    <div className="rounded-xl border bg-background p-3 text-sm">
-                      <p><span className="text-muted-foreground">Name:</span> {selectedUser.name || 'N/A'}</p>
-                      <p><span className="text-muted-foreground">Email:</span> {selectedUser.email}</p>
-                      <p><span className="text-muted-foreground">Role:</span> {selectedUser.role}</p>
-                      <p><span className="text-muted-foreground">Status:</span> {selectedUser.isBanned ? 'BANNED' : 'ACTIVE'}</p>
-                      <p><span className="text-muted-foreground">Subscription:</span> {selectedUser.subscription ? `${selectedUser.subscription.plan} / ${selectedUser.subscription.status}` : 'N/A'}</p>
+                    <div className="rounded-xl border bg-white/5 p-3 text-sm">
+                      <p><span className="text-slate-400">Name:</span> {selectedUser.name || 'N/A'}</p>
+                      <p><span className="text-slate-400">Email:</span> {selectedUser.email}</p>
+                      <p><span className="text-slate-400">Role:</span> {selectedUser.role}</p>
+                      <p><span className="text-slate-400">Status:</span> {selectedUser.isBanned ? 'BANNED' : 'ACTIVE'}</p>
+                      <p><span className="text-slate-400">Subscription:</span> {selectedUser.subscription ? `${selectedUser.subscription.plan} / ${selectedUser.subscription.status}` : 'N/A'}</p>
                     </div>
                   </div>
                 )}
@@ -345,22 +345,22 @@ function AdminPage() {
             <h2 className="text-lg font-black tracking-tight">Premium Promo Codes</h2>
           </div>
           <div className="grid grid-cols-1 gap-2 md:grid-cols-[1.1fr,0.7fr,0.8fr,auto]">
-            <input value={promoCode} onChange={(e) => setPromoCode(e.target.value)} placeholder="Code (e.g. SPRING2026)" className="h-11 rounded-xl border bg-background px-3 text-sm" />
-            <input type="number" value={promoMaxUses} onChange={(e) => setPromoMaxUses(e.target.value)} placeholder="Max uses (optional)" className="h-11 rounded-xl border bg-background px-3 text-sm" />
-            <input type="date" value={promoExpiresAt} onChange={(e) => setPromoExpiresAt(e.target.value)} className="h-11 rounded-xl border bg-background px-3 text-sm" />
-            <button type="button" onClick={handleCreatePromoCode} className="h-11 rounded-xl border bg-background px-4 text-sm font-semibold hover:bg-muted">Create</button>
+            <input value={promoCode} onChange={(e) => setPromoCode(e.target.value)} placeholder="Code (e.g. SPRING2026)" className="h-11 rounded-xl border bg-white/5 px-3 text-sm" />
+            <input type="number" value={promoMaxUses} onChange={(e) => setPromoMaxUses(e.target.value)} placeholder="Max uses (optional)" className="h-11 rounded-xl border bg-white/5 px-3 text-sm" />
+            <input type="date" value={promoExpiresAt} onChange={(e) => setPromoExpiresAt(e.target.value)} className="h-11 rounded-xl border bg-white/5 px-3 text-sm" />
+            <button type="button" onClick={handleCreatePromoCode} className="h-11 rounded-xl border bg-white/5 px-4 text-sm font-semibold hover:bg-white/10">Create</button>
           </div>
-          <div className="max-h-80 overflow-auto rounded-xl border bg-background">
+          <div className="max-h-80 overflow-auto rounded-xl border bg-white/5">
             {promoCodes.length === 0 ? (
-              <p className="p-3 text-sm text-muted-foreground">No promo codes yet.</p>
+              <p className="p-3 text-sm text-slate-400">No promo codes yet.</p>
             ) : (
               promoCodes.map((item) => (
                 <div key={item.id} className="border-b last:border-b-0 p-3 text-sm">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="font-bold">{item.code}</p>
-                    <button type="button" onClick={() => void handleTogglePromoCode(item)} className="rounded-lg border px-2 py-1 text-xs font-semibold hover:bg-muted">{item.isActive ? 'Disable' : 'Enable'}</button>
+                    <button type="button" onClick={() => void handleTogglePromoCode(item)} className="rounded-lg border px-2 py-1 text-xs font-semibold hover:bg-white/10">{item.isActive ? 'Disable' : 'Enable'}</button>
                   </div>
-                  <p className="text-xs text-muted-foreground">Uses: {item.redemptionCount}{item.maxRedemptions ? ` / ${item.maxRedemptions}` : ''} | Expires: {item.expiresAt ? new Date(item.expiresAt).toLocaleDateString() : 'Never'}</p>
+                  <p className="text-xs text-slate-400">Uses: {item.redemptionCount}{item.maxRedemptions ? ` / ${item.maxRedemptions}` : ''} | Expires: {item.expiresAt ? new Date(item.expiresAt).toLocaleDateString() : 'Never'}</p>
                 </div>
               ))
             )}
@@ -375,18 +375,18 @@ function AdminPage() {
               <Activity size={18} className="text-primary" />
               Audit Logs
             </h2>
-            <button type="button" onClick={() => void loadLogs()} className="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold bg-background hover:bg-muted">
+            <button type="button" onClick={() => void loadLogs()} className="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold bg-white/5 hover:bg-white/10">
               <RefreshCw size={15} />
               Reload
             </button>
           </div>
-          <div className="mt-3 max-h-[440px] overflow-auto rounded-xl border bg-background">
-            {logs.length === 0 && <p className="p-4 text-sm text-muted-foreground">No logs yet.</p>}
+          <div className="mt-3 max-h-[440px] overflow-auto rounded-xl border bg-white/5">
+            {logs.length === 0 && <p className="p-4 text-sm text-slate-400">No logs yet.</p>}
             {logs.map((log) => (
               <div key={log.id} className="border-b last:border-b-0 px-3 py-2 text-xs sm:text-sm">
                 <p className="font-semibold">{log.action}</p>
-                <p className="text-muted-foreground">Actor: {log.actorUser?.email || 'System'} | Target: {log.targetUser?.email || 'N/A'}</p>
-                <p className="text-muted-foreground">{new Date(log.createdAt).toLocaleString()}</p>
+                <p className="text-slate-400">Actor: {log.actorUser?.email || 'System'} | Target: {log.targetUser?.email || 'N/A'}</p>
+                <p className="text-slate-400">{new Date(log.createdAt).toLocaleString()}</p>
               </div>
             ))}
           </div>
@@ -399,17 +399,17 @@ function AdminPage() {
 function MetricCard({ title, value, description }: { title: string; value: string; description: string }) {
   return (
     <div className="met-card rounded-2xl p-5">
-      <p className="text-sm font-semibold text-muted-foreground">{title}</p>
+      <p className="text-sm font-semibold text-slate-400">{title}</p>
       <p className="mt-2 text-3xl font-black tracking-tight">{value}</p>
-      <p className="mt-2 text-xs text-muted-foreground">{description}</p>
+      <p className="mt-2 text-xs text-slate-400">{description}</p>
     </div>
   )
 }
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border bg-background p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
+    <div className="rounded-xl border bg-white/5 p-3">
+      <p className="text-xs text-slate-400">{label}</p>
       <p className="text-lg font-black tracking-tight">{value}</p>
     </div>
   )
@@ -430,7 +430,7 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-semibold transition ${active ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-background hover:bg-muted'}`}
+      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-semibold transition ${active ? 'border-primary/40 bg-primary/10 text-primary' : 'border-white/12 bg-white/5 hover:bg-white/10'}`}
     >
       <Icon size={15} />
       {children}

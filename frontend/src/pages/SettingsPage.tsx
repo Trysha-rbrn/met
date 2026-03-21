@@ -286,7 +286,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
           </div>
 
           <div className="met-card met-card-hover rounded-2xl p-4">
-            <p className="text-sm font-bold text-foreground">Save Status</p>
+            <p className="text-sm font-bold text-slate-100">Save Status</p>
             <p className="mt-2 text-xs text-slate-400">{saveStateLabel}</p>
           </div>
         </aside>
@@ -326,7 +326,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
             <SectionHeader icon={KeyRound} title="Security & Privacy" subtitle="Password rotation and benchmarking privacy controls." />
             <div className="mt-6 grid gap-4 lg:grid-cols-2">
               <div className="rounded-2xl border border-white/12 bg-white/5 p-4">
-                <p className="text-sm font-bold text-foreground">Password Update</p>
+                <p className="text-sm font-bold text-slate-100">Password Update</p>
                 <p className="mt-1 text-xs text-slate-400">Enter current + new password. Save runs automatically after brief pause.</p>
                 <form className="mt-4 space-y-3" onSubmit={(e) => e.preventDefault()}>
                   <input type="text" name="username" autoComplete="username" value={user?.email || ''} readOnly tabIndex={-1} aria-hidden="true" className="sr-only" />
@@ -335,7 +335,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
                 </form>
               </div>
               <div className="rounded-2xl border border-white/12 bg-white/5 p-4">
-                <p className="text-sm font-bold text-foreground">Benchmark Privacy</p>
+                <p className="text-sm font-bold text-slate-100">Benchmark Privacy</p>
                 <p className="mt-1 text-xs text-slate-400">Anonymous benchmarking compares your trends against similar users only if enabled.</p>
                 <label className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-white/12 bg-white/5 px-4 py-3">
                   <span className="text-sm font-semibold">Opt out from anonymized benchmarking</span>
@@ -428,14 +428,14 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
             <div className="mt-6 grid gap-4 lg:grid-cols-2">
               <form onSubmit={handleResetData} className="rounded-2xl border border-[#ff9eff]/35 bg-white/5 p-4">
                 <input type="text" name="username" autoComplete="username" value={user?.email || ''} readOnly tabIndex={-1} aria-hidden="true" className="sr-only" />
-                <p className="flex items-center gap-2 text-sm font-bold text-foreground"><DatabaseZap size={16} />Reset Financial Data</p>
+                <p className="flex items-center gap-2 text-sm font-bold text-slate-100"><DatabaseZap size={16} />Reset Financial Data</p>
                 <p className="mt-1 text-xs text-slate-400">Deletes transactions, categories, and extra accounts while preserving the primary account.</p>
                 <input id="settings-reset-data-password" name="resetDataPassword" type="password" autoComplete="current-password" placeholder="Confirm password" value={resetDataPassword} onChange={(e) => setResetDataPassword(e.target.value)} className="mt-3 h-11 w-full rounded-xl border border-white/12 bg-white/5 px-4 outline-none transition focus:ring-4 focus:ring-[#ff9eff]/20" />
                 <button type="submit" className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#ff9eff] px-4 font-bold text-[#1c0d32] transition hover:opacity-90"><DatabaseZap size={16} />Clear User Data</button>
               </form>
               <form onSubmit={handleDeleteAccount} className="rounded-2xl border border-rose-400/45 bg-white/5 p-4">
                 <input type="text" name="username" autoComplete="username" value={user?.email || ''} readOnly tabIndex={-1} aria-hidden="true" className="sr-only" />
-                <p className="text-sm font-bold text-foreground">Delete Account</p>
+                <p className="text-sm font-bold text-slate-100">Delete Account</p>
                 <p className="mt-1 text-xs text-slate-400">Permanently removes your account and all related data.</p>
                 <input id="settings-delete-password" name="deletePassword" type="password" autoComplete="current-password" placeholder="Confirm password" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} className="mt-3 h-11 w-full rounded-xl border border-white/12 bg-white/5 px-4 outline-none transition focus:ring-4 focus:ring-rose-500/20" />
                 <button type="submit" className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 font-bold text-white transition hover:bg-rose-700"><Trash2 size={16} />Delete Account</button>
@@ -462,7 +462,7 @@ function SettingsPage({ user, onUserUpdate, themeMode, onThemeModeChange }: Sett
 
 const SectionHeader = ({ icon: Icon, title, subtitle }: { icon: typeof User; title: string; subtitle: string }) => (
   <div>
-    <div className="inline-flex items-center gap-3 text-foreground">
+    <div className="inline-flex items-center gap-3 text-slate-100">
       <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#ff9eff]/12">
         <Icon size={15} className="text-[#ff9eff]" />
       </span>

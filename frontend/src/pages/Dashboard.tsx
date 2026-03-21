@@ -349,7 +349,7 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
       <header className="space-y-3">
         <div className="space-y-1">
           <h1 className="text-2xl sm:text-3xl font-black tracking-tighter">Dashboard</h1>
-          <p className="text-sm sm:text-base text-muted-foreground font-medium">Current balance and movement across selected periods.</p>
+          <p className="text-sm sm:text-base text-slate-400 font-medium">Current balance and movement across selected periods.</p>
         </div>
         {isPremiumUser && (
         <section className="met-card met-card-hover overflow-hidden rounded-[24px] p-5 sm:p-6">
@@ -378,7 +378,7 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
         </section>
         )}
         <div className="met-card met-card-hover rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+          <div className="flex items-center gap-2 text-sm font-semibold text-slate-400">
             <WalletCards size={16} />
             Active account
           </div>
@@ -387,13 +387,13 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
             name="accountId"
             value={selectedAccountId}
             onChange={(e) => setSelectedAccountId(e.target.value)}
-            className="sm:min-w-56 min-h-11 px-4 py-2.5 border rounded-xl bg-background"
+            className="sm:min-w-56 min-h-11 px-4 py-2.5 border rounded-xl bg-white/5"
           >
             {accounts.map((account) => (
               <option key={account.id} value={account.id}>{account.name}</option>
             ))}
           </select>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-slate-400">
             {selectedAccount ? `Showing ${selectedAccount.name}` : 'No account selected'}
           </span>
         </div>
@@ -442,7 +442,7 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
                 className={`min-h-11 px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
                   selectedRange === range
                     ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:text-foreground'
+                    : 'bg-white/10 text-slate-400 hover:text-slate-100'
                 }`}
               >
                 {range}
@@ -454,32 +454,32 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
         {selectedRange === 'CUSTOM' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className="text-sm font-semibold space-y-1">
-              <span className="block text-muted-foreground">Start date</span>
+              <span className="block text-slate-400">Start date</span>
               <input
                 id="dashboard-custom-start"
                 name="customStartDate"
                 type="date"
                 value={customStart}
                 onChange={(e) => setCustomStart(e.target.value)}
-                className="w-full rounded-xl border bg-background px-3 py-2.5"
+                className="w-full rounded-xl border bg-white/5 px-3 py-2.5"
               />
             </label>
             <label className="text-sm font-semibold space-y-1">
-              <span className="block text-muted-foreground">End date</span>
+              <span className="block text-slate-400">End date</span>
               <input
                 id="dashboard-custom-end"
                 name="customEndDate"
                 type="date"
                 value={customEnd}
                 onChange={(e) => setCustomEnd(e.target.value)}
-                className="w-full rounded-xl border bg-background px-3 py-2.5"
+                className="w-full rounded-xl border bg-white/5 px-3 py-2.5"
               />
             </label>
           </div>
         )}
 
-        <p className="text-sm text-muted-foreground">
-          Showing: <span className="font-semibold text-foreground">{periodTitle}</span>
+        <p className="text-sm text-slate-400">
+          Showing: <span className="font-semibold text-slate-100">{periodTitle}</span>
         </p>
 
         {hasInvalidCustomRange && (
@@ -550,8 +550,8 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
               <p className="text-sm text-slate-300">Top categories in the active period ranked by total spend.</p>
             </div>
             <div className="rounded-2xl border border-white/12 bg-white/5 px-4 py-3 text-right">
-              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">Expense focus</p>
-              <p className="text-sm font-semibold text-foreground">{periodTitle}</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">Expense focus</p>
+              <p className="text-sm font-semibold text-slate-100">{periodTitle}</p>
             </div>
           </div>
 
@@ -598,8 +598,8 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
               <p className="text-sm text-slate-300">Budget goals are loaded for the month tied to the active analysis window.</p>
             </div>
             <div className="rounded-2xl border border-white/12 bg-white/5 px-4 py-3 text-right">
-              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">Budget month</p>
-              <p className="text-sm font-semibold text-foreground">{getMonthValue(rangeBoundaries.end)}</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">Budget month</p>
+              <p className="text-sm font-semibold text-slate-100">{getMonthValue(rangeBoundaries.end)}</p>
             </div>
           </div>
 
@@ -643,22 +643,22 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
               <Sparkles size={13} />
               SMART RECOMMENDATIONS
             </div>
-            <h3 className="text-xl font-black tracking-tight text-foreground">Smart recommendations</h3>
-            <p className="text-sm text-foreground/80">Generated from your recent transaction patterns.</p>
+            <h3 className="text-xl font-black tracking-tight text-slate-100">Smart recommendations</h3>
+            <p className="text-sm text-slate-100/80">Generated from your recent transaction patterns.</p>
           </div>
           {englishInsightsFeed.length === 0 ? (
-            <p className="text-sm text-foreground/80">No recommendation signals yet.</p>
+            <p className="text-sm text-slate-100/80">No recommendation signals yet.</p>
           ) : (
             <div className="space-y-2">
               {englishInsightsFeed.map((line, idx) => (
-                <p key={`${idx}-${line}`} className="rounded-xl border border-white/12 bg-white/5 px-3 py-2 text-sm font-medium text-foreground">
+                <p key={`${idx}-${line}`} className="rounded-xl border border-white/12 bg-white/5 px-3 py-2 text-sm font-medium text-slate-100">
                   {line}
                 </p>
               ))}
             </div>
           )}
           {englishBenchmarkMessage ? (
-            <div className="rounded-xl border border-white/12 bg-white/5 px-3 py-2 text-sm font-medium text-foreground">
+            <div className="rounded-xl border border-white/12 bg-white/5 px-3 py-2 text-sm font-medium text-slate-100">
               Benchmark: {englishBenchmarkMessage}
             </div>
           ) : null}
@@ -668,17 +668,17 @@ function Dashboard({ isSidebarCollapsed, userRole }: DashboardProps) {
       <section className="met-card met-card-hover rounded-2xl p-5 md:p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-bold">Recent Activity (Snapshot)</h3>
-          <span className="text-xs text-muted-foreground">Less critical detail</span>
+          <span className="text-xs text-slate-400">Less critical detail</span>
         </div>
         {recentTransactions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No transactions in selected period.</p>
+          <p className="text-sm text-slate-400">No transactions in selected period.</p>
         ) : (
           <div className="divide-y">
             {recentTransactions.map((tx) => (
               <div key={tx.id} className="py-3 flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-semibold truncate">{tx.description || tx.category?.name || 'Transaction'}</p>
-                  <p className="text-xs text-muted-foreground truncate">
+                  <p className="text-xs text-slate-400 truncate">
                     {tx.category?.name || 'Uncategorized'} • {new Date(tx.date).toLocaleDateString()}
                   </p>
                 </div>
@@ -789,7 +789,7 @@ function normalizeInsightToEnglish(input: string) {
 
 const StatCard = ({ title, amount, icon: Icon, color, glow = false }: { title: string; amount: string; icon: ComponentType<{ size?: number; className?: string }>; color: string; glow?: boolean }) => (
   <div className="met-card met-card-hover rounded-2xl p-4 sm:p-6 flex flex-col justify-between gap-3 sm:gap-4">
-    <div className="flex items-center justify-between text-muted-foreground">
+    <div className="flex items-center justify-between text-slate-400">
       <span className="font-bold text-sm uppercase tracking-widest">{title}</span>
       <Icon size={24} className={color} />
     </div>
@@ -805,12 +805,12 @@ const StatCard = ({ title, amount, icon: Icon, color, glow = false }: { title: s
 const ChartsSectionSkeleton = () => (
   <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 min-w-0">
     <div className="met-card rounded-2xl p-5 md:p-6 min-w-0">
-      <div className="h-6 w-40 rounded-md bg-muted/70 mb-4" />
-      <div className="h-64 sm:h-72 min-h-[16rem] sm:min-h-[18rem] min-w-0 rounded-xl bg-muted/60 animate-pulse" />
+      <div className="h-6 w-40 rounded-md bg-white/10 mb-4" />
+      <div className="h-64 sm:h-72 min-h-[16rem] sm:min-h-[18rem] min-w-0 rounded-xl bg-white/10 animate-pulse" />
     </div>
     <div className="met-card rounded-2xl p-5 md:p-6 min-w-0">
-      <div className="h-6 w-44 rounded-md bg-muted/70 mb-4" />
-      <div className="h-64 sm:h-72 min-h-[16rem] sm:min-h-[18rem] min-w-0 rounded-xl bg-muted/60 animate-pulse" />
+      <div className="h-6 w-44 rounded-md bg-white/10 mb-4" />
+      <div className="h-64 sm:h-72 min-h-[16rem] sm:min-h-[18rem] min-w-0 rounded-xl bg-white/10 animate-pulse" />
     </div>
   </div>
 )

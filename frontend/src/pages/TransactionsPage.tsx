@@ -763,13 +763,13 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tighter">Transactions</h1>
-            <p className="text-sm sm:text-base text-muted-foreground font-medium">All your income and expense records for selected account.</p>
+            <p className="text-sm sm:text-base text-slate-400 font-medium">All your income and expense records for selected account.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full md:w-auto">
             <button
               type="button"
               onClick={exportExcel}
-              className="min-h-11 px-4 py-2.5 rounded-xl border font-semibold inline-flex items-center justify-center gap-2 hover:bg-muted"
+              className="min-h-11 px-4 py-2.5 rounded-xl border font-semibold inline-flex items-center justify-center gap-2 hover:bg-white/10"
             >
               <Download size={16} />
               Export Excel
@@ -777,7 +777,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
             <button
               type="button"
               onClick={exportPdf}
-              className="min-h-11 px-4 py-2.5 rounded-xl border font-semibold inline-flex items-center justify-center gap-2 hover:bg-muted"
+              className="min-h-11 px-4 py-2.5 rounded-xl border font-semibold inline-flex items-center justify-center gap-2 hover:bg-white/10"
             >
               <Download size={16} />
               Export PDF
@@ -785,7 +785,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
             <button
               type="button"
               onClick={handleImportExcelClick}
-              className="min-h-11 px-4 py-2.5 rounded-xl border font-semibold inline-flex items-center justify-center gap-2 hover:bg-muted"
+              className="min-h-11 px-4 py-2.5 rounded-xl border font-semibold inline-flex items-center justify-center gap-2 hover:bg-white/10"
             >
               <FileUp size={16} />
               Import Excel
@@ -838,7 +838,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
         )}
 
         <div className="met-card met-card-hover rounded-2xl p-4 md:p-5 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-          <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+          <div className="flex items-center gap-2 text-sm font-semibold text-slate-400">
             <WalletCards size={16} />
             Active account
           </div>
@@ -848,7 +848,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
               name="accountId"
               value={selectedAccountId}
               onChange={(e) => setSelectedAccountId(e.target.value)}
-              className="w-full sm:min-w-52 min-h-11 px-4 py-2.5 border rounded-xl bg-background"
+              className="w-full sm:min-w-52 min-h-11 px-4 py-2.5 border rounded-xl bg-white/5"
             >
               {accounts.map((account) => (
                 <option key={account.id} value={account.id}>{account.name}</option>
@@ -857,14 +857,14 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
             <button
               type="button"
               onClick={handleCreateAccount}
-              className="w-full sm:w-auto min-h-11 px-4 py-2.5 rounded-xl border font-semibold hover:bg-muted transition-colors"
+              className="w-full sm:w-auto min-h-11 px-4 py-2.5 rounded-xl border font-semibold hover:bg-white/10 transition-colors"
               disabled={accounts.length >= maxAccounts}
             >
               {accounts.length >= maxAccounts ? 'Account limit reached' : 'Create Account'}
             </button>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-slate-400">
           Plan: <span className="font-semibold">{userRole}</span> • Account limit: {maxAccounts}
         </p>
         {isPremiumUser && (
@@ -872,13 +872,13 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="space-y-1">
                 <p className="text-sm font-bold">Bulk assign category</p>
-                <p className="text-xs text-muted-foreground">Select transactions and update category in one action.</p>
+                <p className="text-xs text-slate-400">Select transactions and update category in one action.</p>
               </div>
               <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                 <select
                   value={bulkCategoryId}
                   onChange={(e) => setBulkCategoryId(e.target.value)}
-                  className="w-full sm:min-w-60 min-h-11 rounded-xl border bg-background px-3"
+                  className="w-full sm:min-w-60 min-h-11 rounded-xl border bg-white/5 px-3"
                 >
                   <option value="">Choose category</option>
                   {categories.map((category) => (
@@ -890,7 +890,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
                 <button
                   type="button"
                   onClick={handleBulkAssignCategory}
-                  className="min-h-11 rounded-xl border px-4 font-semibold hover:bg-muted"
+                  className="min-h-11 rounded-xl border px-4 font-semibold hover:bg-white/10"
                 >
                   <CheckSquare size={14} className="inline mr-1" />
                   Apply to {selectedTransactionIds.length}
@@ -1009,7 +1009,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
       />
 
       <div className="met-card rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-5 md:px-6 py-4 border-b bg-muted/30 text-sm font-semibold text-muted-foreground">
+        <div className="px-5 md:px-6 py-4 border-b bg-white/5 text-sm font-semibold text-slate-400">
           {selectedAccount ? `Showing transactions for ${selectedAccount.name}` : 'No account selected'}
         </div>
         <div className="hidden md:block overflow-x-auto">
@@ -1032,7 +1032,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
                 />
               )) : (
                 <tr>
-                  <td colSpan={5} className="p-12 text-center text-muted-foreground italic">
+                  <td colSpan={5} className="p-12 text-center text-slate-400 italic">
                     No transactions yet for this account. Add your first one.
                   </td>
                 </tr>
@@ -1057,24 +1057,24 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
               onDelete={() => handleDelete(t.id)}
             />
           )) : (
-            <p className="text-center text-sm text-muted-foreground italic py-8">
+            <p className="text-center text-sm text-slate-400 italic py-8">
               No transactions yet for this account. Add your first one.
             </p>
           )}
         </div>
         {!loading && (
           <div className="px-4 pb-4 pt-2 text-center">
-            <p className="text-xs text-muted-foreground mb-2">
+            <p className="text-xs text-slate-400 mb-2">
               Showing {displayedTransactions.length} of {filteredTransactions.length} transaction(s)
             </p>
             {hasMoreTransactions ? (
               <div ref={loadMoreRef} className="h-10 flex items-center justify-center">
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-slate-400">
                   {loadingMore ? 'Loading older transactions...' : 'Scroll down to load older transactions'}
                 </span>
               </div>
             ) : transactions.length > 20 ? (
-              <span className="text-xs text-muted-foreground">All transactions loaded.</span>
+              <span className="text-xs text-slate-400">All transactions loaded.</span>
             ) : null}
           </div>
         )}
@@ -1113,7 +1113,7 @@ const TransactionRow = ({
   onSplit?: () => void
   onDelete: () => void
 }) => (
-  <tr className="hover:bg-muted/50 transition-colors group">
+  <tr className="hover:bg-white/5 transition-colors group">
     <td className="p-4 md:p-6">
       <div className="flex items-center gap-3">
         <input type="checkbox" checked={isSelected} onChange={onToggleSelect} className="h-4 w-4" />
@@ -1141,7 +1141,7 @@ const TransactionRow = ({
             </span>
           )}
         </div>
-        <p className="text-sm text-muted-foreground inline-flex items-center gap-2">
+        <p className="text-sm text-slate-400 inline-flex items-center gap-2">
           <CategoryBadge icon={t.category?.icon} name={t.category?.name || 'Uncategorized'} />
           <span>-</span>
           <span>{t.account?.name || 'No account'}</span>
@@ -1152,13 +1152,13 @@ const TransactionRow = ({
       <p className={`font-bold text-lg ${t.type === 'INCOME' ? 'text-emerald-500' : 'text-rose-500'}`}>
         {t.type === 'INCOME' ? '+' : '-'}{formatCurrency(t.amount)}
       </p>
-      <p className="text-sm text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
+      <p className="text-sm text-slate-400">{new Date(t.date).toLocaleDateString()}</p>
     </td>
     <td className="p-4 md:p-6 w-24">
       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        {onSplit ? <button onClick={onSplit} className="p-2 text-muted-foreground hover:text-[#ff9eff]"><Scissors size={16} /></button> : null}
-        <button onClick={onEdit} className="p-2 text-muted-foreground hover:text-foreground"><Edit2 size={16} /></button>
-        <button onClick={onDelete} className="p-2 text-muted-foreground hover:text-destructive"><Trash2 size={16} /></button>
+        {onSplit ? <button onClick={onSplit} className="p-2 text-slate-400 hover:text-[#ff9eff]"><Scissors size={16} /></button> : null}
+        <button onClick={onEdit} className="p-2 text-slate-400 hover:text-slate-100"><Edit2 size={16} /></button>
+        <button onClick={onDelete} className="p-2 text-slate-400 hover:text-destructive"><Trash2 size={16} /></button>
       </div>
     </td>
   </tr>
@@ -1167,18 +1167,18 @@ const TransactionRow = ({
 const TransactionSkeleton = () => (
   <tr className="animate-pulse">
     <td className="p-4 md:p-6">
-      <div className="h-4 w-4 bg-muted rounded-sm" />
+      <div className="h-4 w-4 bg-white/10 rounded-sm" />
     </td>
     <td className="p-4 md:p-6 flex items-center gap-4">
-      <div className="w-10 h-10 rounded-full bg-muted" />
+      <div className="w-10 h-10 rounded-full bg-white/10" />
       <div>
-        <div className="h-4 w-32 bg-muted rounded-md" />
-        <div className="h-3 w-20 bg-muted rounded-md mt-2" />
+        <div className="h-4 w-32 bg-white/10 rounded-md" />
+        <div className="h-3 w-20 bg-white/10 rounded-md mt-2" />
       </div>
     </td>
     <td className="p-4 md:p-6 text-right">
-      <div className="h-6 w-24 bg-muted rounded-md ml-auto" />
-      <div className="h-3 w-16 bg-muted rounded-md mt-2 ml-auto" />
+      <div className="h-6 w-24 bg-white/10 rounded-md ml-auto" />
+      <div className="h-3 w-16 bg-white/10 rounded-md mt-2 ml-auto" />
     </td>
     <td className="p-4 md:p-6 w-24" />
   </tr>
@@ -1205,9 +1205,9 @@ const MobileTransactionCard = ({
   onSplit?: () => void
   onDelete: () => void
 }) => (
-  <div className="rounded-xl border bg-background p-4 space-y-3">
+  <div className="rounded-xl border bg-white/5 p-4 space-y-3">
     <div className="flex items-center justify-between gap-3">
-      <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+      <label className="inline-flex items-center gap-2 text-xs text-slate-400">
         <input type="checkbox" checked={isSelected} onChange={onToggleSelect} className="h-4 w-4" />
         Select
       </label>
@@ -1229,7 +1229,7 @@ const MobileTransactionCard = ({
             </span>
           )}
         </div>
-        <p className="text-xs text-muted-foreground truncate inline-flex items-center gap-2">
+        <p className="text-xs text-slate-400 truncate inline-flex items-center gap-2">
           <CategoryBadge icon={t.category?.icon} name={t.category?.name || 'Uncategorized'} />
           <span>-</span>
           <span>{t.account?.name || 'No account'}</span>
@@ -1240,17 +1240,17 @@ const MobileTransactionCard = ({
       </div>
     </div>
     <div className="flex items-center justify-between">
-      <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
+      <p className="text-xs text-slate-400">{new Date(t.date).toLocaleDateString()}</p>
       <div className="flex items-center gap-2">
         {onSplit ? (
-          <button onClick={onSplit} className="h-11 w-11 rounded-lg border text-muted-foreground hover:text-[#ff9eff] flex items-center justify-center">
+          <button onClick={onSplit} className="h-11 w-11 rounded-lg border text-slate-400 hover:text-[#ff9eff] flex items-center justify-center">
             <Scissors size={15} />
           </button>
         ) : null}
-        <button onClick={onEdit} className="h-11 w-11 rounded-lg border text-muted-foreground hover:text-foreground flex items-center justify-center">
+        <button onClick={onEdit} className="h-11 w-11 rounded-lg border text-slate-400 hover:text-slate-100 flex items-center justify-center">
           <Edit2 size={15} />
         </button>
-        <button onClick={onDelete} className="h-11 w-11 rounded-lg border text-muted-foreground hover:text-destructive flex items-center justify-center">
+        <button onClick={onDelete} className="h-11 w-11 rounded-lg border text-slate-400 hover:text-destructive flex items-center justify-center">
           <Trash2 size={15} />
         </button>
       </div>
@@ -1261,7 +1261,7 @@ const MobileTransactionCard = ({
 const CategoryBadge = ({ icon, name }: { icon?: string; name: string }) => {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className="h-4 w-4 rounded-full bg-muted inline-flex items-center justify-center">
+      <span className="h-4 w-4 rounded-full bg-white/10 inline-flex items-center justify-center">
         {renderCategoryIcon(icon, 10)}
       </span>
       <span>{name}</span>
@@ -1271,9 +1271,9 @@ const CategoryBadge = ({ icon, name }: { icon?: string; name: string }) => {
 
 const MobileTransactionSkeleton = () => (
   <div className="rounded-xl border p-4 space-y-3 animate-pulse">
-    <div className="h-4 w-1/2 bg-muted rounded" />
-    <div className="h-3 w-2/3 bg-muted rounded" />
-    <div className="h-3 w-1/3 bg-muted rounded" />
+    <div className="h-4 w-1/2 bg-white/10 rounded" />
+    <div className="h-3 w-2/3 bg-white/10 rounded" />
+    <div className="h-3 w-1/3 bg-white/10 rounded" />
   </div>
 )
 
