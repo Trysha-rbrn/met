@@ -57,12 +57,12 @@ function HomePage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#f1f5f9]">
       <nav className="fixed top-0 z-[100] h-16 w-full border-b border-white/10 bg-[#0a0a0a]/85 backdrop-blur-xl">
-        <div className="mx-auto flex h-full w-full max-w-7xl items-center justify-between px-6">
+        <div className="relative mx-auto flex h-full w-full max-w-7xl items-center justify-between px-6">
           <Link to="/" className="flex items-center gap-2.5">
             <MetLogo compact />
             <span className="text-xl font-extrabold tracking-tighter text-[#f1f5f9]">MET</span>
           </Link>
-          <div className="hidden items-center gap-8 text-sm font-medium text-[#64748b] md:flex">
+          <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 text-sm font-medium text-[#64748b] md:flex">
             <a href="#features" className="hover:text-[#f1f5f9]">Features</a>
             <a href="#pricing" className="hover:text-[#f1f5f9]">Pricing</a>
             <a href="#testimonials" className="hover:text-[#f1f5f9]">Reviews</a>

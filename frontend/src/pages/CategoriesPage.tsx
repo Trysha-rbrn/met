@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, ChevronRight, ChevronDown, Tag, Gem, Target, CalendarDays } from 'lucide-react'
+import { Plus, Edit2, Trash2, Gem, Target, CalendarDays } from 'lucide-react'
 import * as api from '../api/categoriesApi'
 import type { BudgetGoal, Category, CategoryRule } from '../api/categoriesApi'
 import CategoryModal from '../components/CategoryModal'
@@ -17,13 +17,11 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
   const [budgetGoals, setBudgetGoals] = useState<BudgetGoal[]>([])
   const [loading, setLoading] = useState(true)
   const [budgetLoading, setBudgetLoading] = useState(false)
-  const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({})
   const [selectedBudgetMonth, setSelectedBudgetMonth] = useState(() => new Date().toISOString().slice(0, 7))
   const [categoryRules, setCategoryRules] = useState<CategoryRule[]>([])
   const [newRuleKeyword, setNewRuleKeyword] = useState('')
   const [newRuleCategoryId, setNewRuleCategoryId] = useState('')
-  
-  // Modal state
+
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalInitialData, setModalInitialData] = useState<Category | null>(null)
   const [modalParentId, setModalParentId] = useState<string | null>(null)
@@ -40,7 +38,6 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
       setCategoryRules([])
       return
     }
-
     void fetchBudgetGoals(selectedBudgetMonth)
     void fetchCategoryRules()
   }, [isPremiumUser, selectedBudgetMonth])
@@ -55,10 +52,6 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
     } finally {
       setLoading(false)
     }
-  }
-
-  const toggleExpand = (id: string) => {
-    setExpandedCats(prev => ({ ...prev, [id]: !prev[id] }))
   }
 
   const handleAddCategory = () => {
@@ -83,15 +76,14 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
   }
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this category? All subcategories will also be deleted.')) {
-      try {
-        await api.deleteCategory(id)
-        notify.success('Category deleted.')
-        fetchCategories()
-      } catch (error) {
-        console.error('Error deleting category:', error)
-        notify.error('Failed to delete category.')
-      }
+    if (!window.confirm('Are you sure you want to delete this category? All subcategories will also be deleted.')) return
+    try {
+      await api.deleteCategory(id)
+      notify.success('Category deleted.')
+      await fetchCategories()
+    } catch (error) {
+      console.error('Error deleting category:', error)
+      notify.error('Failed to delete category.')
     }
   }
 
@@ -126,17 +118,12 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
         await api.createCategory(data)
         notify.success('Category created.')
       }
-      fetchCategories()
+      await fetchCategories()
     } catch (error) {
       console.error('Error saving category:', error)
       throw error
     }
   }
-
-  const expenseCategoryOptions = useMemo(
-    () => categories.filter((category) => category.type === 'EXPENSE'),
-    [categories]
-  )
 
   const budgetMap = useMemo(
     () => new Map(budgetGoals.map((goal) => [goal.categoryId, goal])),
@@ -172,7 +159,6 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
 
   const handleDeleteBudgetGoal = async (goal: BudgetGoal) => {
     if (!window.confirm(`Delete monthly budget for ${goal.category.name}?`)) return
-
     try {
       await api.deleteBudgetGoal(goal.id)
       notify.success('Budget deleted.')
@@ -193,7 +179,6 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
       notify.warning('Choose a category.')
       return
     }
-
     try {
       await api.createCategoryRule({ keyword, categoryId: newRuleCategoryId, isActive: true })
       notify.success('Rule created.')
@@ -224,53 +209,175 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
     }
   }
 
+  const goalTotals = useMemo(() => {
+    const totalBudget = budgetGoals.reduce((sum, goal) => sum + goal.amount, 0)
+    const totalSpent = 0
+    return { totalBudget, totalSpent, remaining: totalBudget - totalSpent }
+  }, [budgetGoals])
+
+  const categoryCards = useMemo(
+    () => categories.filter((category) => !category.parentId),
+    [categories]
+  )
+
   if (loading) return <div className="p-8 text-center">Loading categories...</div>
 
-  const incomeCats = categories.filter(c => c.type === 'INCOME')
-  const expenseCats = categories.filter(c => c.type === 'EXPENSE')
-
   return (
-    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-500">
-      <header className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
-        <div className="space-y-2">
-          <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Budget / Plan</p>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Categories</h1>
-          <p className="text-sm sm:text-base text-slate-400">Manage your income and expense categories.</p>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <header className="flex items-center justify-between">
+        <div>
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-[#64748b]">Budget / Plan</p>
+          <h1 className="text-3xl font-extrabold tracking-tight">Categories</h1>
         </div>
-        <button 
+        <button
           onClick={handleAddCategory}
-          className="w-full sm:w-auto min-h-11 flex items-center justify-center gap-2 bg-primary hover:opacity-90 text-primary-foreground px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 active:scale-95"
+          className="flex items-center gap-2 rounded-[10px] bg-[#ff9eff] px-5 py-2.5 text-sm font-bold text-black transition-all hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(255,158,255,0.4)]"
         >
-          <Plus size={20} />
-          Add Category
+          <Plus size={16} />
+          New Category
         </button>
       </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="met-card met-card-hover p-4 text-center rounded-2xl">
-          <p className="text-[10px] text-slate-400 mb-1">Total Categories</p>
-          <p className="text-lg font-extrabold text-slate-100">{categories.length}</p>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-center">
+          <p className="mb-1 text-[10px] text-[#64748b]">Total Budget</p>
+          <p className="text-lg font-extrabold">{formatBudgetCurrency(goalTotals.totalBudget)}</p>
         </div>
-        <div className="met-card met-card-hover p-4 text-center rounded-2xl">
-          <p className="text-[10px] text-slate-400 mb-1">Income Categories</p>
-          <p className="text-lg font-extrabold text-emerald-400">{incomeCats.length}</p>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-center">
+          <p className="mb-1 text-[10px] text-[#64748b]">Total Spent</p>
+          <p className="text-lg font-extrabold text-[#ff9eff]">{formatBudgetCurrency(goalTotals.totalSpent)}</p>
         </div>
-        <div className="met-card met-card-hover p-4 text-center rounded-2xl">
-          <p className="text-[10px] text-slate-400 mb-1">Expense Categories</p>
-          <p className="text-lg font-extrabold text-[#ff9eff]">{expenseCats.length}</p>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-center">
+          <p className="mb-1 text-[10px] text-[#64748b]">Remaining</p>
+          <p className="text-lg font-extrabold text-emerald-400">{formatBudgetCurrency(goalTotals.remaining)}</p>
         </div>
       </div>
 
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+        {categoryCards.map((category) => {
+          const goal = budgetMap.get(category.id)
+          const spent = 0
+          const budget = goal?.amount || 0
+          const percent = budget > 0 ? Math.min(100, Math.round((spent / budget) * 100)) : 0
+          const statusColor = percent >= 86 ? 'text-red-400' : percent >= 60 ? 'text-yellow-400' : 'text-emerald-400'
+          const statusText = percent >= 86 ? 'Near limit' : percent >= 60 ? 'Watch out' : 'On track'
+          return (
+            <article key={category.id} className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 transition hover:-translate-y-0.5 hover:border-[#ff9eff]/25">
+              <div className="mb-5 flex items-start justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#ff9eff]/10 text-[#ff9eff]">
+                    {renderCategoryIcon(category.icon, 20)}
+                  </div>
+                  <div>
+                    <h3 className="font-bold">{category.name}</h3>
+                    <p className="mt-0.5 text-[10px] text-[#64748b]">
+                      Budget: {budget > 0 ? formatBudgetCurrency(budget) : 'Not set'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => handleEdit(category)} className="rounded-md p-2 text-[#64748b] transition hover:bg-white/5 hover:text-white">
+                    <Edit2 size={14} />
+                  </button>
+                  <button onClick={() => handleDelete(category.id)} className="rounded-md p-2 text-[#64748b] transition hover:bg-white/5 hover:text-rose-400">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2.5">
+                <div className="flex justify-between text-xs font-bold">
+                  <span className="text-[#64748b]">{formatBudgetCurrency(spent)} spent</span>
+                  <span className={statusColor}>{percent}% · {statusText}</span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-white/5">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${percent}%`,
+                      background: percent >= 86 ? 'linear-gradient(90deg,#dc89e1,#ef4444)' : 'linear-gradient(90deg,#dc89e1,#ff9eff)'
+                    }}
+                  />
+                </div>
+                <p className="text-[10px] text-[#64748b]">
+                  {budget > 0 ? formatBudgetCurrency(Math.max(0, budget - spent)) : 'Set a budget target'}
+                </p>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSetBudgetGoal(category)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-bold hover:bg-white/10"
+                >
+                  <Target size={13} />
+                  {goal ? 'Edit Budget' : 'Set Budget'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAddSubcategory(category)}
+                  className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-bold hover:bg-white/10"
+                >
+                  Add Subcategory
+                </button>
+                {goal ? (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteBudgetGoal(goal)}
+                    className="rounded-lg border border-rose-400/35 bg-rose-500/10 px-3 py-2 text-xs font-bold text-rose-200 hover:bg-rose-500/15"
+                  >
+                    Remove Budget
+                  </button>
+                ) : null}
+              </div>
+
+              {category.subcategories && category.subcategories.length > 0 ? (
+                <div className="mt-4 border-t border-white/10 pt-3">
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-[#64748b]">Subcategories</p>
+                  <div className="space-y-2">
+                    {category.subcategories.map((sub) => (
+                      <div key={sub.id} className="flex items-center justify-between rounded-lg bg-white/[0.03] px-3 py-2">
+                        <span className="inline-flex items-center gap-2 text-xs">
+                          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/10">{renderCategoryIcon(sub.icon, 12)}</span>
+                          {sub.name}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => handleEdit(sub)} className="rounded p-1 text-[#64748b] hover:text-white">
+                            <Edit2 size={12} />
+                          </button>
+                          <button onClick={() => handleDelete(sub.id)} className="rounded p-1 text-[#64748b] hover:text-rose-400">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </article>
+          )
+        })}
+
+        <button
+          onClick={handleAddCategory}
+          className="flex min-h-[180px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-white/15 bg-transparent transition hover:border-[#ff9eff]/35 hover:bg-[#ff9eff]/[0.03]"
+        >
+          <span className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-dashed border-white/15">
+            <Plus size={18} className="text-[#64748b]" />
+          </span>
+          <span className="text-sm font-bold text-[#64748b]">Add custom category</span>
+        </button>
+      </div>
+
       {isPremiumUser ? (
-        <section className="met-card met-card-hover rounded-[24px] p-5 md:p-6 space-y-4">
+        <section className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5 md:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="space-y-2">
               <div className="inline-flex items-center gap-2 rounded-full border border-[#ff9eff]/35 bg-[#ff9eff]/10 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-[#ff9eff]">
                 <Gem size={13} />
                 MONTHLY BUDGET GOALS
               </div>
-              <h2 className="text-xl font-black tracking-tight text-slate-100">Set category targets before the month runs away</h2>
-              <p className="text-sm text-slate-300">Budget goals are available for expense categories and feed premium dashboard analysis.</p>
+              <h2 className="text-xl font-black tracking-tight text-slate-100">Set category targets</h2>
             </div>
             <label className="space-y-1 text-sm font-semibold text-slate-300">
               <span className="inline-flex items-center gap-2"><CalendarDays size={15} /> Budget month</span>
@@ -283,61 +390,11 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
             </label>
           </div>
 
-          {budgetLoading ? (
-            <p className="text-sm text-slate-400">Loading budget goals...</p>
-          ) : expenseCategoryOptions.length === 0 ? (
-            <p className="text-sm text-slate-400">Create at least one expense category to start budgeting.</p>
-          ) : (
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              {expenseCategoryOptions.map((category) => {
-                const goal = budgetMap.get(category.id)
-                return (
-                  <div key={category.id} className="rounded-2xl border border-white/12 bg-white/5 p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-black tracking-tight text-slate-100">{category.name}</p>
-                        <p className="mt-1 text-xs text-slate-400 inline-flex items-center gap-2">
-                          <CategoryIcon icon={category.icon} small />
-                          Expense category
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleSetBudgetGoal(category)}
-                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-bold text-slate-200 transition hover:bg-white/10"
-                      >
-                        <Target size={15} />
-                        {goal ? 'Edit' : 'Set'}
-                      </button>
-                    </div>
-                    <div className="mt-4 flex items-end justify-between gap-3">
-                      <div>
-                        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Monthly target</p>
-                        <p className="mt-1 text-xl font-black tracking-tight text-slate-100">
-                          {goal ? formatBudgetCurrency(goal.amount) : 'Not set'}
-                        </p>
-                      </div>
-                      {goal && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteBudgetGoal(goal)}
-                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-400/35 bg-rose-500/10 px-3 py-2 text-sm font-bold text-rose-200 transition hover:bg-rose-500/15"
-                        >
-                          <Trash2 size={14} />
-                          Remove
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
+          {budgetLoading ? <p className="text-sm text-slate-400">Loading budget goals...</p> : null}
 
           <div className="rounded-2xl border border-white/12 bg-white/5 p-4 space-y-4">
             <div className="space-y-1">
               <h3 className="text-base font-black tracking-tight text-slate-100">Auto-categorization rules</h3>
-              <p className="text-xs text-slate-400">If description contains a keyword, transaction gets assigned to selected category.</p>
             </div>
             <div className="grid grid-cols-1 gap-2 md:grid-cols-[1fr,1fr,auto]">
               <input
@@ -399,59 +456,7 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
         </section>
       ) : null}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Income Categories */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2 text-emerald-400 font-bold text-lg px-2">
-            <Tag size={20} />
-            <h2>Income</h2>
-          </div>
-          <div className="met-card rounded-2xl overflow-hidden shadow-sm">
-            {incomeCats.length > 0 ? incomeCats.map(cat => (
-              <CategoryItem 
-                key={cat.id} 
-                category={cat} 
-                isExpanded={expandedCats[cat.id]} 
-                onToggle={() => toggleExpand(cat.id)}
-                onEdit={() => handleEdit(cat)}
-                onDelete={() => handleDelete(cat.id)}
-                onSubEdit={handleEdit}
-                onSubDelete={(subId) => handleDelete(subId)}
-                onAddSub={() => handleAddSubcategory(cat)}
-              />
-            )) : (
-              <p className="p-8 text-center text-slate-400 italic">No income categories</p>
-            )}
-          </div>
-        </section>
-
-        {/* Expense Categories */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2 text-rose-400 font-bold text-lg px-2">
-            <Tag size={20} />
-            <h2>Expenses</h2>
-          </div>
-          <div className="met-card rounded-2xl overflow-hidden shadow-sm">
-            {expenseCats.length > 0 ? expenseCats.map(cat => (
-              <CategoryItem 
-                key={cat.id} 
-                category={cat} 
-                isExpanded={expandedCats[cat.id]} 
-                onToggle={() => toggleExpand(cat.id)}
-                onEdit={() => handleEdit(cat)}
-                onDelete={() => handleDelete(cat.id)}
-                onSubEdit={handleEdit}
-                onSubDelete={(subId) => handleDelete(subId)}
-                onAddSub={() => handleAddSubcategory(cat)}
-              />
-            )) : (
-              <p className="p-8 text-center text-slate-400 italic">No expense categories</p>
-            )}
-          </div>
-        </section>
-      </div>
-
-      <CategoryModal 
+      <CategoryModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveCategory}
@@ -463,88 +468,6 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
   )
 }
 
-function CategoryItem({ category, isExpanded, onToggle, onEdit, onDelete, onSubEdit, onSubDelete, onAddSub }: { 
-  category: Category, 
-  isExpanded: boolean, 
-  onToggle: () => void,
-  onEdit: () => void,
-  onDelete: () => void,
-  onSubEdit: (category: Category) => void,
-  onSubDelete: (id: string) => void,
-  onAddSub: () => void
-}) {
-  const hasSubs = category.subcategories && category.subcategories.length > 0
-
-  return (
-    <div className="border-b border-white/8 last:border-0">
-      <div className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors group">
-        <div className="flex items-center gap-3">
-          {hasSubs ? (
-            <button onClick={onToggle} className="h-11 w-11 -ml-1 text-slate-400 hover:text-[#ff9eff] transition-colors cursor-pointer flex items-center justify-center">
-              {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
-            </button>
-          ) : (
-            <div className="w-5" />
-          )}
-          <span className="font-semibold text-slate-200">{category.name}</span>
-          <CategoryIcon icon={category.icon} />
-        </div>
-        
-        <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-            <button 
-              onClick={onEdit}
-              className="h-11 w-11 text-slate-400 hover:text-[#ff9eff] hover:bg-[#ff9eff]/12 rounded-lg transition-all flex items-center justify-center"
-              title="Edit"
-            >
-              <Edit2 size={16} />
-            </button>
-            <button 
-              onClick={onDelete}
-              className="h-11 w-11 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all flex items-center justify-center"
-              title="Delete"
-            >
-              <Trash2 size={16} />
-          </button>
-        </div>
-      </div>
-
-      {(hasSubs || isExpanded) && isExpanded && (
-        <div className="bg-white/4 pl-12 pr-4 py-2 space-y-1 border-t border-white/8">
-          {category.subcategories?.map(sub => (
-            <div key={sub.id} className="flex items-center justify-between py-2 group/sub">
-              <span className="text-slate-400 text-sm font-medium inline-flex items-center gap-2">
-                <CategoryIcon icon={sub.icon} small />
-                {sub.name}
-              </span>
-              <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover/sub:opacity-100 transition-opacity">
-                <button 
-                  onClick={() => onSubEdit(sub)}
-                  className="p-1.5 text-slate-400 hover:text-[#ff9eff] transition-colors"
-                >
-                  <Edit2 size={14} />
-                </button>
-                <button 
-                  onClick={() => onSubDelete(sub.id)}
-                  className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            </div>
-          ))}
-          <button 
-            onClick={onAddSub}
-            className="flex items-center gap-2 text-xs font-bold text-primary hover:underline py-3 transition-all"
-          >
-            <Plus size={14} />
-            Add Subcategory
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
-
 function formatBudgetCurrency(amount: number) {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -552,13 +475,4 @@ function formatBudgetCurrency(amount: number) {
   }).format(amount)
 }
 
-function CategoryIcon({ icon, small = false }: { icon: string; small?: boolean }) {
-  return (
-    <span className={`inline-flex items-center justify-center rounded-full bg-white/10 ${small ? 'h-5 w-5' : 'h-7 w-7'}`}>
-      {renderCategoryIcon(icon, small ? 12 : 15, 'text-slate-400')}
-    </span>
-  )
-}
-
 export default CategoriesPage
-
