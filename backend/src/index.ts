@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import 'dotenv/config'
+import { PrismaClient } from '@prisma/client'
 import categoryRoutes from './routes/categoryRoutes.ts'
 import transactionRoutes from './routes/transactionRoutes.ts'
 import authRoutes from './routes/authRoutes.ts'
@@ -11,6 +12,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorMiddleware.ts'
 import { env } from './config/env.ts'
 
 const app = express()
+const prisma = new PrismaClient()
 const PORT = env.port
 const HOST = env.host
 const allowedOrigins = env.corsOrigins
@@ -52,6 +54,15 @@ app.use('/api/admin', adminRoutes)
 
 app.get('/health', (req, res) => {
   res.json({ status: 'API is running' })
+})
+
+app.get('/api/public/stats', async (_req, res) => {
+  try {
+    const totalUsers = await prisma.user.count()
+    res.json({ totalUsers })
+  } catch {
+    res.status(500).json({ error: 'Failed to load public stats.' })
+  }
 })
 
 app.use(notFoundHandler)
