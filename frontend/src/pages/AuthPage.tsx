@@ -5,6 +5,7 @@ import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import * as api from '../api/authApi'
 import type { AuthUser } from '../api/authApi'
+import MetLoadingOverlay from '../components/MetLoadingOverlay'
 import MetLogo from '../components/MetLogo'
 import { getPublicStats, type PublicStats } from '../api/publicApi'
 
@@ -35,6 +36,7 @@ function AuthPage({ onLogin, initialMode = 'login' }: AuthPageProps) {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [isTransitioning, setIsTransitioning] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [stats, setStats] = useState<PublicStats | null>(null)
@@ -71,7 +73,7 @@ function AuthPage({ onLogin, initialMode = 'login' }: AuthPageProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (loading) return
+    if (loading || isTransitioning) return
     setError('')
 
     if (!isLogin && password !== confirmPassword) {
@@ -84,7 +86,10 @@ function AuthPage({ onLogin, initialMode = 'login' }: AuthPageProps) {
       const data = isLogin
         ? await api.login({ email, password })
         : await api.register({ email, password, name })
-      onLogin(data.user)
+      setIsTransitioning(true)
+      window.setTimeout(() => {
+        onLogin(data.user)
+      }, 1400)
     } catch (err: unknown) {
       if (axios.isAxiosError<{ error?: string }>(err)) {
         if (!err.response) {
@@ -102,6 +107,11 @@ function AuthPage({ onLogin, initialMode = 'login' }: AuthPageProps) {
 
   return (
     <div className="flex min-h-screen w-full">
+      <MetLoadingOverlay
+        key={isTransitioning ? (isLogin ? 'login' : 'register') : 'idle'}
+        isOpen={isTransitioning}
+        statusMessages={isLogin ? ['Signing you in...', 'Preparing your dashboard...', 'Almost there...'] : ['Creating your account...', 'Preparing your workspace...', 'Almost there...']}
+      />
       <aside className="relative hidden w-[45%] flex-shrink-0 flex-col justify-between overflow-hidden bg-[linear-gradient(150deg,#0f0618_0%,#1c0d32_50%,#2e1255_100%)] p-12 md:flex">
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px] opacity-40" />
         <div className="absolute right-0 top-0 h-[400px] w-[400px] rounded-full bg-[radial-gradient(circle,rgba(255,158,255,0.08)_0%,transparent_70%)]" />
@@ -197,16 +207,16 @@ function AuthPage({ onLogin, initialMode = 'login' }: AuthPageProps) {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || isTransitioning}
               className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#dc89e1] to-[#ff9eff] text-sm font-extrabold text-black transition hover:opacity-95 disabled:opacity-70"
             >
-              {loading ? 'Processing...' : isLogin ? 'Sign in ->' : 'Create account ->'}
+              {loading || isTransitioning ? 'Processing...' : isLogin ? 'Sign in ->' : 'Create account ->'}
             </button>
           </form>
 
           <p className="mt-6 text-center text-[13px] text-slate-400">
             {isLogin ? "Don't have an account?" : 'Already have an account?'}
-            <button onClick={() => { setIsLogin((prev) => !prev); setError('') }} className="ml-1 font-bold text-[#ff9eff] hover:underline">
+            <button disabled={isTransitioning} onClick={() => { setIsLogin((prev) => !prev); setError('') }} className="ml-1 font-bold text-[#ff9eff] hover:underline disabled:opacity-60">
               {isLogin ? 'Sign up' : 'Sign in'}
             </button>
           </p>
