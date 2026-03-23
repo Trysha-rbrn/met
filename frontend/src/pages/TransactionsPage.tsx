@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowDown, ArrowUp, CheckSquare, Download, Edit2, FileUp, Plus, Search, Scissors, Tag, Trash2, WalletCards, Gem, Sparkles, ShieldCheck, BookmarkPlus, X, Repeat2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, CheckSquare, Download, Edit2, FileUp, Plus, Search, Scissors, Tag, Trash2, Sparkles, BookmarkPlus, X, Repeat2 } from 'lucide-react'
 import type { CellValue } from 'exceljs'
 import * as api from '../api/transactionsApi'
 import * as accountsApi from '../api/accountsApi'
@@ -751,248 +751,234 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
     notify.success('Smart view removed.')
   }
 
+  const totals = useMemo(() => {
+    const income = filteredTransactions
+      .filter((tx) => tx.type === 'INCOME')
+      .reduce((sum, tx) => sum + tx.amount, 0)
+    const expense = filteredTransactions
+      .filter((tx) => tx.type === 'EXPENSE')
+      .reduce((sum, tx) => sum + tx.amount, 0)
+    return { income, expense, net: income - expense }
+  }, [filteredTransactions])
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
-      className="space-y-6 sm:space-y-8"
+      className="space-y-6"
     >
-      <header className="flex flex-col gap-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tighter">Transactions</h1>
-            <p className="text-sm sm:text-base text-muted-foreground font-medium">All your income and expense records for selected account.</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full md:w-auto">
-            <button
-              type="button"
-              onClick={exportExcel}
-              className="min-h-11 px-4 py-2.5 rounded-xl border font-semibold inline-flex items-center justify-center gap-2 hover:bg-muted"
-            >
-              <Download size={16} />
-              Export Excel
-            </button>
-            <button
-              type="button"
-              onClick={exportPdf}
-              className="min-h-11 px-4 py-2.5 rounded-xl border font-semibold inline-flex items-center justify-center gap-2 hover:bg-muted"
-            >
-              <Download size={16} />
-              Export PDF
-            </button>
-            <button
-              type="button"
-              onClick={handleImportExcelClick}
-              className="min-h-11 px-4 py-2.5 rounded-xl border font-semibold inline-flex items-center justify-center gap-2 hover:bg-muted"
-            >
-              <FileUp size={16} />
-              Import Excel
-            </button>
-            <motion.button
-              onClick={() => { setSelectedTransaction(null); setIsModalOpen(true) }}
-              className="sm:col-span-3 min-h-11 flex items-center justify-center gap-2 bg-primary text-primary-foreground px-5 py-3 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 active:scale-95"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              disabled={!selectedAccountId}
-            >
-              <Plus size={20} />
-              New Transaction
-            </motion.button>
+      <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-[#64748b]">Finance</p>
+          <h1 className="text-2xl font-extrabold tracking-tight">Transactions</h1>
+        </div>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+          <div className="flex items-center rounded-[10px] border border-white/10 bg-white/[0.03] px-3 py-2 transition focus-within:border-[#ff9eff]/40 focus-within:bg-white/[0.05]">
+            <Search className="mr-2 h-4 w-4 shrink-0 text-[#64748b]" />
             <input
-              ref={importInputRef}
-              type="file"
-              accept=".xlsx"
-              className="hidden"
-              onChange={handleImportExcel}
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search merchants..."
+              className="w-full bg-transparent text-xs text-white outline-none placeholder:text-[#64748b] md:w-56"
             />
           </div>
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value as 'ALL' | 'INCOME' | 'EXPENSE')}
+            className="rounded-[10px] border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-bold text-[#64748b] transition hover:bg-white/[0.04] hover:text-white"
+          >
+            <option value="ALL">All</option>
+            <option value="INCOME">Income</option>
+            <option value="EXPENSE">Expense</option>
+          </select>
+          <button type="button" onClick={exportExcel} className="flex items-center gap-2 rounded-[10px] border border-white/10 px-4 py-2 text-xs font-bold text-[#64748b] transition hover:bg-white/[0.04] hover:text-white">
+            <Download size={14} />
+            Export
+          </button>
+          <button type="button" onClick={exportPdf} className="flex items-center gap-2 rounded-[10px] border border-white/10 px-4 py-2 text-xs font-bold text-[#64748b] transition hover:bg-white/[0.04] hover:text-white">
+            <Download size={14} />
+            PDF
+          </button>
+          <button type="button" onClick={handleImportExcelClick} className="flex items-center gap-2 rounded-[10px] border border-white/10 px-4 py-2 text-xs font-bold text-[#64748b] transition hover:bg-white/[0.04] hover:text-white">
+            <FileUp size={14} />
+            Import
+          </button>
+          <motion.button
+            onClick={() => { setSelectedTransaction(null); setIsModalOpen(true) }}
+            className="rounded-[10px] bg-[#ff9eff] px-4 py-2 text-xs font-extrabold text-black"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            disabled={!selectedAccountId}
+          >
+            <span className="inline-flex items-center gap-1">
+              <Plus size={14} />
+              New
+            </span>
+          </motion.button>
+          <input ref={importInputRef} type="file" accept=".xlsx" className="hidden" onChange={handleImportExcel} />
         </div>
-
-        {isPremiumUser && (
-        <section className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-5 md:p-6 dark:border-amber-500/30 dark:bg-[linear-gradient(135deg,rgba(41,37,36,0.94),rgba(17,24,39,0.96))]">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-black tracking-[0.24em] text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
-                <Gem size={14} />
-                PREMIUM FLOW
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">
-                  Filter faster. Scan less. Find patterns sooner.
-                </h2>
-                <p className="max-w-2xl text-sm sm:text-base text-slate-600 dark:text-slate-300">
-                  Advanced search and type filtering are active, with a higher account cap for segmented budgets and cleaner ledgers.
-                </p>
-              </div>
-            </div>
-            <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-4 lg:w-auto xl:min-w-[30rem]">
-              <PremiumSignal icon={Search} label="Search" value="Enabled" />
-              <PremiumSignal icon={Sparkles} label="Type Filter" value="Advanced" />
-              <PremiumSignal icon={WalletCards} label="Account Limit" value={String(maxAccounts)} />
-              <PremiumSignal icon={ShieldCheck} label="Plan" value={userRole} />
-            </div>
-          </div>
-        </section>
-        )}
-
-        <div className="bg-card border rounded-2xl p-4 md:p-5 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-          <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-            <WalletCards size={16} />
-            Active account
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-            <select
-              id="transactions-account"
-              name="accountId"
-              value={selectedAccountId}
-              onChange={(e) => setSelectedAccountId(e.target.value)}
-              className="w-full sm:min-w-52 min-h-11 px-4 py-2.5 border rounded-xl bg-background"
-            >
-              {accounts.map((account) => (
-                <option key={account.id} value={account.id}>{account.name}</option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={handleCreateAccount}
-              className="w-full sm:w-auto min-h-11 px-4 py-2.5 rounded-xl border font-semibold hover:bg-muted transition-colors"
-              disabled={accounts.length >= maxAccounts}
-            >
-              {accounts.length >= maxAccounts ? 'Account limit reached' : 'Create Account'}
-            </button>
-          </div>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Plan: <span className="font-semibold">{userRole}</span> • Account limit: {maxAccounts}
-        </p>
-        {isPremiumUser && (
-          <div className="rounded-2xl border bg-card p-4">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="space-y-1">
-                <p className="text-sm font-bold">Bulk assign category</p>
-                <p className="text-xs text-muted-foreground">Select transactions and update category in one action.</p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-                <select
-                  value={bulkCategoryId}
-                  onChange={(e) => setBulkCategoryId(e.target.value)}
-                  className="w-full sm:min-w-60 min-h-11 rounded-xl border bg-background px-3"
-                >
-                  <option value="">Choose category</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.type} - {category.name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={handleBulkAssignCategory}
-                  className="min-h-11 rounded-xl border px-4 font-semibold hover:bg-muted"
-                >
-                  <CheckSquare size={14} className="inline mr-1" />
-                  Apply to {selectedTransactionIds.length}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        {isPremiumUser ? (
-          <div className="space-y-3">
-            <div className="overflow-hidden rounded-[24px] border border-amber-200/70 bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,0.98))] p-4 md:p-5 dark:border-amber-500/30 dark:bg-[linear-gradient(135deg,rgba(41,37,36,0.94),rgba(17,24,39,0.96))]">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="space-y-1">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
-                    <Gem size={13} />
-                    PREMIUM FILTERS
-                  </div>
-                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Refine by text, category context and transaction type without leaving the ledger.</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Search hits check description, category and account labels.</p>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-                  <label className="relative block w-full sm:min-w-80">
-                    <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-amber-700 dark:text-amber-300" />
-                    <input
-                      type="text"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      placeholder="Search description, category, account..."
-                      className="w-full min-h-12 rounded-2xl border border-amber-200 bg-white/90 dark:border-amber-500/35 dark:bg-slate-900 pl-11 pr-4 text-sm shadow-sm outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-200/40 dark:focus:ring-amber-500/20"
-                    />
-                  </label>
-                  <select
-                    value={typeFilter}
-                    onChange={(e) => setTypeFilter(e.target.value as 'ALL' | 'INCOME' | 'EXPENSE')}
-                    className="w-full sm:w-44 min-h-12 rounded-2xl border border-amber-200 bg-white/90 dark:border-amber-500/35 dark:bg-slate-900 px-4 text-sm font-semibold shadow-sm outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-200/40 dark:focus:ring-amber-500/20"
-                  >
-                    <option value="ALL">All types</option>
-                    <option value="INCOME">Income</option>
-                    <option value="EXPENSE">Expense</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-            <div className="rounded-[24px] border bg-card p-4 dark:border-slate-700 dark:bg-slate-900/80">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div className="space-y-1">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black tracking-[0.22em] text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                    <BookmarkPlus size={13} />
-                    SMART VIEWS
-                  </div>
-                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Save your current premium filter setup and reuse it instantly.</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Best for recurring reviews like payroll, groceries or expense-only scans.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleSaveCurrentFilter}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-800 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-                >
-                  <BookmarkPlus size={15} />
-                  Save Current View
-                </button>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {savedFilters.length === 0 ? (
-                  <p className="text-sm text-slate-500 dark:text-slate-400">No saved views yet. Build one with search or type filter, then save it.</p>
-                ) : (
-                  savedFilters.map((filter) => (
-                    <div
-                      key={filter.id}
-                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm ${
-                        activeSavedFilterId === filter.id
-                          ? 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200'
-                          : 'border-slate-200 bg-white text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200'
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => handleApplySavedFilter(filter)}
-                        className="font-semibold"
-                      >
-                        {filter.name}
-                      </button>
-                      <span className="text-xs text-slate-400">•</span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        {filter.typeFilter}{filter.searchTerm ? ` / ${filter.searchTerm}` : ''}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteSavedFilter(filter.id)}
-                        className="rounded-full p-0.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-200"
-                        aria-label={`Delete ${filter.name}`}
-                      >
-                        <X size={13} />
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        ) : null}
       </header>
+
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+          <div>
+            <p className="mb-1 text-[10px] font-medium text-[#64748b]">Total In</p>
+            <p className="text-base font-extrabold text-emerald-400">+{formatCurrency(totals.income)}</p>
+          </div>
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-400/10">
+            <ArrowDown className="h-4 w-4 text-emerald-400" />
+          </div>
+        </div>
+        <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+          <div>
+            <p className="mb-1 text-[10px] font-medium text-[#64748b]">Total Out</p>
+            <p className="text-base font-extrabold text-red-400">-{formatCurrency(totals.expense)}</p>
+          </div>
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-400/10">
+            <ArrowUp className="h-4 w-4 text-red-400" />
+          </div>
+        </div>
+        <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+          <div>
+            <p className="mb-1 text-[10px] font-medium text-[#64748b]">Net</p>
+            <p className="text-base font-extrabold text-[#ff9eff]">{totals.net >= 0 ? '+' : '-'}{formatCurrency(Math.abs(totals.net))}</p>
+          </div>
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#ff9eff]/10">
+            <Sparkles className="h-4 w-4 text-[#ff9eff]" />
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 md:flex-row md:items-center md:justify-between">
+        <div className="text-xs text-[#64748b]">
+          {selectedAccount ? `Account: ${selectedAccount.name}` : 'No account selected'} · Plan: {userRole}
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <select
+            id="transactions-account"
+            name="accountId"
+            value={selectedAccountId}
+            onChange={(e) => setSelectedAccountId(e.target.value)}
+            className="min-h-10 rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm"
+          >
+            {accounts.map((account) => (
+              <option key={account.id} value={account.id}>{account.name}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={handleCreateAccount}
+            className="min-h-10 rounded-xl border border-white/10 px-3 text-sm font-semibold hover:bg-white/10"
+            disabled={accounts.length >= maxAccounts}
+          >
+            {accounts.length >= maxAccounts ? 'Account limit reached' : 'Create Account'}
+          </button>
+          {isPremiumUser ? (
+            <>
+              <select
+                value={bulkCategoryId}
+                onChange={(e) => setBulkCategoryId(e.target.value)}
+                className="min-h-10 rounded-xl border border-white/10 bg-white/[0.03] px-3 text-sm"
+              >
+                <option value="">Choose category</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.type} - {category.name}
+                  </option>
+                ))}
+              </select>
+              <button type="button" onClick={handleBulkAssignCategory} className="min-h-10 rounded-xl border border-white/10 px-3 text-sm font-semibold hover:bg-white/10">
+                <CheckSquare size={14} className="mr-1 inline" />
+                Apply {selectedTransactionIds.length}
+              </button>
+            </>
+          ) : null}
+        </div>
+      </div>
+
+      {isPremiumUser && savedFilters.length > 0 ? (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {savedFilters.map((filter) => (
+            <div
+              key={filter.id}
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm ${
+                activeSavedFilterId === filter.id
+                  ? 'border-[#ff9eff]/35 bg-[#ff9eff]/12 text-[#ff9eff]'
+                  : 'border-white/12 bg-white/5 text-slate-300'
+              }`}
+            >
+              <button type="button" onClick={() => handleApplySavedFilter(filter)} className="font-semibold">
+                {filter.name}
+              </button>
+              <button type="button" onClick={() => handleDeleteSavedFilter(filter.id)} className="rounded-full p-0.5 text-slate-400 transition hover:bg-white/10 hover:text-slate-200">
+                <X size={13} />
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="mb-5 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-white/[0.02] text-[10px] uppercase tracking-wider text-[#64748b]">
+              <tr>
+                <th className="px-6 py-4 font-semibold">#</th>
+                <th className="px-6 py-4 font-semibold">Type</th>
+                <th className="px-6 py-4 font-semibold">Merchant</th>
+                <th className="px-6 py-4 font-semibold">Category</th>
+                <th className="px-6 py-4 font-semibold">Date</th>
+                <th className="px-6 py-4 font-semibold">Amount</th>
+                <th className="px-6 py-4 font-semibold">Status</th>
+                <th className="px-6 py-4 text-right font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="text-xs">
+              {loading ? (
+                [...Array(6)].map((_, i) => <TemplateTransactionSkeleton key={i} />)
+              ) : displayedTransactions.length > 0 ? (
+                displayedTransactions.map((t) => (
+                  <TemplateTransactionRow
+                    key={t.id}
+                    transaction={t}
+                    formatCurrency={formatCurrency}
+                    isSelected={selectedTransactionIds.includes(t.id)}
+                    isImported={isImportedTransaction(t)}
+                    isRecurring={isRecurringTransaction(t)}
+                    onToggleSelect={() => toggleTransactionSelection(t.id)}
+                    onEdit={() => { setSelectedTransaction(t); setIsModalOpen(true) }}
+                    onSplit={isPremiumUser ? () => handleSplitTransaction(t) : undefined}
+                    onDelete={() => handleDelete(t.id)}
+                  />
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={8} className="p-12 text-center italic text-slate-400">
+                    No transactions yet for this account. Add your first one.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <footer className="flex flex-col items-start justify-between gap-3 md:flex-row md:items-center">
+        <p className="text-xs text-[#64748b]">
+          Showing <span className="font-bold text-[#f1f5f9]">{displayedTransactions.length === 0 ? 0 : 1}–{displayedTransactions.length}</span> of{' '}
+          <span className="font-bold text-[#f1f5f9]">{filteredTransactions.length}</span> transactions
+        </p>
+        <div className="flex items-center gap-2">
+          <button className="cursor-not-allowed rounded-[10px] border border-white/10 px-3 py-1.5 text-xs font-bold opacity-40">← Prev</button>
+          <div className="flex gap-1">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#ff9eff] text-[11px] font-bold text-black">1</div>
+          </div>
+          <button className="rounded-[10px] border border-white/10 px-3 py-1.5 text-xs font-bold text-[#64748b] hover:bg-white/[0.04] hover:text-white">Next →</button>
+        </div>
+      </footer>
 
       <RecurringTransactionsPanel
         accounts={accounts}
@@ -1008,77 +994,21 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
         onUpdate={handleUpdateRecurringTransaction}
       />
 
-      <div className="bg-card border rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-5 md:px-6 py-4 border-b bg-muted/30 text-sm font-semibold text-muted-foreground">
-          {selectedAccount ? `Showing transactions for ${selectedAccount.name}` : 'No account selected'}
+      {isPremiumUser ? (
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+          <button
+            type="button"
+            onClick={handleSaveCurrentFilter}
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-bold text-slate-200 transition hover:bg-white/10"
+          >
+            <BookmarkPlus size={14} />
+            Save Current View
+          </button>
+          <p className="mt-2 text-xs text-slate-400">Premium account limit: {maxAccounts}. Search and type filters are active.</p>
+          <div ref={loadMoreRef} className="h-1" />
+          {hasMoreTransactions && loadingMore ? <p className="mt-2 text-xs text-slate-400">Loading older transactions...</p> : null}
         </div>
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full">
-            <tbody className="divide-y">
-              {loading ? (
-                [...Array(6)].map((_, i) => <TransactionSkeleton key={i} />)
-              ) : displayedTransactions.length > 0 ? displayedTransactions.map((t) => (
-                <TransactionRow
-                  key={t.id}
-                  transaction={t}
-                  formatCurrency={formatCurrency}
-                  isSelected={selectedTransactionIds.includes(t.id)}
-                  isImported={isImportedTransaction(t)}
-                  isRecurring={isRecurringTransaction(t)}
-                  onToggleSelect={() => toggleTransactionSelection(t.id)}
-                  onEdit={() => { setSelectedTransaction(t); setIsModalOpen(true) }}
-                  onSplit={isPremiumUser ? () => handleSplitTransaction(t) : undefined}
-                  onDelete={() => handleDelete(t.id)}
-                />
-              )) : (
-                <tr>
-                  <td colSpan={5} className="p-12 text-center text-muted-foreground italic">
-                    No transactions yet for this account. Add your first one.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        <div className="md:hidden p-3 space-y-3">
-          {loading ? (
-            [...Array(4)].map((_, i) => <MobileTransactionSkeleton key={i} />)
-          ) : displayedTransactions.length > 0 ? displayedTransactions.map((t) => (
-            <MobileTransactionCard
-              key={t.id}
-              transaction={t}
-              formatCurrency={formatCurrency}
-              isSelected={selectedTransactionIds.includes(t.id)}
-              isImported={isImportedTransaction(t)}
-              isRecurring={isRecurringTransaction(t)}
-              onToggleSelect={() => toggleTransactionSelection(t.id)}
-              onEdit={() => { setSelectedTransaction(t); setIsModalOpen(true) }}
-              onSplit={isPremiumUser ? () => handleSplitTransaction(t) : undefined}
-              onDelete={() => handleDelete(t.id)}
-            />
-          )) : (
-            <p className="text-center text-sm text-muted-foreground italic py-8">
-              No transactions yet for this account. Add your first one.
-            </p>
-          )}
-        </div>
-        {!loading && (
-          <div className="px-4 pb-4 pt-2 text-center">
-            <p className="text-xs text-muted-foreground mb-2">
-              Showing {displayedTransactions.length} of {filteredTransactions.length} transaction(s)
-            </p>
-            {hasMoreTransactions ? (
-              <div ref={loadMoreRef} className="h-10 flex items-center justify-center">
-                <span className="text-xs text-muted-foreground">
-                  {loadingMore ? 'Loading older transactions...' : 'Scroll down to load older transactions'}
-                </span>
-              </div>
-            ) : transactions.length > 20 ? (
-              <span className="text-xs text-muted-foreground">All transactions loaded.</span>
-            ) : null}
-          </div>
-        )}
-      </div>
+      ) : null}
 
       <TransactionModal
         isOpen={isModalOpen}
@@ -1092,7 +1022,7 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
   )
 }
 
-const TransactionRow = ({
+const TemplateTransactionRow = ({
   transaction: t,
   formatCurrency,
   isSelected,
@@ -1113,188 +1043,67 @@ const TransactionRow = ({
   onSplit?: () => void
   onDelete: () => void
 }) => (
-  <tr className="hover:bg-muted/50 transition-colors group">
-    <td className="p-4 md:p-6">
-      <div className="flex items-center gap-3">
-        <input type="checkbox" checked={isSelected} onChange={onToggleSelect} className="h-4 w-4" />
+  <tr className="border-b border-white/5 text-xs transition hover:bg-[#ff9eff]/[0.025]">
+    <td className="px-6 py-4 font-medium text-[#64748b]">{t.id.slice(-4)}</td>
+    <td className="px-6 py-4">
+      <div className="inline-flex items-center gap-2">
+        <input type="checkbox" checked={isSelected} onChange={onToggleSelect} className="h-3.5 w-3.5" />
+        {t.type === 'INCOME' ? <ArrowDown size={15} className="text-emerald-400" /> : <ArrowUp size={15} className="text-red-400" />}
       </div>
     </td>
-    <td className="p-4 md:p-6 flex items-center gap-4">
-      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-        t.type === 'INCOME' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
-      }`}>
-        {t.type === 'INCOME' ? <ArrowUp size={20} /> : <ArrowDown size={20} />}
-      </div>
-      <div>
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="font-bold">{t.description || 'Transaction'}</p>
-          {isImported && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-              <Tag size={11} />
-              Imported
-            </span>
-          )}
-          {isRecurring && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
-              <Repeat2 size={11} />
-              Recurring
-            </span>
-          )}
-        </div>
-        <p className="text-sm text-muted-foreground inline-flex items-center gap-2">
-          <CategoryBadge icon={t.category?.icon} name={t.category?.name || 'Uncategorized'} />
-          <span>-</span>
-          <span>{t.account?.name || 'No account'}</span>
-        </p>
-      </div>
-    </td>
-    <td className="p-4 md:p-6 text-right">
-      <p className={`font-bold text-lg ${t.type === 'INCOME' ? 'text-emerald-500' : 'text-rose-500'}`}>
-        {t.type === 'INCOME' ? '+' : '-'}{formatCurrency(t.amount)}
-      </p>
-      <p className="text-sm text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
-    </td>
-    <td className="p-4 md:p-6 w-24">
-      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        {onSplit ? <button onClick={onSplit} className="p-2 text-muted-foreground hover:text-amber-600 dark:hover:text-amber-300"><Scissors size={16} /></button> : null}
-        <button onClick={onEdit} className="p-2 text-muted-foreground hover:text-foreground"><Edit2 size={16} /></button>
-        <button onClick={onDelete} className="p-2 text-muted-foreground hover:text-destructive"><Trash2 size={16} /></button>
-      </div>
-    </td>
-  </tr>
-)
-
-const TransactionSkeleton = () => (
-  <tr className="animate-pulse">
-    <td className="p-4 md:p-6">
-      <div className="h-4 w-4 bg-muted rounded-sm" />
-    </td>
-    <td className="p-4 md:p-6 flex items-center gap-4">
-      <div className="w-10 h-10 rounded-full bg-muted" />
-      <div>
-        <div className="h-4 w-32 bg-muted rounded-md" />
-        <div className="h-3 w-20 bg-muted rounded-md mt-2" />
-      </div>
-    </td>
-    <td className="p-4 md:p-6 text-right">
-      <div className="h-6 w-24 bg-muted rounded-md ml-auto" />
-      <div className="h-3 w-16 bg-muted rounded-md mt-2 ml-auto" />
-    </td>
-    <td className="p-4 md:p-6 w-24" />
-  </tr>
-)
-
-const MobileTransactionCard = ({
-  transaction: t,
-  formatCurrency,
-  isSelected,
-  isImported,
-  isRecurring,
-  onToggleSelect,
-  onEdit,
-  onSplit,
-  onDelete
-}: {
-  transaction: Transaction
-  formatCurrency: (value: number) => string
-  isSelected: boolean
-  isImported: boolean
-  isRecurring: boolean
-  onToggleSelect: () => void
-  onEdit: () => void
-  onSplit?: () => void
-  onDelete: () => void
-}) => (
-  <div className="rounded-xl border bg-background p-4 space-y-3">
-    <div className="flex items-center justify-between gap-3">
-      <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-        <input type="checkbox" checked={isSelected} onChange={onToggleSelect} className="h-4 w-4" />
-        Select
-      </label>
-    </div>
-    <div className="flex items-center justify-between gap-3">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <p className="font-bold truncate">{t.description || 'Transaction'}</p>
-          {isImported && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-              <Tag size={10} />
-              Imported
-            </span>
-          )}
-          {isRecurring && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
-              <Repeat2 size={10} />
-              Recurring
-            </span>
-          )}
-        </div>
-        <p className="text-xs text-muted-foreground truncate inline-flex items-center gap-2">
-          <CategoryBadge icon={t.category?.icon} name={t.category?.name || 'Uncategorized'} />
-          <span>-</span>
-          <span>{t.account?.name || 'No account'}</span>
-        </p>
-      </div>
-      <div className={`text-right font-bold ${t.type === 'INCOME' ? 'text-emerald-500' : 'text-rose-500'}`}>
-        {t.type === 'INCOME' ? '+' : '-'}{formatCurrency(t.amount)}
-      </div>
-    </div>
-    <div className="flex items-center justify-between">
-      <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
-      <div className="flex items-center gap-2">
-        {onSplit ? (
-          <button onClick={onSplit} className="h-11 w-11 rounded-lg border text-muted-foreground hover:text-amber-600 dark:hover:text-amber-300 flex items-center justify-center">
-            <Scissors size={15} />
-          </button>
-        ) : null}
-        <button onClick={onEdit} className="h-11 w-11 rounded-lg border text-muted-foreground hover:text-foreground flex items-center justify-center">
-          <Edit2 size={15} />
-        </button>
-        <button onClick={onDelete} className="h-11 w-11 rounded-lg border text-muted-foreground hover:text-destructive flex items-center justify-center">
-          <Trash2 size={15} />
-        </button>
-      </div>
-    </div>
-  </div>
-)
-
-const CategoryBadge = ({ icon, name }: { icon?: string; name: string }) => {
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className="h-4 w-4 rounded-full bg-muted inline-flex items-center justify-center">
-        {renderCategoryIcon(icon, 10)}
+    <td className="px-6 py-4 font-bold text-[#f1f5f9]">{t.description || 'Transaction'}</td>
+    <td className="px-6 py-4">
+      <span className="inline-flex items-center gap-1 rounded-full border border-[#ff9eff]/30 bg-[#ff9eff]/10 px-2 py-1 text-[10px] font-bold text-[#ffc8ff]">
+        {renderCategoryIcon(t.category?.icon, 11)}
+        {t.category?.name || 'Uncategorized'}
       </span>
-      <span>{name}</span>
-    </span>
-  )
-}
+    </td>
+    <td className="px-6 py-4 text-[#64748b]">{new Date(t.date).toLocaleDateString()}</td>
+    <td className={`px-6 py-4 font-bold ${t.type === 'INCOME' ? 'text-emerald-400' : 'text-red-400'}`}>
+      {t.type === 'INCOME' ? '+' : '-'}{formatCurrency(t.amount)}
+    </td>
+    <td className="px-6 py-4">
+      {isRecurring ? (
+        <span className="inline-flex items-center gap-1 rounded-full border border-[#ff9eff]/45 bg-[#ff9eff]/14 px-2 py-0.5 text-[10px] font-semibold text-[#ffc8ff]">
+          <Repeat2 size={10} />
+          Recurring
+        </span>
+      ) : isImported ? (
+        <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+          <Tag size={10} />
+          Imported
+        </span>
+      ) : (
+        <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
+          Cleared
+        </span>
+      )}
+    </td>
+    <td className="px-6 py-4 text-right">
+      <div className="flex justify-end gap-2 text-[#64748b]">
+        {onSplit ? <button onClick={onSplit} className="rounded p-1 hover:text-[#ff9eff]"><Scissors size={14} /></button> : null}
+        <button onClick={onEdit} className="rounded p-1 hover:text-white"><Edit2 size={14} /></button>
+        <button onClick={onDelete} className="rounded p-1 hover:text-red-400"><Trash2 size={14} /></button>
+      </div>
+    </td>
+  </tr>
+)
 
-const MobileTransactionSkeleton = () => (
-  <div className="rounded-xl border p-4 space-y-3 animate-pulse">
-    <div className="h-4 w-1/2 bg-muted rounded" />
-    <div className="h-3 w-2/3 bg-muted rounded" />
-    <div className="h-3 w-1/3 bg-muted rounded" />
-  </div>
+const TemplateTransactionSkeleton = () => (
+  <tr className="animate-pulse border-b border-white/5">
+    <td className="px-6 py-4"><div className="h-3 w-8 rounded bg-white/10" /></td>
+    <td className="px-6 py-4"><div className="h-3 w-10 rounded bg-white/10" /></td>
+    <td className="px-6 py-4"><div className="h-3 w-40 rounded bg-white/10" /></td>
+    <td className="px-6 py-4"><div className="h-3 w-24 rounded bg-white/10" /></td>
+    <td className="px-6 py-4"><div className="h-3 w-20 rounded bg-white/10" /></td>
+    <td className="px-6 py-4"><div className="h-3 w-20 rounded bg-white/10" /></td>
+    <td className="px-6 py-4"><div className="h-3 w-16 rounded bg-white/10" /></td>
+    <td className="px-6 py-4"><div className="ml-auto h-3 w-14 rounded bg-white/10" /></td>
+  </tr>
 )
 
 export default TransactionsPage
 
-const PremiumSignal = ({
-  icon: Icon,
-  label,
-  value
-}: {
-  icon: typeof Search
-  label: string
-  value: string
-}) => (
-  <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
-    <div className="flex items-center gap-2">
-      <Icon size={15} className="text-amber-600 dark:text-amber-300" />
-      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{label}</span>
-    </div>
-    <p className="mt-2 text-sm font-black tracking-tight">{value}</p>
-  </div>
-)
+
 
 

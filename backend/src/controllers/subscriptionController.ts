@@ -1,8 +1,9 @@
 import { randomUUID } from 'crypto'
 import { NextFunction, Request, Response } from 'express'
-import { PrismaClient, UserRole } from '@prisma/client'
+import { UserRole } from '@prisma/client'
 import { env } from '../config/env.ts'
 import { writeAuditLog } from '../lib/auditLog.ts'
+import { prisma } from '../lib/prisma.ts'
 import {
   buildBasicSubscriptionState,
   buildPremiumSubscriptionState,
@@ -10,8 +11,6 @@ import {
   serializeSubscription,
   syncUserRoleFromSubscription
 } from '../lib/subscription.ts'
-
-const prisma = new PrismaClient()
 
 const userSelect = {
   id: true,

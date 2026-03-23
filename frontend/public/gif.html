@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MET | Motion Asset</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /*
+        ════════════════════════════════════════
+         TIMING MAP  —  total loop = 12s
+        ════════════════════════════════════════
+         Scene 1 — Intro      0%  → 28%   (0s    → 3.36s)
+         Black gap             28% → 33%   (3.36s → 3.96s)
+         Scene 2 — Features   33% → 62%   (3.96s → 7.44s)
+         Black gap             62% → 67%   (7.44s → 8.04s)
+         Scene 3 — Dashboard  67% → 88%   (8.04s → 10.56s)
+         Black gap             88% → 91%   (10.56s→ 10.92s)
+         Scene 4 — Outro      91% → 100%  (10.92s→ 12s)
+
+         KEY FIX: animation-delay is NOT used anywhere.
+         All stagger timing is baked into individual @keyframes
+         as percentages of the 12s total, so scenes can never bleed.
+        ════════════════════════════════════════
+        */
+
+        :root {
+            --bg: #0a0a0a;
+            --primary: #ff9eff;
+            --secondary: #dc89e1;
+            --deep: #6a4d8b;
+            --glass: rgba(255,255,255,0.04);
+            --border: rgba(255,255,255,0.08);
+            --text: #f1f5f9;
+            --muted: #64748b;
+            --d: 12s;
+        }
+
+        body {
+            background: #080808;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* ── STAGE ── */
+        #canvas {
+            width: 800px;
+            height: 450px;
+            background: var(--bg);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 6px;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.7);
+        }
+
+        /* Subtle grid texture (always on) */
+        #canvas::before {
+            content: '';
+            position: absolute; inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.016) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.016) 1px, transparent 1px);
+            background-size: 50px 50px;
+            mask-image: radial-gradient(ellipse at center, transparent 25%, black 100%);
+            z-index: 0; pointer-events: none;
+        }
+
+        /* ════════════════════════════════
+           SCENE 1 — INTRO   0% → 28%
+        ════════════════════════════════ */
+        .s1 {
+            position: absolute; inset: 0; z-index: 10;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            animation: s1-vis var(--d) ease infinite;
+        }
+        @keyframes s1-vis {
+            0%   { opacity: 1; }
+            25%  { opacity: 1; }
+            30%  { opacity: 0; }
+            92%  { opacity: 0; }
+            97%  { opacity: 1; }
+            100% { opacity: 1; }
+        }
+
+        .s1-glow {
+            position: absolute;
+            width: 380px; height: 380px;
+            background: radial-gradient(circle, rgba(255,158,255,0.11) 0%, transparent 65%);
+            border-radius: 50%;
+            animation: s1-glow-k var(--d) ease-out infinite;
+        }
+        @keyframes s1-glow-k {
+            0%   { transform: scale(0.4); opacity: 0; }
+            8%   { transform: scale(1);   opacity: 1; }
+            25%  { opacity: 0.7; }
+            30%  { opacity: 0; }
+            100% { opacity: 0; }
+        }
+
+        .s1-icon {
+            position: relative; z-index: 2;
+            width: 108px; height: 108px;
+            background: linear-gradient(150deg, #1c0d32 0%, #2e1850 45%, #5c2878 100%);
+            border-radius: 28px;
+            border: 1px solid rgba(255,158,255,0.2);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 40px rgba(255,158,255,0.2), 0 16px 48px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.09);
+            animation: s1-icon-k var(--d) cubic-bezier(0.16,1,0.3,1) infinite;
+        }
+        @keyframes s1-icon-k {
+            0%   { transform: scale(0.55); opacity: 0; }
+            8%   { transform: scale(1.04); opacity: 1; }
+            12%  { transform: scale(1); }
+            25%  { transform: scale(1); opacity: 1; }
+            30%  { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(0.55); opacity: 0; }
+        }
+
+        .s1-word {
+            display: flex; gap: 3px;
+            margin-top: 20px; position: relative; z-index: 2;
+        }
+        .s1-word span {
+            font-size: 52px; font-weight: 800;
+            color: var(--text); letter-spacing: -0.04em;
+            opacity: 0;
+        }
+        /* Stagger baked in as % of 12s:
+           M enters at 0.7s = 5.8%
+           E enters at 0.85s = 7.1%
+           T enters at 1.0s  = 8.3% */
+        .s1-word .lM { animation: s1-lM var(--d) cubic-bezier(0.16,1,0.3,1) infinite; }
+        .s1-word .lE { animation: s1-lE var(--d) cubic-bezier(0.16,1,0.3,1) infinite; }
+        .s1-word .lT { animation: s1-lT var(--d) cubic-bezier(0.16,1,0.3,1) infinite; }
+
+        @keyframes s1-lM {
+            0%, 5.8%  { opacity: 0; transform: translateY(14px); }
+            13%       { opacity: 1; transform: translateY(0); }
+            25%       { opacity: 1; }
+            30%       { opacity: 0; transform: translateY(-8px); }
+            100%      { opacity: 0; }
+        }
+        @keyframes s1-lE {
+            0%, 7.1%  { opacity: 0; transform: translateY(14px); }
+            14%       { opacity: 1; transform: translateY(0); }
+            25%       { opacity: 1; }
+            30%       { opacity: 0; transform: translateY(-8px); }
+            100%      { opacity: 0; }
+        }
+        @keyframes s1-lT {
+            0%, 8.3%  { opacity: 0; transform: translateY(14px); }
+            15%       { opacity: 1; transform: translateY(0); }
+            25%       { opacity: 1; }
+            30%       { opacity: 0; transform: translateY(-8px); }
+            100%      { opacity: 0; }
+        }
+
+        .s1-tagline {
+            font-size: 14px; font-weight: 400;
+            color: var(--muted); letter-spacing: 0.1em;
+            margin-top: 10px; z-index: 2;
+            animation: s1-tag-k var(--d) ease infinite;
+        }
+        @keyframes s1-tag-k {
+            0%, 15%  { opacity: 0; transform: translateY(6px); }
+            21%      { opacity: 1; transform: translateY(0); }
+            25%      { opacity: 1; }
+            30%      { opacity: 0; }
+            100%     { opacity: 0; }
+        }
+
+        /* ════════════════════════════════
+           SCENE 2 — FEATURES  33% → 62%
+        ════════════════════════════════ */
+
+        /* Mini brand: enters at 33%, exits at 63% */
+        .s2-brand {
+            position: absolute; top: 36px; left: 40px;
+            display: flex; align-items: center; gap: 10px;
+            z-index: 20;
+            animation: s2-brand-k var(--d) ease infinite;
+        }
+        @keyframes s2-brand-k {
+            0%, 31%  { opacity: 0; transform: translateX(-12px); }
+            37%      { opacity: 1; transform: translateX(0); }
+            60%      { opacity: 1; }
+            64%      { opacity: 0; }
+            100%     { opacity: 0; }
+        }
+        .s2-brand-icon {
+            width: 30px; height: 30px;
+            background: linear-gradient(150deg, #1c0d32, #5c2878);
+            border-radius: 9px; border: 1px solid rgba(255,158,255,0.2);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .s2-brand-name {
+            font-size: 18px; font-weight: 800;
+            color: var(--text); letter-spacing: -0.04em;
+        }
+
+        /* Left stats */
+        .s2-stats {
+            position: absolute;
+            top: 50%; left: 56px;
+            transform: translateY(-50%);
+            animation: s2-stats-k var(--d) ease infinite;
+        }
+        @keyframes s2-stats-k {
+            0%, 32%  { opacity: 0; transform: translateY(-50%) translateX(-14px); }
+            39%      { opacity: 1; transform: translateY(-50%) translateX(0); }
+            60%      { opacity: 1; }
+            64%      { opacity: 0; }
+            100%     { opacity: 0; }
+        }
+        .s2-stat { margin-bottom: 28px; }
+        .s2-stat:last-child { margin-bottom: 0; }
+        .s2-stat-val {
+            font-size: 30px; font-weight: 800;
+            color: var(--text); letter-spacing: -0.04em;
+        }
+        .s2-stat-val em { color: var(--primary); font-style: normal; }
+        .s2-stat-label {
+            font-size: 10px; color: var(--muted);
+            letter-spacing: 0.08em; text-transform: uppercase; margin-top: 3px;
+        }
+        .s2-vline {
+            position: absolute; right: -22px; top: 0;
+            width: 1px; height: 100%;
+            background: linear-gradient(180deg, transparent, rgba(255,255,255,0.07) 30%, rgba(255,255,255,0.07) 70%, transparent);
+        }
+
+        /* Feature cards — NO animation-delay, each has own @keyframes */
+        .s2-cards {
+            position: absolute;
+            top: 50%; right: 52px;
+            transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 14px;
+            width: 296px; z-index: 10;
+        }
+
+        .feat-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-left: 2px solid var(--primary);
+            border-radius: 14px; padding: 16px 18px;
+            display: flex; align-items: center; gap: 14px;
+            opacity: 0;
+        }
+
+        /* Card stagger: c1 enters at 33%, c2 at 35.5%, c3 at 38% */
+        .feat-card:nth-child(1) { animation: fc1 var(--d) cubic-bezier(0.22,1,0.36,1) infinite; }
+        .feat-card:nth-child(2) { animation: fc2 var(--d) cubic-bezier(0.22,1,0.36,1) infinite; }
+        .feat-card:nth-child(3) { animation: fc3 var(--d) cubic-bezier(0.22,1,0.36,1) infinite; }
+
+        @keyframes fc1 {
+            0%,  33%  { opacity: 0; transform: translateX(70px); }
+            40%       { opacity: 1; transform: translateX(0); }
+            60%       { opacity: 1; transform: translateX(0); }
+            64%       { opacity: 0; transform: translateX(-14px); }
+            100%      { opacity: 0; }
+        }
+        @keyframes fc2 {
+            0%,  35.5% { opacity: 0; transform: translateX(70px); }
+            42%        { opacity: 1; transform: translateX(0); }
+            60%        { opacity: 1; transform: translateX(0); }
+            64%        { opacity: 0; transform: translateX(-14px); }
+            100%       { opacity: 0; }
+        }
+        @keyframes fc3 {
+            0%,  38%  { opacity: 0; transform: translateX(70px); }
+            45%       { opacity: 1; transform: translateX(0); }
+            60%       { opacity: 1; transform: translateX(0); }
+            64%       { opacity: 0; transform: translateX(-14px); }
+            100%      { opacity: 0; }
+        }
+
+        .feat-icon-box {
+            width: 36px; height: 36px; flex-shrink: 0;
+            background: rgba(255,158,255,0.08);
+            border: 1px solid rgba(255,158,255,0.15);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .feat-title { font-size: 13px; font-weight: 700; color: var(--text); }
+        .feat-sub   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+        /* ════════════════════════════════
+           SCENE 3 — DASHBOARD  67% → 88%
+        ════════════════════════════════ */
+        .s3 {
+            position: absolute; inset: 0; z-index: 5;
+            display: flex; align-items: center; justify-content: center;
+            animation: s3-vis var(--d) ease infinite;
+        }
+        /* starts at 67%, well clear of Scene 2 exit at 64% */
+        @keyframes s3-vis {
+            0%,  65%  { opacity: 0; }
+            70%       { opacity: 1; }
+            86%       { opacity: 1; }
+            91%       { opacity: 0; }
+            100%      { opacity: 0; }
+        }
+
+        .s3-inner {
+            width: 690px;
+            animation: s3-rise var(--d) ease infinite;
+        }
+        @keyframes s3-rise {
+            0%,  65%  { transform: translateY(20px); }
+            70%       { transform: translateY(0); }
+            100%      { transform: translateY(0); }
+        }
+
+        .s3-kpi {
+            display: grid; grid-template-columns: repeat(4,1fr);
+            gap: 12px; margin-bottom: 14px;
+        }
+        .s3-kpi-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px; padding: 15px;
+        }
+        .s3-kpi-label {
+            font-size: 9px; font-weight: 600; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 0.08em;
+        }
+        .s3-kpi-val {
+            font-size: 20px; font-weight: 800;
+            color: var(--text); margin-top: 5px; letter-spacing: -0.03em;
+        }
+        .c-pink  { color: var(--primary); }
+        .c-red   { color: #f87171; }
+        .c-green { color: #4ade80; }
+
+        .s3-chart-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px; padding: 18px 20px;
+        }
+        .s3-chart-head {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 14px;
+        }
+        .s3-chart-title { font-size: 12px; font-weight: 700; color: var(--text); }
+        .s3-chart-pill {
+            font-size: 9px; font-weight: 700; letter-spacing: 0.06em;
+            text-transform: uppercase; color: var(--primary);
+            background: rgba(255,158,255,0.1); border: 1px solid rgba(255,158,255,0.2);
+            padding: 3px 8px; border-radius: 6px;
+        }
+        .s3-months {
+            display: flex; justify-content: space-between; margin-top: 10px;
+        }
+        .s3-months span { font-size: 9px; color: var(--muted); font-weight: 600; letter-spacing: 0.06em; }
+
+        /* Chart line draws from 70% → 84% */
+        .chart-path {
+            stroke-dasharray: 700;
+            stroke-dashoffset: 700;
+            animation: draw-chart var(--d) ease infinite;
+        }
+        @keyframes draw-chart {
+            0%,  70%  { stroke-dashoffset: 700; }
+            84%       { stroke-dashoffset: 0; }
+            100%      { stroke-dashoffset: 0; }
+        }
+
+        .s3-available {
+            position: absolute; bottom: 26px; right: 40px;
+            display: flex; align-items: center; gap: 6px;
+            font-size: 11px; color: var(--muted);
+            animation: s3-avail-k var(--d) ease infinite;
+        }
+        @keyframes s3-avail-k {
+            0%,  78%  { opacity: 0; }
+            82%       { opacity: 1; }
+            86%       { opacity: 1; }
+            91%       { opacity: 0; }
+            100%      { opacity: 0; }
+        }
+        .avail-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: #4ade80; box-shadow: 0 0 6px #4ade80;
+        }
+
+        /* ════════════════════════════════
+           SCENE 4 — OUTRO  91% → 100%
+        ════════════════════════════════ */
+        .s4 {
+            position: absolute; inset: 0; z-index: 30;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            pointer-events: none;
+            animation: s4-vis var(--d) ease infinite;
+        }
+        /* starts at 91%, well clear of Scene 3 exit at 91% — tiny crossfade intentional */
+        @keyframes s4-vis {
+            0%,  90%  { opacity: 0; }
+            94%       { opacity: 1; }
+            98%       { opacity: 1; }
+            100%      { opacity: 0; }
+        }
+        .s4-glow {
+            position: absolute;
+            width: 300px; height: 300px;
+            background: radial-gradient(circle, rgba(255,158,255,0.1) 0%, transparent 65%);
+            animation: s4-glow-k var(--d) ease infinite;
+        }
+        @keyframes s4-glow-k {
+            0%, 90%  { transform: scale(0.5); opacity: 0; }
+            95%      { transform: scale(1.1); opacity: 1; }
+            100%     { transform: scale(0.9); opacity: 0; }
+        }
+        .s4-icon {
+            width: 80px; height: 80px;
+            background: linear-gradient(150deg, #1c0d32, #5c2878);
+            border-radius: 22px;
+            border: 1px solid rgba(255,158,255,0.2);
+            box-shadow: 0 0 30px rgba(255,158,255,0.2);
+            display: flex; align-items: center; justify-content: center;
+            position: relative; z-index: 2; margin-bottom: 16px;
+        }
+        .s4-name {
+            font-size: 42px; font-weight: 800;
+            color: var(--text); letter-spacing: -0.05em;
+            position: relative; z-index: 2;
+        }
+        .s4-tag {
+            font-size: 12px; color: var(--muted);
+            letter-spacing: 0.08em; margin-top: 6px;
+            position: relative; z-index: 2;
+        }
+    </style>
+</head>
+<body>
+<div id="canvas">
+
+    <!-- ══ S1: INTRO ══ -->
+    <div class="s1">
+        <div class="s1-glow"></div>
+        <div class="s1-icon">
+            <svg width="62" height="62" viewBox="0 0 100 100" fill="none">
+                <defs>
+                    <linearGradient id="sg1" x1="10" y1="10" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#fce3f7"/>
+                        <stop offset="50%" stop-color="#ff9eff"/>
+                        <stop offset="100%" stop-color="#dc89e1"/>
+                    </linearGradient>
+                    <filter id="gf1"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                    <filter id="df1" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                </defs>
+                <path d="M12,84 L12,20 L46,53 L50,58 L54,53 L88,12 L88,84"
+                      stroke="url(#sg1)" stroke-width="10.5"
+                      stroke-linecap="round" stroke-linejoin="round"
+                      fill="none" filter="url(#gf1)"/>
+                <circle cx="50" cy="58" r="15" fill="rgba(255,158,255,0.15)" filter="url(#df1)"/>
+                <circle cx="50" cy="58" r="8" fill="#ff9eff"/>
+                <circle cx="47" cy="55" r="2.8" fill="rgba(252,227,247,0.7)"/>
+            </svg>
+        </div>
+        <div class="s1-word">
+            <span class="lM">M</span>
+            <span class="lE">E</span>
+            <span class="lT">T</span>
+        </div>
+        <p class="s1-tagline">Your wealth, clearly.</p>
+    </div>
+
+    <!-- ══ S2: FEATURES ══ -->
+    <div class="s2-brand">
+        <div class="s2-brand-icon">
+            <svg width="16" height="16" viewBox="0 0 100 100" fill="none">
+                <defs>
+                    <linearGradient id="sg2" x1="10" y1="10" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#fce3f7"/>
+                        <stop offset="50%" stop-color="#ff9eff"/>
+                        <stop offset="100%" stop-color="#dc89e1"/>
+                    </linearGradient>
+                </defs>
+                <path d="M12,84 L12,20 L46,53 L50,58 L54,53 L88,12 L88,84"
+                      stroke="url(#sg2)" stroke-width="13"
+                      stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                <circle cx="50" cy="58" r="9" fill="#ff9eff"/>
+            </svg>
+        </div>
+        <span class="s2-brand-name">MET</span>
+    </div>
+
+    <div class="s2-stats">
+        <div class="s2-stat">
+            <div class="s2-stat-val">$142<em>,500</em></div>
+            <div class="s2-stat-label">Total Balance</div>
+        </div>
+        <div class="s2-stat">
+            <div class="s2-stat-val">64<em>%</em></div>
+            <div class="s2-stat-label">Savings Rate</div>
+        </div>
+        <div class="s2-vline"></div>
+    </div>
+
+    <div class="s2-cards">
+        <div class="feat-card">
+            <div class="feat-icon-box">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#ff9eff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+            </div>
+            <div>
+                <div class="feat-title">Track transactions</div>
+                <div class="feat-sub">Every income & expense, live</div>
+            </div>
+        </div>
+        <div class="feat-card">
+            <div class="feat-icon-box">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#ff9eff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+            </div>
+            <div>
+                <div class="feat-title">Smart budgets</div>
+                <div class="feat-sub">AI-powered spending insights</div>
+            </div>
+        </div>
+        <div class="feat-card">
+            <div class="feat-icon-box">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#ff9eff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+            </div>
+            <div>
+                <div class="feat-title">Bank-level security</div>
+                <div class="feat-sub">256-bit encryption · 2FA</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ S3: DASHBOARD ══ -->
+    <div class="s3">
+        <div class="s3-inner">
+            <div class="s3-kpi">
+                <div class="s3-kpi-card">
+                    <div class="s3-kpi-label">Balance</div>
+                    <div class="s3-kpi-val">$142,500</div>
+                </div>
+                <div class="s3-kpi-card">
+                    <div class="s3-kpi-label">Income</div>
+                    <div class="s3-kpi-val c-pink">$12,450</div>
+                </div>
+                <div class="s3-kpi-card">
+                    <div class="s3-kpi-label">Expenses</div>
+                    <div class="s3-kpi-val c-red">$4,120</div>
+                </div>
+                <div class="s3-kpi-card">
+                    <div class="s3-kpi-label">Savings</div>
+                    <div class="s3-kpi-val c-green">64%</div>
+                </div>
+            </div>
+            <div class="s3-chart-card">
+                <div class="s3-chart-head">
+                    <span class="s3-chart-title">Net Worth Over Time</span>
+                    <span class="s3-chart-pill">6 months</span>
+                </div>
+                <svg width="100%" height="88" viewBox="0 0 650 88" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#ff9eff" stop-opacity="0.18"/>
+                            <stop offset="100%" stop-color="#ff9eff" stop-opacity="0"/>
+                        </linearGradient>
+                    </defs>
+                    <line x1="0" y1="29" x2="650" y2="29" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+                    <line x1="0" y1="59" x2="650" y2="59" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+                    <path d="M0,76 C80,68 160,55 225,47 S390,27 468,17 S590,7 650,3 L650,88 L0,88 Z" fill="url(#cg)"/>
+                    <path class="chart-path"
+                          d="M0,76 C80,68 160,55 225,47 S390,27 468,17 S590,7 650,3"
+                          fill="none" stroke="#ff9eff" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="0"   cy="76" r="3.5" fill="#ff9eff"/>
+                    <circle cx="130" cy="56" r="3.5" fill="#ff9eff"/>
+                    <circle cx="260" cy="43" r="3.5" fill="#ff9eff"/>
+                    <circle cx="390" cy="26" r="3.5" fill="#ff9eff"/>
+                    <circle cx="520" cy="13" r="3.5" fill="#ff9eff"/>
+                    <circle cx="650" cy="3"  r="4.5" fill="#ff9eff" stroke="#0a0a0a" stroke-width="2"/>
+                </svg>
+                <div class="s3-months">
+                    <span>MAY</span><span>JUN</span><span>JUL</span>
+                    <span>AUG</span><span>SEP</span><span>OCT</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="s3-available">
+        <div class="avail-dot"></div>
+        Available now · met.app
+    </div>
+
+    <!-- ══ S4: OUTRO ══ -->
+    <div class="s4">
+        <div class="s4-glow"></div>
+        <div class="s4-icon">
+            <svg width="44" height="44" viewBox="0 0 100 100" fill="none">
+                <defs>
+                    <linearGradient id="sg4" x1="10" y1="10" x2="90" y2="90" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#fce3f7"/>
+                        <stop offset="50%" stop-color="#ff9eff"/>
+                        <stop offset="100%" stop-color="#dc89e1"/>
+                    </linearGradient>
+                </defs>
+                <path d="M12,84 L12,20 L46,53 L50,58 L54,53 L88,12 L88,84"
+                      stroke="url(#sg4)" stroke-width="11"
+                      stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                <circle cx="50" cy="58" r="12" fill="rgba(255,158,255,0.2)"/>
+                <circle cx="50" cy="58" r="7" fill="#ff9eff"/>
+                <circle cx="47.5" cy="55.5" r="2.5" fill="rgba(252,227,247,0.7)"/>
+            </svg>
+        </div>
+        <div class="s4-name">MET</div>
+        <div class="s4-tag">Your wealth, clearly.</div>
+    </div>
+
+</div>
+</body>
+</html>

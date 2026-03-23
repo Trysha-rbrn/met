@@ -99,9 +99,9 @@ function TransactionModal({ isOpen, onClose, onSave, initialData, accounts, defa
     .find((cat) => cat.id === categoryId)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/55 backdrop-blur-md">
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-200/70 dark:border-slate-800 bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 shadow-[0_30px_80px_-35px_rgba(15,23,42,0.6)] animate-in zoom-in-95 duration-200">
-        <div className="flex items-start justify-between gap-4 px-5 sm:px-7 py-5 sm:py-6 border-b border-slate-200/70 dark:border-slate-800/80">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/65 backdrop-blur-md">
+      <div className="met-card w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-[0_30px_80px_-35px_rgba(15,23,42,0.6)] animate-in zoom-in-95 duration-200">
+        <div className="flex items-start justify-between gap-4 px-5 sm:px-7 py-5 sm:py-6 border-b border-white/10">
           <div className="space-y-1">
             <h2 className="text-xl sm:text-2xl font-black tracking-tight">
               {initialData ? 'Edit Transaction' : 'Create Transaction'}
@@ -110,7 +110,7 @@ function TransactionModal({ isOpen, onClose, onSave, initialData, accounts, defa
               Save income and expenses with account and category context.
             </p>
           </div>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors text-slate-500">
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-white/10 transition-colors text-slate-400">
             <X size={20} />
           </button>
         </div>
@@ -126,7 +126,7 @@ function TransactionModal({ isOpen, onClose, onSave, initialData, accounts, defa
                 name="accountId"
                 value={accountId}
                 onChange={(e) => setAccountId(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 outline-none"
+                className="w-full px-4 py-3 rounded-xl border border-white/12 bg-white/5 text-slate-100 focus:ring-2 focus:ring-[#ff9eff]/20 outline-none"
                 required
               >
                 <option value="">Select account</option>
@@ -148,7 +148,7 @@ function TransactionModal({ isOpen, onClose, onSave, initialData, accounts, defa
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 outline-none"
+                className="w-full px-4 py-3 rounded-xl border border-white/12 bg-white/5 text-slate-100 placeholder:text-slate-500 focus:ring-2 focus:ring-[#ff9eff]/20 outline-none"
                 required
               />
             </label>
@@ -165,19 +165,19 @@ function TransactionModal({ isOpen, onClose, onSave, initialData, accounts, defa
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 outline-none"
+                className="w-full px-4 py-3 rounded-xl border border-white/12 bg-white/5 text-slate-100 focus:ring-2 focus:ring-[#ff9eff]/20 outline-none"
                 required
               />
             </label>
 
             <label className="space-y-2">
               <span className="text-sm font-semibold text-muted-foreground">Type</span>
-              <div className="grid grid-cols-2 p-1 rounded-xl bg-muted/70 border">
+              <div className="grid grid-cols-2 p-1 rounded-xl bg-white/5 border border-white/12">
                 <button
                   type="button"
                   onClick={() => setType('EXPENSE')}
                   className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${
-                    type === 'EXPENSE' ? 'bg-white dark:bg-slate-800 text-rose-600 shadow-sm' : 'text-muted-foreground'
+                    type === 'EXPENSE' ? 'bg-rose-500/15 text-rose-300 shadow-sm' : 'text-muted-foreground'
                   }`}
                 >
                   Expense
@@ -186,7 +186,7 @@ function TransactionModal({ isOpen, onClose, onSave, initialData, accounts, defa
                   type="button"
                   onClick={() => setType('INCOME')}
                   className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${
-                    type === 'INCOME' ? 'bg-white dark:bg-slate-800 text-emerald-600 shadow-sm' : 'text-muted-foreground'
+                    type === 'INCOME' ? 'bg-emerald-500/15 text-emerald-300 shadow-sm' : 'text-muted-foreground'
                   }`}
                 >
                   Income
@@ -202,7 +202,7 @@ function TransactionModal({ isOpen, onClose, onSave, initialData, accounts, defa
               name="categoryId"
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 outline-none"
+              className="w-full px-4 py-3 rounded-xl border border-white/12 bg-white/5 text-slate-100 focus:ring-2 focus:ring-[#ff9eff]/20 outline-none"
               required
             >
               <option value="">Select category</option>
@@ -236,7 +236,7 @@ function TransactionModal({ isOpen, onClose, onSave, initialData, accounts, defa
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Optional note about this transaction"
               rows={3}
-              className="w-full px-4 py-3 rounded-xl border bg-background focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+              className="w-full px-4 py-3 rounded-xl border border-white/12 bg-white/5 text-slate-100 placeholder:text-slate-500 focus:ring-2 focus:ring-[#ff9eff]/20 outline-none resize-none"
             />
           </label>
 
@@ -244,14 +244,14 @@ function TransactionModal({ isOpen, onClose, onSave, initialData, accounts, defa
             <button
               type="button"
               onClick={onClose}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl border font-semibold hover:bg-muted transition-colors"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-white/15 bg-white/5 font-semibold text-slate-200 hover:bg-white/10 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#ff9eff] text-[#1c0d32] font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               <CheckCircle2 size={17} />
               {isSubmitting ? 'Saving...' : initialData ? 'Update' : 'Create'}

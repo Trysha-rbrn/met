@@ -1,8 +1,7 @@
 import { NextFunction, Request, Response } from 'express'
-import { PrismaClient, UserRole } from '@prisma/client'
+import { UserRole } from '@prisma/client'
 import { writeAuditLog } from '../lib/auditLog.ts'
-
-const prisma = new PrismaClient()
+import { prisma } from '../lib/prisma.ts'
 const MAX_ACCOUNTS_BASIC = 3
 const MAX_ACCOUNTS_PREMIUM = 10
 const MAX_ACCOUNTS_ADMIN = 20
