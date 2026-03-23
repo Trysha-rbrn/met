@@ -15,6 +15,7 @@ model User {
   email             String           @unique
   password          String
   name              String?
+  countryCode       String?
   preferredCurrency String           @default("USD")
   benchmarkOptOut   Boolean          @default(false)
   role              UserRole         @default(BASIC)
@@ -26,6 +27,7 @@ model User {
   recurringTransactions RecurringTransaction[]
   transferLogs      DataTransferLog[]
   transactions      Transaction[]
+  reviews           UserReview[]
   subscription      Subscription?
   createdPromoCodes PromoCode[]      @relation("PromoCodeCreator")
   promoRedemptions  PromoCodeRedemption[]
@@ -230,6 +232,20 @@ model RecurringTransaction {
   updatedAt   DateTime           @updatedAt
 
   @@index([userId, nextRunDate, isActive])
+}
+
+model UserReview {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Float
+  comment   String?
+  isPublic  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isPublic, createdAt])
+  @@index([userId, createdAt])
 }
 
 enum UserRole {

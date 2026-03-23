@@ -74,9 +74,21 @@ app.get('/health', (req, res) => {
 
 app.get('/api/public/stats', async (_req, res) => {
   try {
-    const [totalUsers, premiumUsers, totalIncomeAgg, totalExpenseAgg, monthlyTransactions, monthlyIncomeAgg, monthlyExpenseAgg] = await Promise.all([
+    const [
+      totalUsers,
+      premiumUsers,
+      totalTransactions,
+      totalIncomeAgg,
+      totalExpenseAgg,
+      monthlyTransactions,
+      monthlyIncomeAgg,
+      monthlyExpenseAgg,
+      reviewAggregate,
+      countryGroups
+    ] = await Promise.all([
       prisma.user.count({ where: { isBanned: false } }),
       prisma.user.count({ where: { role: 'PREMIUM', isBanned: false } }),
+      prisma.transaction.count({ where: { user: { isBanned: false } } }),
       prisma.transaction.aggregate({
         where: { type: 'INCOME', user: { isBanned: false } },
         _sum: { amount: true }
@@ -106,6 +118,20 @@ app.get('/api/public/stats', async (_req, res) => {
           user: { isBanned: false }
         },
         _sum: { amount: true }
+      }),
+      prisma.userReview.aggregate({
+        where: {
+          isPublic: true,
+          user: { isBanned: false }
+        },
+        _avg: { rating: true }
+      }),
+      prisma.user.groupBy({
+        by: ['countryCode'],
+        where: {
+          isBanned: false,
+          countryCode: { not: null }
+        }
       })
     ])
 
@@ -119,9 +145,14 @@ app.get('/api/public/stats', async (_req, res) => {
     const savingsRate = totalIncome > 0 ? Math.max(0, Math.min(100, (net / totalIncome) * 100)) : 0
     const avgMonthlyTransactions = totalUsers > 0 ? monthlyTransactions / totalUsers : 0
     const premiumRate = totalUsers > 0 ? (premiumUsers / totalUsers) * 100 : 0
+    const averageUserRating = reviewAggregate._avg.rating ?? null
+    const countriesCount = countryGroups.length
 
     res.json({
       totalUsers,
+      totalTransactions,
+      averageUserRating,
+      countriesCount,
       premiumUsers,
       premiumRate,
       avgBalanceUsd: totalUsers >= minUsersForFinancialStats ? avgBalanceUsd : null,

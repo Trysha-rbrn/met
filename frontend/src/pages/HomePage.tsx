@@ -14,8 +14,11 @@ import { Link } from 'react-router-dom'
 import MetLogo from '../components/MetLogo'
 import { getPublicStats, type PublicStats } from '../api/publicApi'
 
-const fallbackStats: PublicStats = {
+const fallbackStats = {
   totalUsers: 1284,
+  totalTransactions: 18420,
+  averageUserRating: 4.8,
+  countriesCount: 12,
   premiumUsers: 847,
   premiumRate: 65.9,
   avgBalanceUsd: 142000,
@@ -23,11 +26,12 @@ const fallbackStats: PublicStats = {
   avgMonthlyTransactions: 34,
   monthlyIncome: 12450,
   monthlyExpense: 4120
-}
+} satisfies PublicStats
 
 function HomePage() {
   const [isYearly, setIsYearly] = useState(false)
   const [stats, setStats] = useState<PublicStats | null>(null)
+  const [statsLoading, setStatsLoading] = useState(true)
 
   useEffect(() => {
     const load = async () => {
@@ -36,6 +40,8 @@ function HomePage() {
         setStats(nextStats)
       } catch {
         setStats(null)
+      } finally {
+        setStatsLoading(false)
       }
     }
     void load()
@@ -46,11 +52,31 @@ function HomePage() {
     () => new Intl.NumberFormat('en-US').format(safeStats.totalUsers),
     [safeStats.totalUsers]
   )
-  const avgBalance = safeStats.avgBalanceUsd ?? fallbackStats.avgBalanceUsd!
-  const savingsRate = safeStats.savingsRate ?? fallbackStats.savingsRate!
-  const monthlyIncome = safeStats.monthlyIncome ?? fallbackStats.monthlyIncome!
-  const monthlyExpense = safeStats.monthlyExpense ?? fallbackStats.monthlyExpense!
-  const monthlyTransactions = safeStats.avgMonthlyTransactions ?? fallbackStats.avgMonthlyTransactions!
+  const avgBalance = safeStats.avgBalanceUsd ?? fallbackStats.avgBalanceUsd
+  const savingsRate = safeStats.savingsRate ?? fallbackStats.savingsRate
+  const monthlyIncome = safeStats.monthlyIncome ?? fallbackStats.monthlyIncome
+  const monthlyExpense = safeStats.monthlyExpense ?? fallbackStats.monthlyExpense
+  const statsBarItems = useMemo(() => {
+    if (statsLoading) {
+      return [
+        { label: 'ACTIVE USERS', value: '...' },
+        { label: 'TRANSACTIONS TRACKED', value: '...' },
+        { label: 'USER RATING', value: '...' as string, accent: true },
+        { label: 'COUNTRIES', value: '...' }
+      ]
+    }
+
+    return [
+      { label: 'ACTIVE USERS', value: new Intl.NumberFormat('en-US').format(safeStats.totalUsers) },
+      { label: 'TRANSACTIONS TRACKED', value: formatLargeCount(safeStats.totalTransactions) },
+      {
+        label: 'USER RATING',
+        value: safeStats.averageUserRating === null ? 'N/A' : `${safeStats.averageUserRating.toFixed(1)} / 5`,
+        accent: true
+      },
+      { label: 'COUNTRIES', value: new Intl.NumberFormat('en-US').format(safeStats.countriesCount) }
+    ]
+  }, [safeStats, statsLoading])
   const proPrice = useMemo(() => (isYearly ? '$9.6' : '$12'), [isYearly])
   const primaryButtonClass = 'inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#dc89e1] to-[#ff9eff] font-extrabold text-black transition-all duration-200 hover:scale-[1.02] hover:shadow-[0_0_24px_rgba(255,158,255,0.4)]'
 
@@ -63,9 +89,9 @@ function HomePage() {
             <span className="text-xl font-extrabold tracking-tighter text-[#f1f5f9]">MET</span>
           </Link>
           <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 text-sm font-medium text-[#64748b] md:flex">
-            <a href="#features" className="hover:text-[#f1f5f9]">Features</a>
-            <a href="#pricing" className="hover:text-[#f1f5f9]">Pricing</a>
-            <a href="#testimonials" className="hover:text-[#f1f5f9]">Reviews</a>
+            <Link to="/#features" className="hover:text-[#f1f5f9]">Features</Link>
+            <Link to="/#pricing" className="hover:text-[#f1f5f9]">Pricing</Link>
+            <Link to="/#testimonials" className="hover:text-[#f1f5f9]">Reviews</Link>
           </div>
           <div className="hidden items-center gap-3 md:flex">
             <Link to="/auth" className="rounded-[10px] border border-white/15 px-[18px] py-2 text-[13px] font-semibold hover:border-white/20 hover:bg-white/5">
@@ -82,10 +108,10 @@ function HomePage() {
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.018)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[size:48px_48px]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,158,255,0.08),transparent_45%)]" />
         <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center">
-          <a href="#features" className="mb-10 inline-flex items-center gap-2 rounded-full border border-[#ff9eff]/30 bg-[#ff9eff]/10 px-4 py-1.5 text-[12px] font-bold text-[#ff9eff]">
+          <Link to="/#features" className="mb-10 inline-flex items-center gap-2 rounded-full border border-[#ff9eff]/30 bg-[#ff9eff]/10 px-4 py-1.5 text-[12px] font-bold text-[#ff9eff]">
             <Sparkles size={12} />
             Now with AI budget insights
-          </a>
+          </Link>
           <h1 className="max-w-4xl text-center text-[clamp(44px,6.5vw,84px)] font-extrabold leading-[1.05] tracking-[-0.04em]">
             Your finances,<br />finally <span className="bg-gradient-to-r from-[#ff9eff] to-[#dc89e1] bg-clip-text text-transparent">clear.</span>
           </h1>
@@ -96,9 +122,9 @@ function HomePage() {
             <Link to="/register" className={`${primaryButtonClass} h-[52px] px-8 text-[15px]`}>
               Get started free -&gt;
             </Link>
-            <a href="#features" className="inline-flex h-[52px] items-center justify-center rounded-xl border border-white/15 px-8 text-[15px] font-medium text-white hover:bg-white/5">
+            <Link to="/#features" className="inline-flex h-[52px] items-center justify-center rounded-xl border border-white/15 px-8 text-[15px] font-medium text-white hover:bg-white/5">
               See how it works
-            </a>
+            </Link>
           </div>
           <p className="mt-7 text-[12px] text-[#64748b]">
             Trusted by <span className="font-semibold text-[#f1f5f9]">{trustedUsers}</span> members - No credit card required
@@ -170,10 +196,9 @@ function HomePage() {
 
       <section className="w-full border-y border-white/[0.06] bg-white/[0.015] py-10">
         <div className="mx-auto flex max-w-4xl flex-wrap justify-center gap-10 px-6 text-center md:gap-20">
-          <StatBlock value={`${trustedUsers}+`} label="Members" />
-          <StatBlock value={formatUsdCompact(avgBalance)} label="Avg Balance" />
-          <StatBlock value={`${Math.round(savingsRate)}%`} label="Savings Rate" />
-          <StatBlock value={`${Math.round(monthlyTransactions)} / mo`} label="Avg Tx Per User" accent />
+          {statsBarItems.map((item) => (
+            <StatBlock key={item.label} value={item.value} label={item.label} accent={item.accent} />
+          ))}
         </div>
       </section>
 
@@ -278,9 +303,9 @@ function HomePage() {
           <p className="relative z-10 mt-4 max-w-sm text-[15px] text-[#64748b]">Join the next generation of wealth builders today.</p>
           <div className="relative z-10 mt-10 flex flex-col items-center gap-3 sm:flex-row">
             <Link to="/register" className={`${primaryButtonClass} h-[52px] px-8 text-[15px]`}>Get started free -&gt;</Link>
-            <a href="#features" className="inline-flex h-[52px] items-center rounded-xl border border-white/15 px-8 text-[15px] font-medium text-white hover:bg-white/5">
+            <Link to="/#features" className="inline-flex h-[52px] items-center rounded-xl border border-white/15 px-8 text-[15px] font-medium text-white hover:bg-white/5">
               See how it works
-            </a>
+            </Link>
           </div>
           <p className="relative z-10 mt-5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#64748b]">Free forever - No credit card - Cancel anytime</p>
         </div>
@@ -299,9 +324,9 @@ function HomePage() {
           <FooterColumn
             title="Product"
             links={[
-              { label: 'Features', href: '#features' },
-              { label: 'Pricing', href: '#pricing' },
-              { label: 'Reviews', href: '#testimonials' },
+              { label: 'Features', href: '/#features' },
+              { label: 'Pricing', href: '/#pricing' },
+              { label: 'Reviews', href: '/#testimonials' },
               { label: 'Get Started', href: '/register' }
             ]}
           />
@@ -464,6 +489,15 @@ function formatUsdCompact(value: number) {
     notation: 'compact',
     maximumFractionDigits: 1
   }).format(value)
+  return compact.replace('K', 'k')
+}
+
+function formatLargeCount(value: number) {
+  const compact = new Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    maximumFractionDigits: value >= 1_000_000 ? 1 : 0
+  }).format(value)
+
   return compact.replace('K', 'k')
 }
 

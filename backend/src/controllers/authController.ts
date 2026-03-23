@@ -6,7 +6,7 @@ import type { SignOptions } from 'jsonwebtoken'
 import { env } from '../config/env.ts'
 import { writeAuditLog } from '../lib/auditLog.ts'
 import { buildPremiumSubscriptionState, ensureSubscriptionRecord, syncUserRoleFromSubscription } from '../lib/subscription.ts'
-import { resolveDefaultCurrencyForRequest } from '../lib/currency.ts'
+import { resolveDefaultCurrencyForRequest, resolveRequestCountryCode } from '../lib/currency.ts'
 import { prisma } from '../lib/prisma.ts'
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
@@ -19,6 +19,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     const hashedPassword = await bcrypt.hash(password, env.bcryptRounds)
     const role: UserRole = env.adminEmails.includes(email.toLowerCase()) ? 'ADMIN' : 'BASIC'
     const preferredCurrency = resolveDefaultCurrencyForRequest(req)
+    const countryCode = resolveRequestCountryCode(req) || null
 
     const user = await prisma.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
@@ -26,6 +27,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
           email,
           password: hashedPassword,
           name,
+          countryCode,
           preferredCurrency,
           role
         }

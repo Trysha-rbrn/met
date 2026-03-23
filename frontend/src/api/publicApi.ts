@@ -5,6 +5,9 @@ const API_URL = `${API_BASE_URL}/public`
 
 export interface PublicStats {
   totalUsers: number
+  totalTransactions: number
+  averageUserRating: number | null
+  countriesCount: number
   premiumUsers: number
   premiumRate: number
   avgBalanceUsd: number | null
