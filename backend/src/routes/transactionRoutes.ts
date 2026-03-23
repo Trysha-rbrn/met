@@ -16,6 +16,7 @@ import {
   splitTransaction
 } from '../controllers/transactionController.ts'
 import { auth } from '../middleware/authMiddleware.ts'
+import { csrfProtect } from '../middleware/csrfMiddleware.ts'
 import { premiumOrAdminOnly } from '../middleware/premiumMiddleware.ts'
 import {
   validateCreateTransaction,
@@ -38,14 +39,14 @@ router.get('/summary', validateTransactionListQuery, getSummary)
 router.get('/insights', premiumOrAdminOnly, validateTransactionListQuery, getInsights)
 router.get('/benchmark', premiumOrAdminOnly, validateTransactionListQuery, getBenchmark)
 router.get('/recurring', premiumOrAdminOnly, getRecurringTransactions)
-router.post('/recurring', premiumOrAdminOnly, validateCreateRecurringTransaction, createRecurringTransaction)
-router.post('/recurring/run-due', premiumOrAdminOnly, runDueRecurringTransactions)
-router.put('/recurring/:id', premiumOrAdminOnly, validateUpdateRecurringTransaction, updateRecurringTransaction)
-router.delete('/recurring/:id', premiumOrAdminOnly, validateRecurringTransactionIdParam, deleteRecurringTransaction)
-router.patch('/bulk/category', premiumOrAdminOnly, validateBulkAssignTransactionCategory, bulkAssignTransactionCategory)
-router.post('/:id/split', premiumOrAdminOnly, validateSplitTransaction, splitTransaction)
-router.post('/', validateCreateTransaction, createTransaction)
-router.put('/:id', validateUpdateTransaction, updateTransaction)
-router.delete('/:id', validateTransactionIdParam, deleteTransaction)
+router.post('/recurring', premiumOrAdminOnly, csrfProtect, validateCreateRecurringTransaction, createRecurringTransaction)
+router.post('/recurring/run-due', premiumOrAdminOnly, csrfProtect, runDueRecurringTransactions)
+router.put('/recurring/:id', premiumOrAdminOnly, csrfProtect, validateUpdateRecurringTransaction, updateRecurringTransaction)
+router.delete('/recurring/:id', premiumOrAdminOnly, csrfProtect, validateRecurringTransactionIdParam, deleteRecurringTransaction)
+router.patch('/bulk/category', premiumOrAdminOnly, csrfProtect, validateBulkAssignTransactionCategory, bulkAssignTransactionCategory)
+router.post('/:id/split', premiumOrAdminOnly, csrfProtect, validateSplitTransaction, splitTransaction)
+router.post('/', csrfProtect, validateCreateTransaction, createTransaction)
+router.put('/:id', csrfProtect, validateUpdateTransaction, updateTransaction)
+router.delete('/:id', csrfProtect, validateTransactionIdParam, deleteTransaction)
 
 export default router

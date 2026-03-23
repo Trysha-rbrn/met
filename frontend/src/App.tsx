@@ -8,6 +8,7 @@ import AuthPage from './pages/AuthPage'
 import HomePage from './pages/HomePage'
 import NotFoundPage from './pages/NotFoundPage'
 import * as authApi from './api/authApi'
+import { clearStoredCsrfToken } from './api/http'
 import type { AuthUser } from './api/authApi'
 import { notify } from './lib/toast'
 import PremiumComparisonModal from './components/PremiumComparisonModal'
@@ -63,7 +64,6 @@ const readJsonStorage = <T,>(key: string, fallback: T): T => {
 function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [user, setUser] = useState<AuthUser | null>(null)
-  const [token, setToken] = useState<string | null>(localStorage.getItem('met_token'))
   const [loading, setLoading] = useState(true)
   const [showPremiumOfferModal, setShowPremiumOfferModal] = useState(false)
   const hadConnectionDropRef = useRef(false)
@@ -74,33 +74,31 @@ function App() {
 
   useEffect(() => {
     if (!user) return
-    localStorage.setItem('met_user_role', user.role)
     localStorage.setItem('met_currency', user.preferredCurrency || 'USD')
   }, [user])
 
   const handleLogout = useCallback(() => {
+    void authApi.logout().catch(() => undefined)
     setUser(null)
-    setToken(null)
-    localStorage.removeItem('met_token')
-    localStorage.removeItem('met_user_role')
+    clearStoredCsrfToken()
+    localStorage.removeItem('met_account_id')
+    localStorage.removeItem(PREMIUM_OFFER_STORAGE_KEY)
+    localStorage.removeItem(ACTIVE_USAGE_STORAGE_KEY)
   }, [])
 
   useEffect(() => {
     const verifyUser = async () => {
-      const storedToken = localStorage.getItem('met_token')
-      if (storedToken) {
-        try {
-          const userData = await authApi.getMe()
-          setUser(userData)
-          localStorage.setItem('met_user_role', userData.role)
-        } catch {
-          handleLogout()
-        }
+      try {
+        const userData = await authApi.getMe()
+        setUser(userData)
+      } catch {
+        clearStoredCsrfToken()
+        setUser(null)
       }
       setLoading(false)
     }
-    verifyUser()
-  }, [token, handleLogout])
+    void verifyUser()
+  }, [])
 
   useEffect(() => {
     const onOffline = () => {
@@ -110,7 +108,7 @@ function App() {
     const onOnline = () => {
       if (!hadConnectionDropRef.current) return
       hadConnectionDropRef.current = false
-      if (localStorage.getItem('met_token')) {
+      if (user) {
         notify.info('Connection changed. Please log in again.')
       }
       handleLogout()
@@ -123,10 +121,10 @@ function App() {
       window.removeEventListener('offline', onOffline)
       window.removeEventListener('online', onOnline)
     }
-  }, [handleLogout])
+  }, [handleLogout, user])
 
   useEffect(() => {
-    if (!token) return
+    if (!user) return
 
     const interval = window.setInterval(async () => {
       try {
@@ -141,10 +139,10 @@ function App() {
     }, 15000)
 
     return () => window.clearInterval(interval)
-  }, [token, handleLogout])
+  }, [user, handleLogout])
 
   useEffect(() => {
-    if (!token || !user || user.role !== 'BASIC') return
+    if (!user || user.role !== 'BASIC') return
 
     const now = Date.now()
     const offerState = readJsonStorage<PremiumOfferState>(PREMIUM_OFFER_STORAGE_KEY, {
@@ -159,10 +157,10 @@ function App() {
       usage.activeDays = [...usage.activeDays, today].slice(-45)
       localStorage.setItem(ACTIVE_USAGE_STORAGE_KEY, JSON.stringify(usage))
     }
-  }, [token, user])
+  }, [user])
 
   useEffect(() => {
-    if (!token || !user || user.role !== 'BASIC') return
+    if (!user || user.role !== 'BASIC') return
 
     const interval = window.setInterval(() => {
       if (document.hidden) return
@@ -172,10 +170,10 @@ function App() {
     }, 60000)
 
     return () => window.clearInterval(interval)
-  }, [token, user])
+  }, [user])
 
   useEffect(() => {
-    if (!token || !user || user.role !== 'BASIC') return
+    if (!user || user.role !== 'BASIC') return
 
     const usage = readJsonStorage<ActiveUsageState>(ACTIVE_USAGE_STORAGE_KEY, { totalMinutes: 0, activeDays: [] })
     const offerState = readJsonStorage<PremiumOfferState>(PREMIUM_OFFER_STORAGE_KEY, {
@@ -192,7 +190,7 @@ function App() {
       }, 0)
       return () => window.clearTimeout(timer)
     }
-  }, [token, user])
+  }, [user])
 
   const scheduleNextPremiumOfferPrompt = useCallback(() => {
     const now = Date.now()
@@ -205,11 +203,8 @@ function App() {
     setShowPremiumOfferModal(false)
   }, [])
 
-  const handleLogin = (userData: AuthUser, userToken: string) => {
+  const handleLogin = (userData: AuthUser) => {
     setUser(userData)
-    setToken(userToken)
-    localStorage.setItem('met_token', userToken)
-    localStorage.setItem('met_user_role', userData.role)
     localStorage.setItem('met_currency', userData.preferredCurrency || 'USD')
   }
 
@@ -222,7 +217,7 @@ function App() {
   return (
     <Router>
       <div className="met-app-bg min-h-screen overflow-x-hidden antialiased">
-        {!token ? (
+        {!user ? (
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/auth" element={<AuthPage onLogin={handleLogin} initialMode="login" />} />

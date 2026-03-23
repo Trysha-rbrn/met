@@ -1,7 +1,6 @@
-import axios from 'axios'
-import { API_BASE_URL } from './baseUrl'
+import { http } from './http'
 
-const API_URL = `${API_BASE_URL}/data-transfer`
+const API_URL = '/data-transfer'
 
 export type TransferAction = 'IMPORT' | 'EXPORT'
 export type TransferFormat = 'EXCEL' | 'PDF'
@@ -14,17 +13,12 @@ export interface TransferLog {
   createdAt: string
 }
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('met_token')
-  return { Authorization: `Bearer ${token}` }
-}
-
 export const getTransferLogs = async () => {
-  const response = await axios.get<TransferLog[]>(API_URL, { headers: getAuthHeaders() })
+  const response = await http.get<TransferLog[]>(API_URL)
   return response.data
 }
 
 export const createTransferLog = async (payload: { action: TransferAction; format: TransferFormat; rows: number }) => {
-  const response = await axios.post<TransferLog>(API_URL, payload, { headers: getAuthHeaders() })
+  const response = await http.post<TransferLog>(API_URL, payload)
   return response.data
 }

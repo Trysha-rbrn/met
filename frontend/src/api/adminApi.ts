@@ -1,12 +1,6 @@
-import axios from 'axios'
-import { API_BASE_URL } from './baseUrl'
+import { http } from './http'
 
-const API_URL = `${API_BASE_URL}/admin`
-
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('met_token')
-  return { Authorization: `Bearer ${token}` }
-}
+const API_URL = '/admin'
 
 export interface AdminUserListItem {
   id: string
@@ -93,72 +87,52 @@ export const getAdminUsers = async (params: {
   page?: number
   pageSize?: number
 }) => {
-  const response = await axios.get<{ users: AdminUserListItem[]; pagination: { page: number; totalPages: number; total: number } }>(
+  const response = await http.get<{ users: AdminUserListItem[]; pagination: { page: number; totalPages: number; total: number } }>(
     `${API_URL}/users`,
-    {
-      params,
-      headers: getAuthHeaders()
-    }
+    { params }
   )
   return response.data
 }
 
 export const getAdminUserDetails = async (id: string) => {
-  const response = await axios.get<AdminUserDetails>(`${API_URL}/users/${id}`, {
-    headers: getAuthHeaders()
-  })
+  const response = await http.get<AdminUserDetails>(`${API_URL}/users/${id}`)
   return response.data
 }
 
 export const setAdminUserBan = async (id: string, isBanned: boolean) => {
-  const response = await axios.patch(`${API_URL}/users/${id}/ban`, { isBanned }, {
-    headers: getAuthHeaders()
-  })
+  const response = await http.patch(`${API_URL}/users/${id}/ban`, { isBanned })
   return response.data
 }
 
 export const setAdminUserRole = async (id: string, role: 'BASIC' | 'PREMIUM') => {
-  const response = await axios.patch(`${API_URL}/users/${id}/role`, { role }, {
-    headers: getAuthHeaders()
-  })
+  const response = await http.patch(`${API_URL}/users/${id}/role`, { role })
   return response.data
 }
 
 export const deleteAdminUser = async (id: string) => {
-  const response = await axios.delete(`${API_URL}/users/${id}`, {
-    headers: getAuthHeaders()
-  })
+  const response = await http.delete(`${API_URL}/users/${id}`)
   return response.data
 }
 
 export const getAdminAuditLogs = async (params?: { action?: string; userId?: string; page?: number; pageSize?: number }) => {
-  const response = await axios.get<{ logs: AdminAuditLog[]; pagination: { page: number; totalPages: number; total: number } }>(
+  const response = await http.get<{ logs: AdminAuditLog[]; pagination: { page: number; totalPages: number; total: number } }>(
     `${API_URL}/audit-logs`,
-    {
-      params,
-      headers: getAuthHeaders()
-    }
+    { params }
   )
   return response.data
 }
 
 export const getPromoCodes = async () => {
-  const response = await axios.get<PromoCodeItem[]>(`${API_URL}/promo-codes`, {
-    headers: getAuthHeaders()
-  })
+  const response = await http.get<PromoCodeItem[]>(`${API_URL}/promo-codes`)
   return response.data
 }
 
 export const createPromoCode = async (payload: { code: string; expiresAt?: string; maxRedemptions?: number }) => {
-  const response = await axios.post<PromoCodeItem>(`${API_URL}/promo-codes`, payload, {
-    headers: getAuthHeaders()
-  })
+  const response = await http.post<PromoCodeItem>(`${API_URL}/promo-codes`, payload)
   return response.data
 }
 
 export const setPromoCodeState = async (id: string, isActive: boolean) => {
-  const response = await axios.patch<PromoCodeItem>(`${API_URL}/promo-codes/${id}/state`, { isActive }, {
-    headers: getAuthHeaders()
-  })
+  const response = await http.patch<PromoCodeItem>(`${API_URL}/promo-codes/${id}/state`, { isActive })
   return response.data
 }

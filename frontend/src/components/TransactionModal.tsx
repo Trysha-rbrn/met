@@ -3,7 +3,7 @@ import { X, Calendar, Coins, FileText, WalletCards, CheckCircle2 } from 'lucide-
 import * as categoryApi from '../api/categoriesApi'
 import type { Transaction, TransactionPayload, TransactionType } from '../api/transactionsApi'
 import type { Account } from '../api/accountsApi'
-import { notify } from '../lib/toast'
+import { extractApiError, notify } from '../lib/toast'
 import { renderCategoryIcon } from '../lib/categoryIcons'
 
 interface Category {
@@ -61,9 +61,8 @@ function TransactionModal({ isOpen, onClose, onSave, initialData, accounts, defa
     try {
       const data = await categoryApi.getCategories()
       setCategories(data)
-    } catch (error) {
-      console.error('Error fetching categories:', error)
-      notify.error('Failed to load categories.')
+    } catch (error: unknown) {
+      notify.error(extractApiError(error, 'Failed to load categories.'))
     }
   }
 
@@ -85,9 +84,8 @@ function TransactionModal({ isOpen, onClose, onSave, initialData, accounts, defa
         metadata: { source: 'web-app', author: 'Trysha-rbrn' }
       })
       onClose()
-    } catch (error) {
-      console.error('Failed to save transaction:', error)
-      notify.error('Failed to save transaction.')
+    } catch (error: unknown) {
+      notify.error(extractApiError(error, 'Failed to save transaction.'))
     } finally {
       setIsSubmitting(false)
     }

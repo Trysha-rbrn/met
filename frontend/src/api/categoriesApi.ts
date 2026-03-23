@@ -1,7 +1,6 @@
-import axios from 'axios';
-import { API_BASE_URL } from './baseUrl'
+import { http } from './http'
 
-const API_URL = `${API_BASE_URL}/categories`;
+const API_URL = '/categories'
 
 export interface Category {
   id: string
@@ -50,84 +49,64 @@ export interface CategoryRule {
   }
 }
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('met_token');
-  return { Authorization: `Bearer ${token}` };
-};
-
 export const getCategories = async () => {
-  const response = await axios.get<Category[]>(API_URL, { headers: getAuthHeaders() });
-  return response.data;
-};
+  const response = await http.get<Category[]>(API_URL)
+  return response.data
+}
 
 export const createCategory = async (data: CategoryPayload) => {
-  const response = await axios.post<Category>(API_URL, data, { headers: getAuthHeaders() });
-  return response.data;
-};
+  const response = await http.post<Category>(API_URL, data)
+  return response.data
+}
 
 export const updateCategory = async (id: string, data: Partial<CategoryPayload>) => {
-  const response = await axios.put<Category>(`${API_URL}/${id}`, data, { headers: getAuthHeaders() });
-  return response.data;
-};
+  const response = await http.put<Category>(`${API_URL}/${id}`, data)
+  return response.data
+}
 
 export const deleteCategory = async (id: string) => {
-  const response = await axios.delete(`${API_URL}/${id}`, { headers: getAuthHeaders() });
-  return response.data;
-};
+  const response = await http.delete(`${API_URL}/${id}`)
+  return response.data
+}
 
 export const getBudgetGoals = async (month: string) => {
-  const response = await axios.get<BudgetGoal[]>(`${API_URL}/budgets`, {
-    headers: getAuthHeaders(),
+  const response = await http.get<BudgetGoal[]>(`${API_URL}/budgets`, {
     params: { month }
   })
   return response.data
 }
 
 export const createBudgetGoal = async (data: { categoryId: string; month: string; amount: number }) => {
-  const response = await axios.post<BudgetGoal>(`${API_URL}/budgets`, data, {
-    headers: getAuthHeaders()
-  })
+  const response = await http.post<BudgetGoal>(`${API_URL}/budgets`, data)
   return response.data
 }
 
 export const updateBudgetGoal = async (id: string, amount: number) => {
-  const response = await axios.patch<BudgetGoal>(`${API_URL}/budgets/${id}`, { amount }, {
-    headers: getAuthHeaders()
-  })
+  const response = await http.patch<BudgetGoal>(`${API_URL}/budgets/${id}`, { amount })
   return response.data
 }
 
 export const deleteBudgetGoal = async (id: string) => {
-  const response = await axios.delete(`${API_URL}/budgets/${id}`, {
-    headers: getAuthHeaders()
-  })
+  const response = await http.delete(`${API_URL}/budgets/${id}`)
   return response.data
 }
 
 export const getCategoryRules = async () => {
-  const response = await axios.get<CategoryRule[]>(`${API_URL}/rules`, {
-    headers: getAuthHeaders()
-  })
+  const response = await http.get<CategoryRule[]>(`${API_URL}/rules`)
   return response.data
 }
 
 export const createCategoryRule = async (payload: { keyword: string; categoryId: string; isActive?: boolean }) => {
-  const response = await axios.post<CategoryRule>(`${API_URL}/rules`, payload, {
-    headers: getAuthHeaders()
-  })
+  const response = await http.post<CategoryRule>(`${API_URL}/rules`, payload)
   return response.data
 }
 
 export const updateCategoryRule = async (id: string, payload: Partial<{ keyword: string; categoryId: string; isActive: boolean }>) => {
-  const response = await axios.patch<CategoryRule>(`${API_URL}/rules/${id}`, payload, {
-    headers: getAuthHeaders()
-  })
+  const response = await http.patch<CategoryRule>(`${API_URL}/rules/${id}`, payload)
   return response.data
 }
 
 export const deleteCategoryRule = async (id: string) => {
-  const response = await axios.delete(`${API_URL}/rules/${id}`, {
-    headers: getAuthHeaders()
-  })
+  const response = await http.delete(`${API_URL}/rules/${id}`)
   return response.data
 }

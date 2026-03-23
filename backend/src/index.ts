@@ -14,6 +14,18 @@ import { prisma } from './lib/prisma.ts'
 const app = express()
 const PORT = env.port
 const HOST = env.host
+const DEFAULT_CSP = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "img-src 'self' data: https:",
+  "object-src 'none'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self' data: https:",
+  "connect-src 'self'"
+].join('; ')
 const normalizeOrigin = (value: string) => {
   try {
     const parsed = new URL(value.trim())
@@ -56,8 +68,22 @@ app.use(cors({
 
     callback(new Error('CORS origin denied'))
   },
-  credentials: true
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'x-billing-hook-secret'],
+  exposedHeaders: ['X-CSRF-Token']
 }))
+app.use((_req, res, next) => {
+  res.setHeader('Content-Security-Policy', DEFAULT_CSP)
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin')
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('X-Frame-Options', 'DENY')
+  if (env.nodeEnv === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+  }
+  next()
+})
 app.use(express.json())
 
 // Routes

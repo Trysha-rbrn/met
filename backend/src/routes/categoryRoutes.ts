@@ -14,6 +14,7 @@ import {
   updateCategoryRule
 } from '../controllers/categoryController.ts'
 import { auth } from '../middleware/authMiddleware.ts'
+import { csrfProtect } from '../middleware/csrfMiddleware.ts'
 import { premiumOrAdminOnly } from '../middleware/premiumMiddleware.ts'
 import {
   validateBudgetGoalIdParam,
@@ -32,16 +33,16 @@ const router = Router()
 router.use(auth) // All category routes are protected
 
 router.get('/', getCategories)
-router.post('/', validateCreateCategory, createCategory)
-router.put('/:id', validateUpdateCategory, updateCategory)
-router.delete('/:id', validateCategoryIdParam, deleteCategory)
+router.post('/', csrfProtect, validateCreateCategory, createCategory)
+router.put('/:id', csrfProtect, validateUpdateCategory, updateCategory)
+router.delete('/:id', csrfProtect, validateCategoryIdParam, deleteCategory)
 router.get('/rules', premiumOrAdminOnly, getCategoryRules)
-router.post('/rules', premiumOrAdminOnly, validateCreateCategoryRule, createCategoryRule)
-router.patch('/rules/:id', premiumOrAdminOnly, validateUpdateCategoryRule, updateCategoryRule)
-router.delete('/rules/:id', premiumOrAdminOnly, validateCategoryIdParam, deleteCategoryRule)
+router.post('/rules', premiumOrAdminOnly, csrfProtect, validateCreateCategoryRule, createCategoryRule)
+router.patch('/rules/:id', premiumOrAdminOnly, csrfProtect, validateUpdateCategoryRule, updateCategoryRule)
+router.delete('/rules/:id', premiumOrAdminOnly, csrfProtect, validateCategoryIdParam, deleteCategoryRule)
 router.get('/budgets', premiumOrAdminOnly, validateBudgetMonthQuery, getBudgetGoals)
-router.post('/budgets', premiumOrAdminOnly, validateCreateBudgetGoal, createBudgetGoal)
-router.patch('/budgets/:id', premiumOrAdminOnly, validateUpdateBudgetGoal, updateBudgetGoal)
-router.delete('/budgets/:id', premiumOrAdminOnly, validateBudgetGoalIdParam, deleteBudgetGoal)
+router.post('/budgets', premiumOrAdminOnly, csrfProtect, validateCreateBudgetGoal, createBudgetGoal)
+router.patch('/budgets/:id', premiumOrAdminOnly, csrfProtect, validateUpdateBudgetGoal, updateBudgetGoal)
+router.delete('/budgets/:id', premiumOrAdminOnly, csrfProtect, validateBudgetGoalIdParam, deleteBudgetGoal)
 
 export default router

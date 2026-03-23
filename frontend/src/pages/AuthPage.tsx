@@ -9,7 +9,7 @@ import MetLogo from '../components/MetLogo'
 import { getPublicStats, type PublicStats } from '../api/publicApi'
 
 interface AuthPageProps {
-  onLogin: (user: AuthUser, token: string) => void
+  onLogin: (user: AuthUser) => void
   initialMode?: 'login' | 'register'
 }
 
@@ -84,7 +84,7 @@ function AuthPage({ onLogin, initialMode = 'login' }: AuthPageProps) {
       const data = isLogin
         ? await api.login({ email, password })
         : await api.register({ email, password, name })
-      onLogin(data.user, data.token)
+      onLogin(data.user)
     } catch (err: unknown) {
       if (axios.isAxiosError<{ error?: string }>(err)) {
         if (!err.response) {

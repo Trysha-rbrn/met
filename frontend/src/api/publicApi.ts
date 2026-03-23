@@ -1,7 +1,6 @@
-import axios from 'axios'
-import { API_BASE_URL } from './baseUrl'
+import { http } from './http'
 
-const API_URL = `${API_BASE_URL}/public`
+const API_URL = '/public'
 
 export interface PublicStats {
   totalUsers: number
@@ -18,6 +17,6 @@ export interface PublicStats {
 }
 
 export const getPublicStats = async () => {
-  const response = await axios.get<PublicStats>(`${API_URL}/stats`)
+  const response = await http.get<PublicStats>(`${API_URL}/stats`)
   return response.data
 }

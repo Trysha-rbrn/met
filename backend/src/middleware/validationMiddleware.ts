@@ -835,3 +835,22 @@ export const validateBudgetGoalIdParam = (req: Request, res: Response, next: Nex
 
   return next()
 }
+
+export const validateCreateAccount = (req: Request, res: Response, next: NextFunction) => {
+  if (!isPlainObject(req.body)) {
+    return sendValidationError(res, ['Invalid request body.'])
+  }
+
+  if (typeof req.body.name === 'undefined' || req.body.name === null || req.body.name === '') {
+    req.body.name = undefined
+    return next()
+  }
+
+  const name = toTrimmedString(req.body.name)
+  if (!name || name.length > 80) {
+    return sendValidationError(res, ['Account name must be between 1 and 80 characters.'])
+  }
+
+  req.body.name = name
+  return next()
+}

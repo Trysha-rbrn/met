@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express'
 
 export const notFoundHandler = (req: Request, res: Response) => {
-  res.status(404).json({ error: `Route not found: ${req.method} ${req.originalUrl}` })
+  res.status(404).json({ error: 'Route not found.' })
 }
 
 export const errorHandler = (
@@ -22,6 +22,6 @@ export const errorHandler = (
     return
   }
 
-  console.error(error)
+  console.error('[server-error]', error.message)
   res.status(500).json({ error: 'Internal server error' })
 }

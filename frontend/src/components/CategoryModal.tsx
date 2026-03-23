@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
-import { notify } from '../lib/toast'
+import { extractApiError, notify } from '../lib/toast'
 import { CATEGORY_ICON_OPTIONS, renderCategoryIcon, type CategoryIconKey } from '../lib/categoryIcons'
 
 interface Category {
@@ -53,9 +53,8 @@ function CategoryModal({ isOpen, onClose, onSave, initialData, parentId, type }:
         parentId: initialData ? initialData.parentId : (parentId || null)
       })
       onClose()
-    } catch (error) {
-      console.error('Failed to save category:', error)
-      notify.error('Failed to save category.')
+    } catch (error: unknown) {
+      notify.error(extractApiError(error, 'Failed to save category.'))
     } finally {
       setIsSubmitting(false)
     }

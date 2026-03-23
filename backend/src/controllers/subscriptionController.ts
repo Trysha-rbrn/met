@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto'
+import { randomUUID, timingSafeEqual } from 'crypto'
 import { NextFunction, Request, Response } from 'express'
 import { UserRole } from '@prisma/client'
 import { env } from '../config/env.ts'
@@ -387,7 +387,12 @@ export const handleBillingWebhook = async (req: Request, res: Response, next: Ne
       return res.status(503).json({ error: 'Billing webhook secret is not configured.' })
     }
 
-    if (providedSecret !== env.billingWebhookSecret) {
+    const expectedSecret = Buffer.from(env.billingWebhookSecret)
+    const receivedSecret = Buffer.from(providedSecret)
+    const isSecretValid = expectedSecret.length === receivedSecret.length &&
+      timingSafeEqual(expectedSecret, receivedSecret)
+
+    if (!isSecretValid) {
       return res.status(401).json({ error: 'Invalid billing webhook secret.' })
     }
 

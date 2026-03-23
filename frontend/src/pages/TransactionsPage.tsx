@@ -92,9 +92,8 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
       setTransactions(data)
       setSelectedTransactionIds([])
       setVisibleCount(20)
-    } catch (error) {
-      console.error('Error fetching transactions:', error)
-      notify.error('Failed to load transactions.')
+    } catch (error: unknown) {
+      notify.error(extractApiError(error, 'Failed to load transactions.'))
     } finally {
       setLoading(false)
     }
@@ -110,9 +109,8 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
       setRecurringLoading(true)
       const data = await api.getRecurringTransactions()
       setRecurringTransactions(data)
-    } catch (error) {
-      console.error('Error fetching recurring transactions:', error)
-      notify.error('Failed to load recurring templates.')
+    } catch (error: unknown) {
+      notify.error(extractApiError(error, 'Failed to load recurring templates.'))
     } finally {
       setRecurringLoading(false)
     }
@@ -148,8 +146,8 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
         }
 
         await Promise.all(tasks)
-      } catch (error) {
-        console.error('Error initializing transactions page:', error)
+      } catch (error: unknown) {
+        notify.error(extractApiError(error, 'Failed to initialize transactions workspace.'))
       } finally {
         setLoading(false)
       }
@@ -196,8 +194,8 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
         notify.success('Transaction created.')
       }
       await fetchTransactions(selectedAccountId)
-    } catch (error) {
-      console.error('Error saving transaction:', error)
+    } catch (error: unknown) {
+      notify.error(extractApiError(error, 'Failed to save transaction.'))
       throw error
     }
   }
@@ -434,9 +432,8 @@ function TransactionsPage({ userRole }: TransactionsPageProps) {
       }
 
       notify.success('Excel export completed.')
-    } catch (error) {
-      console.error('Excel export failed:', error)
-      notify.error('Excel export failed. Please try again.')
+    } catch (error: unknown) {
+      notify.error(extractApiError(error, 'Excel export failed. Please try again.'))
     }
   }
 

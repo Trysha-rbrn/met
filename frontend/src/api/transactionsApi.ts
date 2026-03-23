@@ -1,7 +1,6 @@
-import axios from 'axios';
-import { API_BASE_URL } from './baseUrl'
+import { http } from './http'
 
-const API_URL = `${API_BASE_URL}/transactions`;
+const API_URL = '/transactions'
 
 export type TransactionType = 'INCOME' | 'EXPENSE'
 export type RecurringFrequency = 'DAILY' | 'WEEKLY' | 'MONTHLY'
@@ -108,84 +107,67 @@ export interface TransactionBenchmarkResponse {
   }>
 }
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('met_token');
-  return { Authorization: `Bearer ${token}` };
-};
-
 export const getTransactions = async (accountId?: string) => {
-  const response = await axios.get<Transaction[]>(API_URL, {
-    headers: getAuthHeaders(),
+  const response = await http.get<Transaction[]>(API_URL, {
     params: accountId ? { accountId } : undefined
-  });
-  return response.data;
-};
+  })
+  return response.data
+}
 
 export const getSummary = async (accountId?: string) => {
-  const response = await axios.get<TransactionSummary>(`${API_URL}/summary`, {
-    headers: getAuthHeaders(),
+  const response = await http.get<TransactionSummary>(`${API_URL}/summary`, {
     params: accountId ? { accountId } : undefined
-  });
-  return response.data;
-};
+  })
+  return response.data
+}
 
 export const createTransaction = async (data: TransactionPayload) => {
-  const response = await axios.post<Transaction>(API_URL, data, { headers: getAuthHeaders() });
-  return response.data;
-};
+  const response = await http.post<Transaction>(API_URL, data)
+  return response.data
+}
 
 export const updateTransaction = async (id: string, data: TransactionPayload) => {
-  const response = await axios.put<Transaction>(`${API_URL}/${id}`, data, { headers: getAuthHeaders() });
-  return response.data;
-};
+  const response = await http.put<Transaction>(`${API_URL}/${id}`, data)
+  return response.data
+}
 
 export const deleteTransaction = async (id: string) => {
-  const response = await axios.delete(`${API_URL}/${id}`, { headers: getAuthHeaders() });
-  return response.data;
-};
+  const response = await http.delete(`${API_URL}/${id}`)
+  return response.data
+}
 
 export const getRecurringTransactions = async () => {
-  const response = await axios.get<RecurringTransaction[]>(`${API_URL}/recurring`, {
-    headers: getAuthHeaders()
-  })
+  const response = await http.get<RecurringTransaction[]>(`${API_URL}/recurring`)
   return response.data
 }
 
 export const createRecurringTransaction = async (data: RecurringTransactionPayload) => {
-  const response = await axios.post<RecurringTransaction>(`${API_URL}/recurring`, data, {
-    headers: getAuthHeaders()
-  })
+  const response = await http.post<RecurringTransaction>(`${API_URL}/recurring`, data)
   return response.data
 }
 
 export const updateRecurringTransaction = async (id: string, data: Partial<RecurringTransactionPayload>) => {
-  const response = await axios.put<RecurringTransaction>(`${API_URL}/recurring/${id}`, data, {
-    headers: getAuthHeaders()
-  })
+  const response = await http.put<RecurringTransaction>(`${API_URL}/recurring/${id}`, data)
   return response.data
 }
 
 export const deleteRecurringTransaction = async (id: string) => {
-  const response = await axios.delete(`${API_URL}/recurring/${id}`, {
-    headers: getAuthHeaders()
-  })
+  const response = await http.delete(`${API_URL}/recurring/${id}`)
   return response.data
 }
 
 export const runDueRecurringTransactions = async () => {
-  const response = await axios.post<{ createdCount: number; transactions: Transaction[] }>(
+  const response = await http.post<{ createdCount: number; transactions: Transaction[] }>(
     `${API_URL}/recurring/run-due`,
-    {},
-    { headers: getAuthHeaders() }
+    {}
   )
   return response.data
 }
 
 export const bulkAssignCategory = async (transactionIds: string[], categoryId: string) => {
-  const response = await axios.patch<{ updatedCount: number; skippedCount: number }>(
+  const response = await http.patch<{ updatedCount: number; skippedCount: number }>(
     `${API_URL}/bulk/category`,
-    { transactionIds, categoryId },
-    { headers: getAuthHeaders() }
+    { transactionIds, categoryId }
   )
   return response.data
 }
@@ -194,23 +176,19 @@ export const splitTransaction = async (
   id: string,
   splits: Array<{ amount: number; categoryId: string; description?: string }>
 ) => {
-  const response = await axios.post<Transaction[]>(`${API_URL}/${id}/split`, { splits }, {
-    headers: getAuthHeaders()
-  })
+  const response = await http.post<Transaction[]>(`${API_URL}/${id}/split`, { splits })
   return response.data
 }
 
 export const getInsights = async (accountId?: string) => {
-  const response = await axios.get<TransactionInsightResponse>(`${API_URL}/insights`, {
-    headers: getAuthHeaders(),
+  const response = await http.get<TransactionInsightResponse>(`${API_URL}/insights`, {
     params: accountId ? { accountId } : undefined
   })
   return response.data
 }
 
 export const getBenchmark = async (accountId?: string) => {
-  const response = await axios.get<TransactionBenchmarkResponse>(`${API_URL}/benchmark`, {
-    headers: getAuthHeaders(),
+  const response = await http.get<TransactionBenchmarkResponse>(`${API_URL}/benchmark`, {
     params: accountId ? { accountId } : undefined
   })
   return response.data

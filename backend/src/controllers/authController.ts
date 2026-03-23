@@ -1,9 +1,8 @@
 import { NextFunction, Request, Response } from 'express'
 import { Prisma, UserRole } from '@prisma/client'
 import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
-import type { SignOptions } from 'jsonwebtoken'
 import { env } from '../config/env.ts'
+import { attachAuthSession, clearAuthSession } from '../lib/authSession.ts'
 import { writeAuditLog } from '../lib/auditLog.ts'
 import { buildPremiumSubscriptionState, ensureSubscriptionRecord, syncUserRoleFromSubscription } from '../lib/subscription.ts'
 import { resolveDefaultCurrencyForRequest, resolveRequestCountryCode } from '../lib/currency.ts'
@@ -83,11 +82,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       details: { email: user.email }
     })
 
-    const token = jwt.sign(
-      { userId: user.id },
-      env.jwtSecret,
-      { expiresIn: env.jwtExpiresIn as SignOptions['expiresIn'] }
-    )
+    attachAuthSession(res, user.id)
     res.status(201).json({
       user: {
         id: user.id,
@@ -97,8 +92,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         isBanned: user.isBanned,
         preferredCurrency: user.preferredCurrency,
         benchmarkOptOut: user.benchmarkOptOut
-      },
-      token
+      }
     })
   } catch (error) {
     next(error)
@@ -115,11 +109,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     const isPasswordValid = await bcrypt.compare(password, user.password)
     if (!isPasswordValid) return res.status(400).json({ error: 'Invalid credentials' })
 
-    const token = jwt.sign(
-      { userId: user.id },
-      env.jwtSecret,
-      { expiresIn: env.jwtExpiresIn as SignOptions['expiresIn'] }
-    )
+    attachAuthSession(res, user.id)
     await writeAuditLog({
       actorUserId: user.id,
       actorRole: user.role,
@@ -135,12 +125,16 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
         isBanned: user.isBanned,
         preferredCurrency: user.preferredCurrency,
         benchmarkOptOut: user.benchmarkOptOut
-      },
-      token
+      }
     })
   } catch (error) {
     next(error)
   }
+}
+
+export const logout = async (_req: Request, res: Response) => {
+  clearAuthSession(res)
+  res.json({ message: 'Logged out successfully.' })
 }
 
 export const getMe = async (req: Request, res: Response, next: NextFunction) => {
@@ -235,6 +229,7 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
     await prisma.category.deleteMany({ where: { userId } })
     await prisma.dataTransferLog.deleteMany({ where: { userId } })
     await prisma.user.delete({ where: { id: userId } })
+    clearAuthSession(res)
     res.json({ message: 'User and all related data deleted successfully' })
   } catch (error) {
     next(error)

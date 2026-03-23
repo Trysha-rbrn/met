@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { AlertCircle, ArrowRight, ChevronDown, Coins, DatabaseZap, Gem, KeyRound, Trash2, User } from 'lucide-react'
 import * as api from '../api/authApi'
+import { clearStoredCsrfToken } from '../api/http'
 import * as dataTransferApi from '../api/dataTransferApi'
 import type { AuthUser, SubscriptionSummary } from '../api/authApi'
 import type { TransferLog } from '../api/dataTransferApi'
@@ -189,7 +190,8 @@ function SettingsPage({ user, onUserUpdate }: SettingsPageProps) {
     try {
       await api.deleteAccount(deletePassword)
       notify.success('Account deleted successfully.')
-      localStorage.removeItem('met_token')
+      clearStoredCsrfToken()
+      localStorage.removeItem('met_account_id')
       window.location.href = '/'
     } catch (error: unknown) {
       notify.error(extractApiError(error, 'Failed to delete account.'))

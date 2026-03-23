@@ -3,7 +3,7 @@ import { Plus, Edit2, Trash2, Gem, Target, CalendarDays } from 'lucide-react'
 import * as api from '../api/categoriesApi'
 import type { BudgetGoal, Category, CategoryRule } from '../api/categoriesApi'
 import CategoryModal from '../components/CategoryModal'
-import { notify } from '../lib/toast'
+import { extractApiError, notify } from '../lib/toast'
 import { renderCategoryIcon } from '../lib/categoryIcons'
 
 type UserRole = 'BASIC' | 'PREMIUM' | 'ADMIN'
@@ -46,9 +46,8 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
     try {
       const data = await api.getCategories()
       setCategories(data)
-    } catch (error) {
-      console.error('Error fetching categories:', error)
-      notify.error('Failed to load categories.')
+    } catch (error: unknown) {
+      notify.error(extractApiError(error, 'Failed to load categories.'))
     } finally {
       setLoading(false)
     }
@@ -81,9 +80,8 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
       await api.deleteCategory(id)
       notify.success('Category deleted.')
       await fetchCategories()
-    } catch (error) {
-      console.error('Error deleting category:', error)
-      notify.error('Failed to delete category.')
+    } catch (error: unknown) {
+      notify.error(extractApiError(error, 'Failed to delete category.'))
     }
   }
 
@@ -92,9 +90,8 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
       setBudgetLoading(true)
       const data = await api.getBudgetGoals(month)
       setBudgetGoals(data)
-    } catch (error) {
-      console.error('Error fetching budget goals:', error)
-      notify.error('Failed to load category budgets.')
+    } catch (error: unknown) {
+      notify.error(extractApiError(error, 'Failed to load category budgets.'))
     } finally {
       setBudgetLoading(false)
     }
@@ -119,8 +116,8 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
         notify.success('Category created.')
       }
       await fetchCategories()
-    } catch (error) {
-      console.error('Error saving category:', error)
+    } catch (error: unknown) {
+      notify.error(extractApiError(error, 'Failed to save category.'))
       throw error
     }
   }
@@ -151,9 +148,8 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
         notify.success('Budget created.')
       }
       await fetchBudgetGoals(selectedBudgetMonth)
-    } catch (error) {
-      console.error('Error saving budget goal:', error)
-      notify.error('Failed to save budget.')
+    } catch (error: unknown) {
+      notify.error(extractApiError(error, 'Failed to save budget.'))
     }
   }
 
@@ -163,9 +159,8 @@ function CategoriesPage({ userRole }: CategoriesPageProps) {
       await api.deleteBudgetGoal(goal.id)
       notify.success('Budget deleted.')
       await fetchBudgetGoals(selectedBudgetMonth)
-    } catch (error) {
-      console.error('Error deleting budget goal:', error)
-      notify.error('Failed to delete budget.')
+    } catch (error: unknown) {
+      notify.error(extractApiError(error, 'Failed to delete budget.'))
     }
   }
 
