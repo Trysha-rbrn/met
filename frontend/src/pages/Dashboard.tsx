@@ -99,8 +99,8 @@ function Dashboard({ userRole }: DashboardProps) {
     void load()
   }, [isPremiumUser])
 
-  const now = new Date()
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const now = useMemo(() => new Date(), [])
+  const startOfMonth = useMemo(() => new Date(now.getFullYear(), now.getMonth(), 1), [now])
 
   const monthlyTransactions = useMemo(
     () => transactions.filter((tx) => new Date(tx.date) >= startOfMonth),
@@ -124,6 +124,112 @@ function Dashboard({ userRole }: DashboardProps) {
         .slice(0, 5),
     [transactions]
   )
+
+  const monthBuckets = useMemo(() => {
+    const buckets: Array<{
+      start: Date
+      end: Date
+      label: string
+      income: number
+      expenses: number
+      net: number
+      runningBalance: number
+    }> = []
+
+    for (let offset = 5; offset >= 0; offset -= 1) {
+      const start = new Date(now.getFullYear(), now.getMonth() - offset, 1)
+      const end = new Date(now.getFullYear(), now.getMonth() - offset + 1, 0, 23, 59, 59, 999)
+      buckets.push({
+        start,
+        end,
+        label: new Intl.DateTimeFormat('en-US', { month: 'short' }).format(start).toUpperCase(),
+        income: 0,
+        expenses: 0,
+        net: 0,
+        runningBalance: 0
+      })
+    }
+
+    const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    let runningBalance = 0
+    let txIndex = 0
+
+    for (const bucket of buckets) {
+      while (txIndex < sortedTransactions.length && new Date(sortedTransactions[txIndex].date).getTime() <= bucket.end.getTime()) {
+        const tx = sortedTransactions[txIndex]
+        const amount = tx.type === 'INCOME' ? tx.amount : -tx.amount
+        runningBalance += amount
+
+        const txDate = new Date(tx.date).getTime()
+        if (txDate >= bucket.start.getTime() && txDate <= bucket.end.getTime()) {
+          if (tx.type === 'INCOME') bucket.income += tx.amount
+          else bucket.expenses += tx.amount
+        }
+        txIndex += 1
+      }
+      bucket.net = bucket.income - bucket.expenses
+      bucket.runningBalance = runningBalance
+    }
+
+    return buckets
+  }, [transactions, now])
+
+  const previousMonthBucket = monthBuckets[4]
+  const currentMonthBucket = monthBuckets[5]
+
+  const monthlyIncomeDelta = useMemo(() => {
+    const current = currentMonthBucket?.income || 0
+    const previous = previousMonthBucket?.income || 0
+    if (previous <= 0) return null
+    return ((current - previous) / previous) * 100
+  }, [currentMonthBucket?.income, previousMonthBucket?.income])
+
+  const savingsRateTrend = useMemo(() => {
+    const historical = monthBuckets.slice(0, 5)
+    const averageHistoricalRate = historical.length > 0
+      ? historical.reduce((sum, bucket) => {
+        const rate = bucket.income > 0 ? ((bucket.income - bucket.expenses) / bucket.income) * 100 : 0
+        return sum + rate
+      }, 0) / historical.length
+      : 0
+    return savingsRate - averageHistoricalRate
+  }, [monthBuckets, savingsRate])
+
+  const chartValues = monthBuckets.map((bucket) => bucket.runningBalance)
+  const chartMin = chartValues.length > 0 ? Math.min(...chartValues) : 0
+  const chartMax = chartValues.length > 0 ? Math.max(...chartValues) : 0
+  const chartRange = Math.max(1, chartMax - chartMin)
+  const paddedMin = chartMin - chartRange * 0.15
+  const paddedMax = chartMax + chartRange * 0.15
+  const viewBoxHeight = 120
+  const chartTop = 10
+  const chartBottom = 95
+  const chartHeight = chartBottom - chartTop
+
+  const chartPoints = monthBuckets.map((bucket, index) => {
+    const x = (index / Math.max(1, monthBuckets.length - 1)) * 400
+    const normalized = (bucket.runningBalance - paddedMin) / Math.max(1, paddedMax - paddedMin)
+    const y = chartBottom - normalized * chartHeight
+    return { x, y, value: bucket.runningBalance, label: bucket.label }
+  })
+
+  const linePath = chartPoints
+    .map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x},${point.y}`)
+    .join(' ')
+  const areaPath = `${linePath} L400,${viewBoxHeight} L0,${viewBoxHeight} Z`
+  const yAxisLabels = [
+    paddedMax,
+    paddedMax - (paddedMax - paddedMin) / 3,
+    paddedMax - ((paddedMax - paddedMin) / 3) * 2,
+    paddedMin
+  ]
+
+  const balanceDeltaPercent = useMemo(() => {
+    const previousBalance = previousMonthBucket?.runningBalance || 0
+    const currentBalance = currentMonthBucket?.runningBalance || 0
+    if (Math.abs(previousBalance) < 0.01) return null
+    return ((currentBalance - previousBalance) / Math.abs(previousBalance)) * 100
+  }, [currentMonthBucket?.runningBalance, previousMonthBucket?.runningBalance])
 
   const spendingByCategory = useMemo(() => {
     const map = new Map<string, number>()
@@ -213,16 +319,18 @@ function Dashboard({ userRole }: DashboardProps) {
           label="Total Balance"
           value={formatCurrency(summary.totalBalance, currencyCode)}
           icon={Wallet}
-          delta="+12%"
-          deltaTone="positive"
-          helper="vs. last month"
+          delta={typeof balanceDeltaPercent === 'number' ? `${balanceDeltaPercent >= 0 ? '+' : ''}${Math.round(balanceDeltaPercent)}%` : undefined}
+          deltaTone={typeof balanceDeltaPercent === 'number' && balanceDeltaPercent < 0 ? 'danger' : 'positive'}
+          helper="vs. previous month-end balance"
         />
         <KpiCard
           label="Monthly Income"
           value={formatCurrency(monthlyIncome, currencyCode)}
           icon={ArrowDownCircle}
           valueClass="text-[#ff9eff]"
-          helper={`${formatCurrency(Math.max(0, monthlyIncome - summary.totalIncome / 6), currencyCode)} vs. prior trend`}
+          delta={typeof monthlyIncomeDelta === 'number' ? `${monthlyIncomeDelta >= 0 ? '+' : ''}${Math.round(monthlyIncomeDelta)}%` : undefined}
+          deltaTone={typeof monthlyIncomeDelta === 'number' && monthlyIncomeDelta < 0 ? 'danger' : 'positive'}
+          helper="vs. previous month income"
         />
         <KpiCard
           label="Monthly Expenses"
@@ -236,7 +344,7 @@ function Dashboard({ userRole }: DashboardProps) {
           label="Savings Rate"
           value={`${Math.round(savingsRate)}%`}
           icon={PiggyBank}
-          helper="Above average"
+          helper={`${savingsRateTrend >= 0 ? 'Above' : 'Below'} 6M average by ${Math.abs(Math.round(savingsRateTrend))}%`}
           ringPercent={savingsRate}
         />
       </div>
@@ -247,22 +355,21 @@ function Dashboard({ userRole }: DashboardProps) {
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold">Net Worth Over Time</h3>
-                <p className="mt-0.5 text-[10px] text-[#64748b]">May - October 2026</p>
+                <p className="mt-0.5 text-[10px] text-[#64748b]">{monthBuckets[0]?.label || ''} - {monthBuckets[monthBuckets.length - 1]?.label || ''} {now.getFullYear()}</p>
               </div>
               <div className="flex items-center gap-2">
                 <span className="rounded-md bg-[rgba(255,158,255,0.1)] px-2 py-1 text-[10px] font-medium text-[#ff9eff]">6M</span>
-                <span className="cursor-pointer rounded-md px-2 py-1 text-[10px] text-[#64748b]">1Y</span>
-                <span className="cursor-pointer rounded-md px-2 py-1 text-[10px] text-[#64748b]">All</span>
+                <span className="rounded-md px-2 py-1 text-[10px] text-[#64748b]">Live</span>
+                <span className="rounded-md px-2 py-1 text-[10px] text-[#64748b]">Account</span>
               </div>
             </div>
 
             <div className="flex gap-2">
               <div className="w-10 shrink-0 pb-5 text-right text-[9px] text-[#64748b]">
                 <div className="flex h-52 flex-col justify-between">
-                  <span>$160k</span>
-                  <span>$140k</span>
-                  <span>$120k</span>
-                  <span>$100k</span>
+                  {yAxisLabels.map((value, index) => (
+                    <span key={index}>{formatCompactCurrency(value, currencyCode)}</span>
+                  ))}
                 </div>
               </div>
               <div className="flex-1">
@@ -277,23 +384,25 @@ function Dashboard({ userRole }: DashboardProps) {
                     <line x1="0" y1="20" x2="400" y2="20" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
                     <line x1="0" y1="50" x2="400" y2="50" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
                     <line x1="0" y1="80" x2="400" y2="80" stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
-                    <path d="M0,95 C40,88 80,75 120,62 S200,45 240,38 S320,22 400,10 L400,120 L0,120 Z" fill="url(#chartGradient)" />
-                    <path d="M0,95 C40,88 80,75 120,62 S200,45 240,38 S320,22 400,10" fill="none" stroke="#ff9eff" strokeWidth="2" strokeLinecap="round" />
-                    <circle cx="0" cy="95" r="3" fill="#ff9eff" />
-                    <circle cx="80" cy="75" r="3" fill="#ff9eff" />
-                    <circle cx="160" cy="55" r="3" fill="#ff9eff" />
-                    <circle cx="240" cy="38" r="3" fill="#ff9eff" />
-                    <circle cx="320" cy="22" r="3" fill="#ff9eff" />
-                    <circle cx="400" cy="10" r="4" fill="#ff9eff" stroke="#0a0a0a" strokeWidth="2" />
+                    <path d={areaPath} fill="url(#chartGradient)" />
+                    <path d={linePath} fill="none" stroke="#ff9eff" strokeWidth="2" strokeLinecap="round" />
+                    {chartPoints.map((point, index) => (
+                      <circle
+                        key={`${point.label}-${index}`}
+                        cx={point.x}
+                        cy={point.y}
+                        r={index === chartPoints.length - 1 ? 4 : 3}
+                        fill="#ff9eff"
+                        stroke={index === chartPoints.length - 1 ? '#0a0a0a' : 'none'}
+                        strokeWidth={index === chartPoints.length - 1 ? 2 : 0}
+                      />
+                    ))}
                   </svg>
                 </div>
                 <div className="mt-2 flex justify-between px-1 text-[10px] text-[#64748b]">
-                  <span>MAY</span>
-                  <span>JUN</span>
-                  <span>JUL</span>
-                  <span>AUG</span>
-                  <span>SEP</span>
-                  <span>OCT</span>
+                  {monthBuckets.map((bucket) => (
+                    <span key={bucket.label}>{bucket.label}</span>
+                  ))}
                 </div>
               </div>
             </div>
@@ -516,6 +625,15 @@ function formatCurrency(value: number, currencyCode: string) {
     style: 'currency',
     currency: currencyCode
   }).format(value)
+}
+
+function formatCompactCurrency(value: number, currencyCode: string) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currencyCode,
+    notation: 'compact',
+    maximumFractionDigits: 1
+  }).format(value).replace('K', 'k')
 }
 
 function formatDate(value: string) {
