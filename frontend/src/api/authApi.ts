@@ -47,6 +47,7 @@ export interface AuthPayload {
   email: string
   password: string
   name?: string
+  preferredCurrency?: AuthUser['preferredCurrency']
 }
 
 export interface UpdateProfilePayload {

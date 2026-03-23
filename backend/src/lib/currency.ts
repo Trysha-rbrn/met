@@ -54,6 +54,13 @@ const COUNTRY_TO_CURRENCY: Record<string, CurrencyCode> = {
   ID: 'IDR'
 }
 
+const EUROPEAN_COUNTRY_CODES = new Set([
+  'AL', 'AD', 'AM', 'AT', 'AZ', 'BA', 'BE', 'BG', 'BY', 'CH', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES',
+  'FI', 'FO', 'FR', 'GB', 'GE', 'GI', 'GR', 'HR', 'HU', 'IE', 'IS', 'IT', 'LI', 'LT', 'LU', 'LV',
+  'MC', 'MD', 'ME', 'MK', 'MT', 'NL', 'NO', 'PL', 'PT', 'RO', 'RS', 'RU', 'SE', 'SI', 'SK', 'SM',
+  'TR', 'UA', 'VA', 'XK'
+])
+
 const COUNTRY_HEADER_KEYS = [
   'cf-ipcountry',
   'x-vercel-ip-country',
@@ -86,7 +93,36 @@ export const resolveRequestCountryCode = (req: Request) => {
   return ''
 }
 
+export const resolveCurrencySuggestion = (req: Request): {
+  countryCode: string | null
+  currency: CurrencyCode
+  source: 'country' | 'region' | 'fallback'
+} => {
+  const countryCode = resolveRequestCountryCode(req) || null
+
+  if (countryCode && COUNTRY_TO_CURRENCY[countryCode]) {
+    return {
+      countryCode,
+      currency: COUNTRY_TO_CURRENCY[countryCode],
+      source: 'country'
+    }
+  }
+
+  if (countryCode && EUROPEAN_COUNTRY_CODES.has(countryCode)) {
+    return {
+      countryCode,
+      currency: 'EUR',
+      source: 'region'
+    }
+  }
+
+  return {
+    countryCode,
+    currency: 'USD',
+    source: 'fallback'
+  }
+}
+
 export const resolveDefaultCurrencyForRequest = (req: Request): CurrencyCode => {
-  const countryCode = resolveRequestCountryCode(req)
-  return COUNTRY_TO_CURRENCY[countryCode] || 'USD'
+  return resolveCurrencySuggestion(req).currency
 }

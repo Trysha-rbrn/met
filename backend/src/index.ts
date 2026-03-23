@@ -10,6 +10,7 @@ import adminRoutes from './routes/adminRoutes.ts'
 import { errorHandler, notFoundHandler } from './middleware/errorMiddleware.ts'
 import { env } from './config/env.ts'
 import { prisma } from './lib/prisma.ts'
+import { resolveCurrencySuggestion } from './lib/currency.ts'
 
 const app = express()
 const PORT = env.port
@@ -190,6 +191,11 @@ app.get('/api/public/stats', async (_req, res) => {
   } catch {
     res.status(500).json({ error: 'Failed to load public stats.' })
   }
+})
+
+app.get('/api/public/currency-suggestion', (req, res) => {
+  const suggestion = resolveCurrencySuggestion(req)
+  res.json(suggestion)
 })
 
 app.use(notFoundHandler)

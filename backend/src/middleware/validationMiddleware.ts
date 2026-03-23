@@ -48,12 +48,21 @@ export const validateRegister = (req: Request, res: Response, next: NextFunction
   const email = toTrimmedString(req.body.email).toLowerCase()
   const password = toTrimmedString(req.body.password)
   const name = req.body.name
+  const preferredCurrency = req.body.preferredCurrency
   const errors: string[] = []
 
   if (!validateEmail(email)) errors.push('Valid email is required.')
   if (password.length < 8 || password.length > 128) errors.push('Password must be between 8 and 128 characters.')
   if (typeof name !== 'undefined' && typeof name !== 'string') errors.push('Name must be a string.')
   if (typeof name === 'string' && name.trim().length > 80) errors.push('Name can be up to 80 characters.')
+  if (typeof preferredCurrency !== 'undefined') {
+    const normalizedCurrency = toTrimmedString(preferredCurrency).toUpperCase()
+    if (!SUPPORTED_CURRENCIES_SET.has(normalizedCurrency as (typeof SUPPORTED_CURRENCIES)[number])) {
+      errors.push('Preferred currency is not supported.')
+    } else {
+      req.body.preferredCurrency = normalizedCurrency
+    }
+  }
 
   if (errors.length > 0) return sendValidationError(res, errors)
 

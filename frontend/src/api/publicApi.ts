@@ -16,7 +16,18 @@ export interface PublicStats {
   monthlyExpense: number | null
 }
 
+export interface CurrencySuggestion {
+  countryCode: string | null
+  currency: string
+  source: 'country' | 'region' | 'fallback'
+}
+
 export const getPublicStats = async () => {
   const response = await http.get<PublicStats>(`${API_URL}/stats`)
+  return response.data
+}
+
+export const getCurrencySuggestion = async () => {
+  const response = await http.get<CurrencySuggestion>(`${API_URL}/currency-suggestion`)
   return response.data
 }

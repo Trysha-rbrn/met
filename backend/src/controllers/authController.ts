@@ -9,7 +9,7 @@ import { resolveDefaultCurrencyForRequest, resolveRequestCountryCode } from '../
 import { prisma } from '../lib/prisma.ts'
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
-  const { email, password, name } = req.body
+  const { email, password, name, preferredCurrency: requestedCurrency } = req.body
   try {
     // TODO(email-verification): Block login until user verifies email via tokenized link.
     const existingUser = await prisma.user.findUnique({ where: { email } })
@@ -17,7 +17,9 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 
     const hashedPassword = await bcrypt.hash(password, env.bcryptRounds)
     const role: UserRole = env.adminEmails.includes(email.toLowerCase()) ? 'ADMIN' : 'BASIC'
-    const preferredCurrency = resolveDefaultCurrencyForRequest(req)
+    const preferredCurrency = typeof requestedCurrency === 'string'
+      ? requestedCurrency
+      : resolveDefaultCurrencyForRequest(req)
     const countryCode = resolveRequestCountryCode(req) || null
 
     const user = await prisma.$transaction(async (tx) => {

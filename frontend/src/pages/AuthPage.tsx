@@ -7,7 +7,8 @@ import * as api from '../api/authApi'
 import type { AuthUser } from '../api/authApi'
 import MetLoadingOverlay from '../components/MetLoadingOverlay'
 import MetLogo from '../components/MetLogo'
-import { getPublicStats, type PublicStats } from '../api/publicApi'
+import { getCurrencySuggestion, getPublicStats, type CurrencySuggestion, type PublicStats } from '../api/publicApi'
+import { CURRENCIES, type CurrencyCode } from '../lib/currencies'
 
 interface AuthPageProps {
   onLogin: (user: AuthUser) => void
@@ -40,6 +41,9 @@ function AuthPage({ onLogin, initialMode = 'login' }: AuthPageProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [stats, setStats] = useState<PublicStats | null>(null)
+  const [preferredCurrency, setPreferredCurrency] = useState<CurrencyCode>('USD')
+  const [currencySuggestion, setCurrencySuggestion] = useState<CurrencySuggestion | null>(null)
+  const [currencyTouched, setCurrencyTouched] = useState(false)
 
   useEffect(() => {
     setIsLogin(initialMode === 'login')
@@ -57,6 +61,21 @@ function AuthPage({ onLogin, initialMode = 'login' }: AuthPageProps) {
     }
     void load()
   }, [])
+
+  useEffect(() => {
+    const loadSuggestion = async () => {
+      try {
+        const suggestion = await getCurrencySuggestion()
+        setCurrencySuggestion(suggestion)
+        if (!currencyTouched && suggestion.currency) {
+          setPreferredCurrency(suggestion.currency as CurrencyCode)
+        }
+      } catch {
+        setCurrencySuggestion(null)
+      }
+    }
+    void loadSuggestion()
+  }, [currencyTouched])
 
   const safeStats = stats || fallbackStats
   const trustedUsers = useMemo(() => new Intl.NumberFormat('en-US').format(safeStats.totalUsers), [safeStats.totalUsers])
@@ -85,7 +104,7 @@ function AuthPage({ onLogin, initialMode = 'login' }: AuthPageProps) {
     try {
       const data = isLogin
         ? await api.login({ email, password })
-        : await api.register({ email, password, name })
+        : await api.register({ email, password, name, preferredCurrency })
       setIsTransitioning(true)
       window.setTimeout(() => {
         onLogin(data.user)
@@ -177,6 +196,33 @@ function AuthPage({ onLogin, initialMode = 'login' }: AuthPageProps) {
 
             {!isLogin ? (
               <>
+                <Field label="Suggested currency">
+                  <div className="space-y-2">
+                    <select
+                      id="auth-preferred-currency"
+                      name="preferredCurrency"
+                      value={preferredCurrency}
+                      onChange={(e) => {
+                        setPreferredCurrency(e.target.value as CurrencyCode)
+                        setCurrencyTouched(true)
+                      }}
+                      className="h-12 w-full rounded-xl border border-white/12 bg-white/5 px-4 text-sm text-slate-100 outline-none transition focus:border-[#ff9eff]/50 focus:ring-4 focus:ring-[#ff9eff]/10"
+                    >
+                      {CURRENCIES.map((currency) => (
+                        <option key={currency.code} value={currency.code}>
+                          {currency.symbol} - {currency.name} ({currency.code})
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[11px] text-slate-500">
+                      {currencySuggestion?.source === 'country'
+                        ? `Suggested from your detected country${currencySuggestion.countryCode ? ` (${currencySuggestion.countryCode})` : ''}.`
+                        : currencySuggestion?.source === 'region'
+                          ? 'Your country is not mapped directly, so we suggested EUR for Europe.'
+                          : 'We could not match a known local currency, so USD is suggested by default.'}
+                    </p>
+                  </div>
+                </Field>
                 <div className="flex gap-1.5">
                   <div className={`h-1 flex-1 rounded ${passwordStrength >= 1 ? 'bg-rose-500' : 'bg-white/10'}`} />
                   <div className={`h-1 flex-1 rounded ${passwordStrength >= 2 ? 'bg-amber-400' : 'bg-white/10'}`} />

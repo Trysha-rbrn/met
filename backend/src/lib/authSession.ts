@@ -52,8 +52,11 @@ export const attachAuthSession = (res: Response, userId: string) => {
 
 export const clearAuthSession = (res: Response) => {
   res.clearCookie(AUTH_COOKIE_NAME, {
-    ...buildCookieOptions(),
-    maxAge: undefined
+    httpOnly: true,
+    secure: env.nodeEnv === 'production',
+    sameSite: env.nodeEnv === 'production' ? 'none' : 'lax',
+    path: '/',
+    expires: new Date(0)
   })
   res.setHeader(CSRF_HEADER_NAME, '')
 }

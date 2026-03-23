@@ -184,7 +184,7 @@ function HomePage() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 pb-24 pt-32">
+            <section className="relative flex min-h-screen flex-col items-center justify-center overflow-x-hidden px-6 pb-24 pt-32">
               <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.018)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[size:48px_48px]" />
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,158,255,0.08),transparent_45%)]" />
               <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center">
@@ -192,13 +192,12 @@ function HomePage() {
                   <Sparkles size={12} />
                   Now with AI budget insights
                 </Link>
-                <h1 className="max-w-4xl text-center text-[clamp(44px,6.5vw,84px)] font-extrabold leading-[1.05] tracking-[-0.04em]">
-                  <span className="inline-block opacity-0" style={{ animation: 'metHeroReveal 720ms cubic-bezier(0.16, 1, 0.3, 1) 80ms forwards' }}>
+                <h1 className="max-w-4xl overflow-visible px-[0.04em] pb-[0.3em] pt-[0.08em] text-center text-[clamp(44px,6.5vw,84px)] font-extrabold leading-[1.24] tracking-[-0.04em]">
+                  <span className="block pb-[0.08em] opacity-0" style={{ animation: 'metHeroReveal 720ms cubic-bezier(0.16, 1, 0.3, 1) 80ms forwards' }}>
                     Your wealth,
                   </span>
-                  <br />
                   <span
-                    className="inline-block opacity-0 bg-gradient-to-r from-[#ff9eff] to-[#dc89e1] bg-clip-text text-transparent"
+                    className="block pt-[0.04em] opacity-0 bg-gradient-to-r from-[#ff9eff] to-[#dc89e1] bg-clip-text text-transparent"
                     style={{ animation: 'metHeroReveal 720ms cubic-bezier(0.16, 1, 0.3, 1) 220ms forwards, metHeroAccent 3.2s ease-in-out 1.1s infinite' }}
                   >
                     clearly.

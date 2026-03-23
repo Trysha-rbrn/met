@@ -77,14 +77,23 @@ function App() {
     localStorage.setItem('met_currency', user.preferredCurrency || 'USD')
   }, [user])
 
-  const handleLogout = useCallback(() => {
-    void authApi.logout().catch(() => undefined)
+  const clearLocalSessionState = useCallback(() => {
     setUser(null)
     clearStoredCsrfToken()
     localStorage.removeItem('met_account_id')
     localStorage.removeItem(PREMIUM_OFFER_STORAGE_KEY)
     localStorage.removeItem(ACTIVE_USAGE_STORAGE_KEY)
   }, [])
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await authApi.logout()
+    } catch {
+      notify.warning('We could not confirm server logout, but local session was cleared.')
+    } finally {
+      clearLocalSessionState()
+    }
+  }, [clearLocalSessionState])
 
   useEffect(() => {
     const verifyUser = async () => {
@@ -111,7 +120,7 @@ function App() {
       if (user) {
         notify.info('Connection changed. Please log in again.')
       }
-      handleLogout()
+      void handleLogout()
     }
 
     window.addEventListener('offline', onOffline)
@@ -133,7 +142,7 @@ function App() {
         const status = (error as { response?: { status?: number } })?.response?.status
         if (status === 401) {
           notify.info('Session expired. Please log in again.')
-          handleLogout()
+          void handleLogout()
         }
       }
     }, 15000)
