@@ -1,6 +1,6 @@
 ﻿import { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
-import { Wallet, LayoutDashboard, LogOut, User, PanelLeftClose, PanelLeftOpen, ArrowLeftRight, PieChart, TrendingUp, FileText, ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, LogOut, User, PanelLeftClose, PanelLeftOpen, ArrowLeftRight, PieChart, TrendingUp, FileText, ShieldCheck } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ToastContainer } from 'react-toastify'
 
@@ -37,6 +37,7 @@ const baseNavItems = [
 
 const PREMIUM_OFFER_STORAGE_KEY = 'met_premium_offer_state'
 const ACTIVE_USAGE_STORAGE_KEY = 'met_active_usage_state'
+const SESSION_HINT_STORAGE_KEY = 'met_session_hint'
 
 type PremiumOfferState = {
   nextPromptAt: number
@@ -79,6 +80,7 @@ function App() {
   useEffect(() => {
     if (!user) return
     localStorage.setItem('met_currency', user.preferredCurrency || 'USD')
+    localStorage.setItem(SESSION_HINT_STORAGE_KEY, '1')
   }, [user])
 
   const clearLocalSessionState = useCallback(() => {
@@ -87,6 +89,7 @@ function App() {
     localStorage.removeItem('met_account_id')
     localStorage.removeItem(PREMIUM_OFFER_STORAGE_KEY)
     localStorage.removeItem(ACTIVE_USAGE_STORAGE_KEY)
+    localStorage.removeItem(SESSION_HINT_STORAGE_KEY)
   }, [])
 
   const handleLogout = useCallback(async () => {
@@ -101,12 +104,23 @@ function App() {
 
   useEffect(() => {
     const verifyUser = async () => {
+      const pathname = window.location.pathname
+      const isPublicRoute = ['/', '/auth', '/register', '/privacy', '/terms', '/security', '/status'].includes(pathname)
+      const hasSessionHint = localStorage.getItem(SESSION_HINT_STORAGE_KEY) === '1'
+
+      if (isPublicRoute && !hasSessionHint) {
+        setLoading(false)
+        return
+      }
+
       try {
         const userData = await authApi.getMe()
         setUser(userData)
+        localStorage.setItem(SESSION_HINT_STORAGE_KEY, '1')
       } catch {
         clearStoredCsrfToken()
         setUser(null)
+        localStorage.removeItem(SESSION_HINT_STORAGE_KEY)
       }
       setLoading(false)
     }
@@ -219,6 +233,7 @@ function App() {
   const handleLogin = (userData: AuthUser) => {
     setUser(userData)
     localStorage.setItem('met_currency', userData.preferredCurrency || 'USD')
+    localStorage.setItem(SESSION_HINT_STORAGE_KEY, '1')
     setShowWorkspaceTransition(true)
   }
 
@@ -233,7 +248,9 @@ function App() {
 
   if (loading) {
     return <div className="fixed inset-0 bg-background flex items-center justify-center">
-      <Wallet size={48} className="animate-pulse text-primary" />
+      <div className="animate-pulse">
+        <MetLogo compact />
+      </div>
     </div>
   }
 
@@ -315,7 +332,9 @@ function PageLoader() {
   return (
     <div className="flex min-h-[40vh] items-center justify-center rounded-3xl border border-border/70 bg-background/90">
       <div className="flex items-center gap-3 text-sm font-semibold text-muted-foreground">
-        <Wallet size={18} className="animate-pulse text-primary" />
+        <div className="animate-pulse">
+          <MetLogo compact />
+        </div>
         Loading workspace...
       </div>
     </div>
