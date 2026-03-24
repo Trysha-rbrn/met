@@ -11,6 +11,24 @@ function MetLoadingOverlay({
   statusMessages = ['Initializing your workspace...', 'Loading your finances...', 'Almost there...']
 }: MetLoadingOverlayProps) {
   const [statusIndex, setStatusIndex] = useState(0)
+  const [shouldRender, setShouldRender] = useState(isOpen)
+
+  useEffect(() => {
+    if (isOpen) {
+      const timer = window.setTimeout(() => {
+        setShouldRender(true)
+        setStatusIndex(0)
+      }, 0)
+      return () => window.clearTimeout(timer)
+    }
+
+    const timer = window.setTimeout(() => {
+      setShouldRender(false)
+      setStatusIndex(0)
+    }, 320)
+
+    return () => window.clearTimeout(timer)
+  }, [isOpen])
 
   useEffect(() => {
     if (!isOpen) return
@@ -31,7 +49,7 @@ function MetLoadingOverlay({
     [statusIndex, statusMessages]
   )
 
-  if (!isOpen) return null
+  if (!shouldRender) return null
 
   return (
     <>
@@ -39,6 +57,10 @@ function MetLoadingOverlay({
         @keyframes metLoaderFadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
+        }
+        @keyframes metLoaderFadeOut {
+          from { opacity: 1; }
+          to { opacity: 0; }
         }
         @keyframes metLoaderScaleIn {
           0% { transform: scale(0.58); opacity: 0; }
@@ -62,7 +84,13 @@ function MetLoadingOverlay({
           50% { opacity: 1; transform: translate(-50%, -50%) scale(1.14); }
         }
       `}</style>
-      <div className="fixed inset-0 z-[220] overflow-hidden bg-[#0a0a0a]" style={{ animation: 'metLoaderFadeIn 220ms ease-out forwards' }}>
+      <div
+        className="fixed inset-0 z-[220] overflow-hidden bg-[#0a0a0a]"
+        style={{
+          animation: isOpen ? 'metLoaderFadeIn 220ms ease-out forwards' : 'metLoaderFadeOut 320ms ease-in forwards',
+          pointerEvents: isOpen ? 'auto' : 'none'
+        }}
+      >
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.018)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[size:50px_50px]" />
         <div
           className="absolute left-1/2 top-1/2 h-[360px] w-[360px] rounded-full"

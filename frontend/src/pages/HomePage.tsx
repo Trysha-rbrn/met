@@ -11,7 +11,7 @@ import {
   TrendingUp,
   X
 } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import MetLogo from '../components/MetLogo'
 import MetLoadingOverlay from '../components/MetLoadingOverlay'
@@ -32,6 +32,7 @@ const fallbackStats = {
 } satisfies PublicStats
 
 function HomePage() {
+  const location = useLocation()
   const navigate = useNavigate()
   const [isYearly, setIsYearly] = useState(false)
   const [stats, setStats] = useState<PublicStats | null>(null)
@@ -58,6 +59,20 @@ function HomePage() {
       window.scrollTo(0, 0)
     }
   }, [showHowItWorks])
+
+  useEffect(() => {
+    if (!location.hash) return
+    if (showHowItWorks) {
+      setShowHowItWorks(false)
+    }
+
+    const targetId = location.hash.replace('#', '')
+    const timer = window.setTimeout(() => {
+      document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 80)
+
+    return () => window.clearTimeout(timer)
+  }, [location.hash, showHowItWorks])
 
   useEffect(() => {
     if (!loadingRoute) return
@@ -180,9 +195,9 @@ function HomePage() {
           <motion.div
             key="landing"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={{ opacity: loadingRoute ? 0 : 1, scale: loadingRoute ? 0.985 : 1, filter: loadingRoute ? 'blur(6px)' : 'blur(0px)' }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: loadingRoute ? 0.32 : 0.3 }}
           >
             <section className="relative flex min-h-screen flex-col items-center justify-center overflow-x-hidden px-6 pb-24 pt-32">
               <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.018)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[size:48px_48px]" />

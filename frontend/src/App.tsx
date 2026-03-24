@@ -1,6 +1,6 @@
 ﻿import { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
-import { Wallet, Settings, LayoutDashboard, LogOut, User, BarChart, PanelLeftClose, PanelLeftOpen, Shield } from 'lucide-react'
+import { Wallet, LayoutDashboard, LogOut, User, PanelLeftClose, PanelLeftOpen, ArrowLeftRight, PieChart, TrendingUp, FileText, ShieldCheck } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ToastContainer } from 'react-toastify'
 
@@ -12,6 +12,7 @@ import { clearStoredCsrfToken } from './api/http'
 import type { AuthUser } from './api/authApi'
 import { notify } from './lib/toast'
 import PremiumComparisonModal from './components/PremiumComparisonModal'
+import MetLoadingOverlay from './components/MetLoadingOverlay'
 import MetLogo from './components/MetLogo'
 
 const CategoriesPage = lazy(() => import('./pages/CategoriesPage'))
@@ -26,10 +27,12 @@ const StatusPage = lazy(() => import('./pages/StatusPage'))
 
 const baseNavItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/transactions', label: 'Transactions', icon: BarChart },
-  { path: '/categories', label: 'Categories', icon: Settings },
+  { path: '/transactions', label: 'Transactions', icon: ArrowLeftRight },
+  { path: '/categories', label: 'Budget', icon: PieChart },
+  { path: '/settings', label: 'Investments', icon: TrendingUp, disabled: true },
+  { path: '/settings', label: 'Reports', icon: FileText, disabled: true },
   { path: '/settings', label: 'Settings', icon: User },
-  { path: '/admin', label: 'Admin', icon: Shield, adminOnly: true },
+  { path: '/admin', label: 'Admin', icon: ShieldCheck, adminOnly: true },
 ]
 
 const PREMIUM_OFFER_STORAGE_KEY = 'met_premium_offer_state'
@@ -66,6 +69,7 @@ function App() {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [showPremiumOfferModal, setShowPremiumOfferModal] = useState(false)
+  const [showWorkspaceTransition, setShowWorkspaceTransition] = useState(false)
   const hadConnectionDropRef = useRef(false)
 
   useEffect(() => {
@@ -215,7 +219,17 @@ function App() {
   const handleLogin = (userData: AuthUser) => {
     setUser(userData)
     localStorage.setItem('met_currency', userData.preferredCurrency || 'USD')
+    setShowWorkspaceTransition(true)
   }
+
+  useEffect(() => {
+    if (!showWorkspaceTransition) return
+    const timer = window.setTimeout(() => {
+      setShowWorkspaceTransition(false)
+    }, 520)
+
+    return () => window.clearTimeout(timer)
+  }, [showWorkspaceTransition])
 
   if (loading) {
     return <div className="fixed inset-0 bg-background flex items-center justify-center">
@@ -243,14 +257,15 @@ function App() {
               user={user}
               isCollapsed={isSidebarCollapsed}
               onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              onLogout={() => void handleLogout()}
             />
-            <div className={`flex min-h-screen min-w-0 flex-col ${isSidebarCollapsed ? 'lg:pl-24' : 'lg:pl-64'}`}>
+            <div className={`flex min-h-screen min-w-0 flex-col ${isSidebarCollapsed ? 'lg:pl-[110px]' : 'lg:pl-[240px]'}`}>
               <Header user={user} onLogout={handleLogout} />
               <main className="flex-1 min-w-0 p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 lg:pb-8">
                 <Suspense fallback={<PageLoader />}>
                   <AnimatePresence mode="wait">
                     <Routes>
-                      <Route path="/" element={<Dashboard isSidebarCollapsed={isSidebarCollapsed} userRole={user?.role || 'BASIC'} />} />
+                      <Route path="/" element={<Dashboard isSidebarCollapsed={isSidebarCollapsed} userRole={user?.role || 'BASIC'} userName={user?.name || 'there'} />} />
                       <Route path="/transactions" element={<TransactionsPage userRole={user?.role || 'BASIC'} />} />
                       <Route path="/categories" element={<CategoriesPage userRole={user?.role || 'BASIC'} />} />
                       <Route path="/settings" element={<SettingsPage user={user} onUserUpdate={setUser} />} />
@@ -272,6 +287,10 @@ function App() {
           </div>
         )}
       </div>
+      <MetLoadingOverlay
+        isOpen={showWorkspaceTransition}
+        statusMessages={['Opening your dashboard...', 'Syncing your workspace...', 'Ready.']}
+      />
       <PremiumComparisonModal
         isOpen={showPremiumOfferModal}
         title="Upgrade Your Finance Workspace"
@@ -306,45 +325,103 @@ function PageLoader() {
 function Sidebar({
   user,
   isCollapsed,
-  onToggle
+  onToggle,
+  onLogout
 }: {
   user: AuthUser | null
   isCollapsed: boolean
   onToggle: () => void
+  onLogout: () => void
 }) {
   const location = useLocation()
   const navItems = baseNavItems.filter((item) => !item.adminOnly || user?.role === 'ADMIN')
+  const primaryNavItems = navItems.filter((item) => !item.adminOnly && item.label !== 'Settings')
+  const secondaryNavItems = navItems.filter((item) => item.adminOnly || item.label === 'Settings')
+  const initials = (user?.name || 'User')
+    .split(' ')
+    .map((part) => part[0] || '')
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
   
   return (
-    <aside className={`hidden lg:flex flex-col border-r border-white/10 bg-[#0a0a0a]/95 fixed top-0 left-0 h-screen z-40 transition-[width] duration-200 ease-out will-change-[width] ${isCollapsed ? 'w-24' : 'w-64'}`}>
+    <aside className={`hidden lg:flex fixed left-0 top-0 z-40 h-screen flex-col border-r border-white/[0.08] bg-[#0a0a0a] px-4 py-6 transition-[width] duration-200 ease-out ${isCollapsed ? 'w-[110px]' : 'w-[240px]'}`}>
       <button
         type="button"
         onClick={onToggle}
-        className="absolute -right-5 top-1/2 -translate-y-1/2 z-50 h-11 w-11 rounded-full border border-white/10 bg-[#111114] shadow-md flex items-center justify-center text-slate-400 hover:text-slate-100 hover:bg-[#1a1a20] transition-colors"
+        className="absolute -right-5 top-1/2 z-50 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-[#111114] text-slate-400 shadow-md transition-colors hover:bg-[#1a1a20] hover:text-slate-100"
         aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
         {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
       </button>
-      <div className={`flex items-center h-20 px-6 border-b border-white/10 ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
-        <MetLogo compact={isCollapsed} />
+      <div className={`mb-10 flex items-center ${isCollapsed ? 'justify-center' : 'gap-2 px-2'}`}>
+        <MetLogo compact />
+        {!isCollapsed ? <span className="text-xl font-bold tracking-tighter text-[#f1f5f9]">MET</span> : null}
       </div>
-      <nav className="flex-1 px-4 py-6 space-y-2">
-        {navItems.map(item => (
+
+      <nav className="flex-1 space-y-1">
+        {primaryNavItems.map((item) => (
           <Link
-            key={item.path}
+            key={`${item.path}-${item.label}`}
             to={item.path}
             title={item.label}
-            className={`met-sidebar-item flex items-center gap-3 px-4 py-2.5 font-bold transition-all duration-200 ${
+            className={`met-sidebar-item flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
               location.pathname === item.path
                 ? 'met-sidebar-item-active'
                 : 'text-slate-500'
-            } ${isCollapsed ? 'justify-center' : ''}`}
+            } ${isCollapsed ? 'justify-center rounded-xl border-l-0' : ''} ${item.disabled ? 'pointer-events-none opacity-55' : ''}`}
           >
             <item.icon size={20} />
-            {!isCollapsed && item.label}
+            {!isCollapsed ? item.label : null}
+          </Link>
+        ))}
+
+        {!isCollapsed ? (
+          <div className="px-3 pb-1 pt-6">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-[#64748b]">Administration</p>
+          </div>
+        ) : null}
+
+        {secondaryNavItems.map((item) => (
+          <Link
+            key={`${item.path}-${item.label}`}
+            to={item.path}
+            title={item.label}
+            className={`met-sidebar-item flex items-center ${item.label === 'Admin' && !isCollapsed ? 'justify-between' : 'gap-3'} px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+              location.pathname === item.path
+                ? 'met-sidebar-item-active'
+                : 'text-slate-500'
+            } ${isCollapsed ? 'justify-center rounded-xl border-l-0' : ''}`}
+          >
+            <span className="flex items-center gap-3">
+              <item.icon size={20} />
+              {!isCollapsed ? item.label : null}
+            </span>
+            {!isCollapsed && item.label === 'Admin' ? (
+              <span className="rounded border border-[#ff9eff]/25 bg-[#ff9eff]/10 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-[#ff9eff]">
+                ADMIN
+              </span>
+            ) : null}
           </Link>
         ))}
       </nav>
+
+      <div className={`mt-auto border-t border-white/[0.08] pt-6 ${isCollapsed ? 'flex justify-center' : 'flex items-center justify-between'}`}>
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-[#6a4d8b] to-[#dc89e1] text-[10px] font-bold">
+            {initials || 'U'}
+          </div>
+          {!isCollapsed ? (
+            <div>
+              <p className="text-xs font-bold text-slate-100">{user?.name || 'User'}</p>
+              <p className="text-[10px] text-[#64748b]">{user?.role === 'ADMIN' ? 'Super Admin' : user?.role === 'PREMIUM' ? 'Premium Member' : 'Basic Member'}</p>
+            </div>
+          ) : null}
+        </div>
+        <button type="button" onClick={onLogout} className="text-[#64748b] transition-colors hover:text-white" aria-label="Logout">
+          <LogOut size={16} />
+        </button>
+      </div>
     </aside>
   )
 }

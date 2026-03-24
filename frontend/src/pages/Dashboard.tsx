@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ComponentType } from 'react'
 import {
   ArrowDownCircle,
@@ -26,9 +26,10 @@ type UserRole = 'BASIC' | 'PREMIUM' | 'ADMIN'
 interface DashboardProps {
   isSidebarCollapsed: boolean
   userRole: UserRole
+  userName: string
 }
 
-function Dashboard({ userRole }: DashboardProps) {
+function Dashboard({ userRole, userName }: DashboardProps) {
   const [accounts, setAccounts] = useState<Account[]>([])
   const [selectedAccountId, setSelectedAccountId] = useState('')
   const [summary, setSummary] = useState<TransactionSummary>({
@@ -39,6 +40,18 @@ function Dashboard({ userRole }: DashboardProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [budgetGoals, setBudgetGoals] = useState<BudgetGoal[]>([])
   const [loading, setLoading] = useState(true)
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false)
+  const [isDateMenuOpen, setIsDateMenuOpen] = useState(false)
+  const [dateRange, setDateRange] = useState(() => {
+    const end = new Date()
+    const start = new Date(end.getFullYear(), end.getMonth(), 1)
+    return {
+      start: toInputDate(start),
+      end: toInputDate(end)
+    }
+  })
+  const accountMenuRef = useRef<HTMLDivElement | null>(null)
+  const dateMenuRef = useRef<HTMLDivElement | null>(null)
 
   const currencyCode = localStorage.getItem('met_currency') || 'USD'
   const isPremiumUser = userRole === 'PREMIUM' || userRole === 'ADMIN'
@@ -82,6 +95,21 @@ function Dashboard({ userRole }: DashboardProps) {
   }, [selectedAccountId])
 
   useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node
+      if (accountMenuRef.current && !accountMenuRef.current.contains(target)) {
+        setIsAccountMenuOpen(false)
+      }
+      if (dateMenuRef.current && !dateMenuRef.current.contains(target)) {
+        setIsDateMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    return () => document.removeEventListener('mousedown', handlePointerDown)
+  }, [])
+
+  useEffect(() => {
     if (!isPremiumUser) {
       setBudgetGoals([])
       return
@@ -100,11 +128,21 @@ function Dashboard({ userRole }: DashboardProps) {
   }, [isPremiumUser])
 
   const now = useMemo(() => new Date(), [])
-  const startOfMonth = useMemo(() => new Date(now.getFullYear(), now.getMonth(), 1), [now])
+  const startDate = useMemo(() => new Date(`${dateRange.start}T00:00:00`), [dateRange.start])
+  const endDate = useMemo(() => new Date(`${dateRange.end}T23:59:59.999`), [dateRange.end])
+  const greeting = useMemo(() => {
+    const hour = now.getHours()
+    if (hour < 12) return 'Good morning'
+    if (hour < 18) return 'Good afternoon'
+    return 'Good evening'
+  }, [now])
 
   const monthlyTransactions = useMemo(
-    () => transactions.filter((tx) => new Date(tx.date) >= startOfMonth),
-    [transactions, startOfMonth]
+    () => transactions.filter((tx) => {
+      const txDate = new Date(tx.date)
+      return txDate >= startDate && txDate <= endDate
+    }),
+    [transactions, startDate, endDate]
   )
 
   const monthlyIncome = useMemo(
@@ -136,9 +174,12 @@ function Dashboard({ userRole }: DashboardProps) {
       runningBalance: number
     }> = []
 
-    for (let offset = 5; offset >= 0; offset -= 1) {
-      const start = new Date(now.getFullYear(), now.getMonth() - offset, 1)
-      const end = new Date(now.getFullYear(), now.getMonth() - offset + 1, 0, 23, 59, 59, 999)
+    const cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1)
+    const lastBucketStart = new Date(endDate.getFullYear(), endDate.getMonth(), 1)
+
+    while (cursor.getTime() <= lastBucketStart.getTime()) {
+      const start = new Date(cursor.getFullYear(), cursor.getMonth(), 1)
+      const end = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0, 23, 59, 59, 999)
       buckets.push({
         start,
         end,
@@ -148,9 +189,15 @@ function Dashboard({ userRole }: DashboardProps) {
         net: 0,
         runningBalance: 0
       })
+      cursor.setMonth(cursor.getMonth() + 1)
     }
 
-    const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    const sortedTransactions = [...transactions]
+      .filter((tx) => {
+        const txTime = new Date(tx.date).getTime()
+        return txTime >= startDate.getTime() && txTime <= endDate.getTime()
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     let runningBalance = 0
     let txIndex = 0
 
@@ -172,7 +219,7 @@ function Dashboard({ userRole }: DashboardProps) {
     }
 
     return buckets
-  }, [transactions, now])
+  }, [endDate, startDate, transactions])
 
   const previousMonthBucket = monthBuckets[4]
   const currentMonthBucket = monthBuckets[5]
@@ -271,6 +318,9 @@ function Dashboard({ userRole }: DashboardProps) {
   }, [budgetGoals, monthlyTransactions])
 
   const selectedAccount = accounts.find((a) => a.id === selectedAccountId)
+  const formattedDateRange = useMemo(() => (
+    `${new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(startDate)} - ${new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(endDate)}`
+  ), [endDate, startDate])
 
   if (loading && accounts.length === 0) {
     return <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-slate-400">Loading dashboard...</div>
@@ -280,13 +330,34 @@ function Dashboard({ userRole }: DashboardProps) {
     <div className="space-y-6">
       <header className="mb-8 flex items-center justify-between">
         <div>
-          <p className="mb-1 text-xs text-[#64748b]">Good morning</p>
+          <p className="mb-1 text-xs text-[#64748b]">{greeting}, {userName}</p>
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
         </div>
         <div className="flex items-center gap-4">
-          <div className="hidden cursor-default items-center gap-2 rounded-lg border border-white/[0.08] bg-[rgba(255,255,255,0.04)] px-3 py-2 text-xs font-medium md:flex">
-            <Calendar className="h-3.5 w-3.5 text-[#ff9eff]" />
-            {new Intl.DateTimeFormat('en-US', { month: 'short' }).format(startOfMonth)} 1 - {new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(now)}
+          <div ref={dateMenuRef} className="relative hidden md:block">
+            <button
+              type="button"
+              onClick={() => setIsDateMenuOpen((prev) => !prev)}
+              className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-[rgba(255,255,255,0.04)] px-3 py-2 text-xs font-medium transition hover:border-[#ff9eff]/25 hover:bg-white/[0.07]"
+            >
+              <Calendar className="h-3.5 w-3.5 text-[#ff9eff]" />
+              {formattedDateRange}
+            </button>
+            {isDateMenuOpen ? (
+              <div className="absolute right-0 top-[calc(100%+10px)] z-20 w-72 rounded-2xl border border-white/10 bg-[#111114] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+                <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Date Range</p>
+                <div className="space-y-3">
+                  <label className="block text-xs text-slate-400">
+                    <span className="mb-1 block">Start date</span>
+                    <input type="date" value={dateRange.start} max={dateRange.end} onChange={(e) => setDateRange((prev) => ({ ...prev, start: e.target.value }))} className="h-11 w-full rounded-xl border border-white/12 bg-white/5 px-3 text-sm text-slate-100 outline-none focus:border-[#ff9eff]/45" />
+                  </label>
+                  <label className="block text-xs text-slate-400">
+                    <span className="mb-1 block">End date</span>
+                    <input type="date" value={dateRange.end} min={dateRange.start} max={toInputDate(now)} onChange={(e) => setDateRange((prev) => ({ ...prev, end: e.target.value }))} className="h-11 w-full rounded-xl border border-white/12 bg-white/5 px-3 text-sm text-slate-100 outline-none focus:border-[#ff9eff]/45" />
+                  </label>
+                </div>
+              </div>
+            ) : null}
           </div>
           <Search className="h-5 w-5 cursor-pointer text-[#64748b] transition-colors hover:text-white" />
         </div>
@@ -294,22 +365,38 @@ function Dashboard({ userRole }: DashboardProps) {
 
       <div className="mb-2 rounded-xl border border-white/[0.08] bg-white/[0.04] p-3">
         <div className="flex flex-wrap items-center gap-3">
-          <label htmlFor="dashboard-account" className="text-xs font-semibold uppercase tracking-[0.12em] text-[#64748b]">
+          <label className="text-xs font-semibold uppercase tracking-[0.12em] text-[#64748b]">
             Account
           </label>
-          <select
-            id="dashboard-account"
-            name="accountId"
-            value={selectedAccountId}
-            onChange={(e) => setSelectedAccountId(e.target.value)}
-            className="min-h-10 rounded-lg border border-white/10 bg-black/30 px-3 text-sm outline-none"
-          >
-            {accounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name}
-              </option>
-            ))}
-          </select>
+          <div ref={accountMenuRef} className="relative">
+            <button
+              id="dashboard-account"
+              type="button"
+              onClick={() => setIsAccountMenuOpen((prev) => !prev)}
+              className="inline-flex min-h-11 min-w-48 items-center justify-between gap-3 rounded-xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] px-4 text-sm font-semibold text-slate-100 shadow-[0_12px_30px_rgba(0,0,0,0.18)] transition hover:border-[#ff9eff]/25 hover:bg-white/[0.08]"
+            >
+              <span>{selectedAccount?.name || 'Select account'}</span>
+              <span className={`text-xs text-slate-500 transition-transform ${isAccountMenuOpen ? 'rotate-180' : ''}`}>⌄</span>
+            </button>
+            {isAccountMenuOpen ? (
+              <div className="absolute left-0 top-[calc(100%+10px)] z-20 min-w-full overflow-hidden rounded-2xl border border-white/10 bg-[#111114] p-2 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+                {accounts.map((account) => (
+                  <button
+                    key={account.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedAccountId(account.id)
+                      setIsAccountMenuOpen(false)
+                    }}
+                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition ${account.id === selectedAccountId ? 'bg-[#ff9eff]/12 text-[#ff9eff]' : 'text-slate-200 hover:bg-white/5'}`}
+                  >
+                    <span>{account.name}</span>
+                    {account.id === selectedAccountId ? <span className="text-xs font-bold">ACTIVE</span> : null}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
           <span className="text-xs text-[#64748b]">{selectedAccount ? `Showing ${selectedAccount.name}` : 'No account selected'}</span>
         </div>
       </div>
@@ -355,10 +442,10 @@ function Dashboard({ userRole }: DashboardProps) {
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold">Net Worth Over Time</h3>
-                <p className="mt-0.5 text-[10px] text-[#64748b]">{monthBuckets[0]?.label || ''} - {monthBuckets[monthBuckets.length - 1]?.label || ''} {now.getFullYear()}</p>
+                <p className="mt-0.5 text-[10px] text-[#64748b]">{formattedDateRange}</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="rounded-md bg-[rgba(255,158,255,0.1)] px-2 py-1 text-[10px] font-medium text-[#ff9eff]">6M</span>
+                <span className="rounded-md bg-[rgba(255,158,255,0.1)] px-2 py-1 text-[10px] font-medium text-[#ff9eff]">{monthBuckets.length}M</span>
                 <span className="rounded-md px-2 py-1 text-[10px] text-[#64748b]">Live</span>
                 <span className="rounded-md px-2 py-1 text-[10px] text-[#64748b]">Account</span>
               </div>
@@ -641,6 +728,10 @@ function formatDate(value: string) {
     month: 'short',
     day: 'numeric'
   })
+}
+
+function toInputDate(value: Date) {
+  return value.toISOString().slice(0, 10)
 }
 
 export default Dashboard

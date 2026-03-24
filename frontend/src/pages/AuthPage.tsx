@@ -79,9 +79,9 @@ function AuthPage({ onLogin, initialMode = 'login' }: AuthPageProps) {
 
   const safeStats = stats || fallbackStats
   const trustedUsers = useMemo(() => new Intl.NumberFormat('en-US').format(safeStats.totalUsers), [safeStats.totalUsers])
-  const avgBalanceLabel = useMemo(() => `${formatUsdCompact(safeStats.avgBalanceUsd ?? fallbackStats.avgBalanceUsd)} avg balance`, [safeStats.avgBalanceUsd])
-  const savingsRateLabel = useMemo(() => `${Math.round(safeStats.savingsRate ?? fallbackStats.savingsRate)}% savings rate`, [safeStats.savingsRate])
-  const txRateLabel = useMemo(() => `${Math.round(safeStats.avgMonthlyTransactions ?? fallbackStats.avgMonthlyTransactions)} tx per month`, [safeStats.avgMonthlyTransactions])
+  const activeUsersLabel = useMemo(() => `${new Intl.NumberFormat('en-US').format(safeStats.totalUsers)} active users`, [safeStats.totalUsers])
+  const trackedTransactionsLabel = useMemo(() => `${new Intl.NumberFormat('en-US').format(safeStats.totalTransactions)} tracked transactions`, [safeStats.totalTransactions])
+  const countriesLabel = useMemo(() => `${new Intl.NumberFormat('en-US').format(safeStats.countriesCount)} countries`, [safeStats.countriesCount])
   const currentHost = typeof window !== 'undefined' ? window.location.host : 'met.app'
 
   const passwordStrength = useMemo(() => {
@@ -145,9 +145,9 @@ function AuthPage({ onLogin, initialMode = 'login' }: AuthPageProps) {
           <h1 className="mb-4 text-[36px] font-[800] leading-[1.2] tracking-[-0.03em]">Your finances, clearly tracked.</h1>
           <p className="mb-8 text-[14px] text-slate-400">Join {trustedUsers} people who manage their wealth smarter.</p>
           <div className="flex flex-wrap gap-2">
-            <span className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-200">{avgBalanceLabel}</span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-200">{savingsRateLabel}</span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-200">{txRateLabel}</span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-200">{activeUsersLabel}</span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-200">{trackedTransactionsLabel}</span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-slate-200">{countriesLabel}</span>
           </div>
         </div>
 
@@ -325,16 +325,6 @@ function IconInput({
       {trailingButton ? <div className="absolute right-4 top-1/2 -translate-y-1/2">{trailingButton}</div> : null}
     </div>
   )
-}
-
-function formatUsdCompact(value: number) {
-  const compact = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    notation: 'compact',
-    maximumFractionDigits: 1
-  }).format(value)
-  return compact.replace('K', 'k')
 }
 
 export default AuthPage
